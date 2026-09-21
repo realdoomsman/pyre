@@ -95,9 +95,10 @@ createServer((req, res) => {
   serve(req, res, () => {
     /*
      * SPA fallback: unknown path without a file extension → index.html. HEAD has
-     * to answer exactly like GET minus the body — Privy probes the current URL
-     * with HEAD to read its Cross-Origin-Opener-Policy, and a 404 there makes it
-     * log an error on every route it mounts on.
+     * to answer exactly like GET minus the body — auth SDKs and link previewers
+     * probe the current URL with HEAD (to read headers such as
+     * Cross-Origin-Opener-Policy), and a 404 there surfaces as an error on every
+     * route.
      */
     const path = (req.url ?? "/").split("?")[0];
     const method = req.method ?? "GET";

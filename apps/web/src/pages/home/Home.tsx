@@ -23,7 +23,7 @@ export const Home = () => {
     <div className="flex flex-col gap-8">
       <h1 className="sr-only">Pyre — coins that build apps</h1>
       <BuildHero />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Feed />
         <div className="hidden xl:block">
           <Rail />

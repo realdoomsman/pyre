@@ -2,8 +2,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { env } from "../env.js";
 
 /**
- * Self-hosted platform session tokens. Replaces the Privy access token: after a Google or
- * wallet login the client holds one of these and sends it as `Authorization: Bearer <token>`.
+ * Self-hosted platform session tokens: after a Google or wallet login the client holds one of
+ * these and sends it as `Authorization: Bearer <token>`.
  * HS256 signed with SESSION_SECRET — the same secret the per-app host cookie uses.
  */
 const secret = new TextEncoder().encode(env.SESSION_SECRET);

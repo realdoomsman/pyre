@@ -53,7 +53,7 @@ export const Feed = () => {
   );
 
   return (
-    <section aria-label="Ranked feed">
+    <section aria-label="Ranked feed" className="min-w-0">
       <Tabs
         name="feed"
         items={tabs}
@@ -63,7 +63,7 @@ export const Feed = () => {
       />
       <div id={panelId("feed", sort)} role="tabpanel" aria-labelledby={`feed-tab-${sort}`} className="mt-4">
         {apps.isPending ? (
-          <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3" aria-busy>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3" aria-busy>
             {Array.from({ length: 6 }, (_, i) => (
               <Skeleton key={i} className="h-[196px] w-full" rounded="card" />
             ))}
@@ -90,7 +90,7 @@ export const Feed = () => {
           />
         ) : (
           <>
-            <ul className="grid list-none gap-3 p-0 sm:grid-cols-2 2xl:grid-cols-3">
+            <ul className="grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 2xl:grid-cols-3">
               {visible.map((app, i) => (
                 <li key={app.id}>
                   <CoinCard app={app} rank={i + 1} />

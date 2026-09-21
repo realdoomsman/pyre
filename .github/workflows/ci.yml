@@ -27,9 +27,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Node 22's cjs-module-lexer cannot see anchor's `BN` export, which
-          # breaks @pump-fun/pump-sdk at import time. The images are pinned to
-          # 24 for the same reason; CI must match or it tests a different app.
+          # The Dockerfiles for api, runner and web all build and run on
+          # node:24; CI must match or it tests a different app.
           node-version: 24
           cache: npm
 
@@ -96,4 +95,4 @@ jobs:
         # console error, or a CLS/perf regression on any audited route.
         run: node apps/web/scripts/audit.mjs
         env:
-          VITE_API_ORIGIN: https://api-production-17ab9.up.railway.app
+          VITE_API_ORIGIN: https://api.pyre.fun

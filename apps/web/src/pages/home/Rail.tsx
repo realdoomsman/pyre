@@ -58,7 +58,8 @@ export const Rail = () => {
       slug: b.slug,
       ticker: b.ticker,
       kind: "burn",
-      text: `burned ${formatTokenUnits(b.tokensBurnedUnits)} · ${formatEth(b.ethWei)}`,
+      amount: formatTokenUnits(b.tokensBurnedUnits),
+      detail: formatEth(b.ethWei),
       href: `/c/${b.slug}?tab=burns`,
     }));
     seedTape((prev) => (prev.length === 0 ? seeded : prev));

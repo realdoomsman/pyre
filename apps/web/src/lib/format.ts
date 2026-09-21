@@ -160,6 +160,12 @@ export const timeAgo = (input: string | number | Date | null | undefined, now = 
   return new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
+/** `timeAgo` without the suffix, for tight tabular rows: "now" / "12s" / "3m" / "Sep 4". */
+export const timeAgoShort = (input: string | number | Date | null | undefined, now = Date.now()): string => {
+  const s = timeAgo(input, now);
+  return s === "just now" ? "now" : s.endsWith(" ago") ? s.slice(0, -4) : s;
+};
+
 export const formatDate = (input: string | number | Date | null | undefined): string => {
   const t = toMs(input);
   if (Number.isNaN(t)) return "—";

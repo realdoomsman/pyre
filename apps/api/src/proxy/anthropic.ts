@@ -53,13 +53,17 @@ const StreamFrame = z.discriminatedUnion("type", [
 const NonStreamResponse = z.object({ model: z.string().optional(), usage: UsageShape });
 
 /**
- * Headers copied from the sandbox request to Anthropic. Auth is replaced, never forwarded;
- * `anthropic-beta` is dropped (beta flags change billing and output limits) and `content-type` is
- * always set by us since the body may have been re-serialized.
+ * Headers copied from the sandbox request to Anthropic. Auth is replaced, never forwarded.
+ * `anthropic-beta` IS forwarded: the Agent SDK sends beta-gated body fields (`context_management`,
+ * effort/output config) that the API rejects with 400 unless the matching beta flag accompanies
+ * them — dropping the header killed every build at the first model call. Spend is still bounded by
+ * the job token reservation and the `max_tokens` clamp, which is what the beta flags could stretch.
+ * `content-type` is always set by us since the body may have been re-serialized.
  */
 const FORWARD_HEADERS: Record<string, true> = {
   accept: true,
   "anthropic-version": true,
+  "anthropic-beta": true,
   "user-agent": true,
 };
 /** Upstream response headers echoed back to the sandbox. */

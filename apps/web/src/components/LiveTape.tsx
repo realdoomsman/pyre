@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { GlobalFrame } from "../api/types.js";
-import { formatEth, formatTokenUnits, timeAgo } from "../lib/format.js";
+import { formatEth, formatTokenUnits, timeAgoShort } from "../lib/format.js";
 import { StatusLed, cx } from "../ui/index.js";
 
 export interface TapeRow {
@@ -11,7 +11,10 @@ export interface TapeRow {
   ticker: string;
   kind: "trade" | "burn" | "deploy" | "fees" | "launch" | "graduated";
   side?: "BUY" | "SELL";
-  text: string;
+  /** The figure: tabular, never truncated. */
+  amount: string;
+  /** Secondary note; truncates before anything else does. */
+  detail?: string;
   href: string;
 }
 
@@ -25,17 +28,17 @@ export const tapeRow = (f: GlobalFrame): TapeRow | null => {
   const base = { id: e.id, at: e.createdAt, slug: f.slug, ticker: f.ticker, href: `/c/${f.slug}` };
   switch (p.type) {
     case "TRADE":
-      return { ...base, kind: "trade", side: p.side, text: `${formatTokenUnits(p.tokenUnits)} for ${formatEth(p.quoteWei)}` };
+      return { ...base, kind: "trade", side: p.side, amount: formatEth(p.quoteWei), detail: `${formatTokenUnits(p.tokenUnits)} tokens` };
     case "BUYBACK":
-      return { ...base, kind: "burn", text: `burned ${formatTokenUnits(p.burnedUnits)} · ${p.burnedPct.toFixed(2)}%`, href: `/c/${f.slug}?tab=burns` };
+      return { ...base, kind: "burn", amount: formatTokenUnits(p.burnedUnits), detail: `${p.burnedPct.toFixed(2)}%`, href: `/c/${f.slug}?tab=burns` };
     case "DEPLOY":
-      return { ...base, kind: "deploy", text: `deployed v${p.version}`, href: p.url };
+      return { ...base, kind: "deploy", amount: `v${p.version}`, href: p.url };
     case "FEES":
-      return { ...base, kind: "fees", text: `claimed ${formatEth(p.wei)} in fees` };
+      return { ...base, kind: "fees", amount: formatEth(p.wei) };
     case "LAUNCH":
-      return { ...base, kind: "launch", text: "live on PONS" };
+      return { ...base, kind: "launch", amount: "on PONS" };
     case "GRADUATED":
-      return { ...base, kind: "graduated", text: "graduated to v4" };
+      return { ...base, kind: "graduated", amount: "v4 pool" };
     default:
       return null;
   }
@@ -117,9 +120,10 @@ export const LiveTape = ({ rows, live, onPause, height = 360, className }: LiveT
             <span className={cx("num w-10 shrink-0 text-12 uppercase tracking-[0.04em]", r.kind === "trade" && r.side === "SELL" ? "text-burn" : r.kind === "trade" ? "text-earn" : k.className)}>
               {r.kind === "trade" ? r.side?.toLowerCase() : k.label}
             </span>
-            <span className="num shrink-0 text-13 text-ink">${r.ticker}</span>
-            <span className="min-w-0 flex-1 truncate text-13 text-ink-2">{r.text}</span>
-            <span className="num shrink-0 text-12 text-ink-3">{timeAgo(r.at)}</span>
+            <span className="num min-w-[3.5rem] shrink truncate text-13 text-ink">${r.ticker}</span>
+            {r.detail && <span className="num min-w-0 flex-1 truncate text-12 text-ink-3">{r.detail}</span>}
+            <span className="num ml-auto shrink-0 text-13 text-ink-2">{r.amount}</span>
+            <span className="num w-9 shrink-0 text-right text-12 text-ink-3">{timeAgoShort(r.at)}</span>
           </>
         );
         const cls = "flex items-center gap-2 px-3 py-1.5 transition-colors duration-(--duration-ui) hover:bg-fill animate-rise";

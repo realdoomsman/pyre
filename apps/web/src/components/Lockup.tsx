@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { cx } from "../ui/cx.js";
 
 /*
  * `marketing/brand/pyre/lockup.svg`, inlined. The mark is the tempered tile
@@ -75,17 +76,21 @@ export const Mark = ({ size = 24, className }: { size?: number; className?: stri
   );
 };
 
-/** Mark + wordmark, horizontal. `height` is the cap height of the lockup box (mark ≈ 0.8 × height). */
-export const Lockup = ({ height = 22, className, ink = "#F3F2EE" }: { height?: number; className?: string; ink?: string }) => {
+/**
+ * Mark + wordmark, horizontal. `height` is the cap height of the lockup box
+ * (mark ≈ 0.8 × height). The wordmark is `currentColor`, so it follows the
+ * theme's `--color-ink` on Ash Paper pages without a prop.
+ */
+export const Lockup = ({ height = 22, className }: { height?: number; className?: string }) => {
   const id = useId().replace(/:/g, "");
   const width = (height * 1007.48) / 404.56;
   return (
-    <svg width={width} height={height} viewBox="0 -322.56 1007.48 404.56" role="img" aria-label="Pyre" className={className}>
+    <svg width={width} height={height} viewBox="0 -322.56 1007.48 404.56" role="img" aria-label="Pyre" className={cx("text-ink", className)}>
       <MarkDefs id={id} />
       <g transform="translate(0 -322.56) scale(0.63)">
         <MarkBody id={id} />
       </g>
-      <path fill={ink} transform="translate(431.08 0)" d={WORDMARK_PATH} />
+      <path fill="currentColor" transform="translate(431.08 0)" d={WORDMARK_PATH} />
     </svg>
   );
 };

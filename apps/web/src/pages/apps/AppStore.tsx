@@ -57,7 +57,6 @@ export const AppStore = () => {
         </p>
         {s ? (
           <ProofStrip
-            className="-mx-3"
             items={[
               { id: "live", label: "apps live", value: s.appsLive },
               { id: "rev", label: "revenue 30d", value: Number(BigInt(s.revenue30dMicros)) / 1e6, prefix: "$", format: { maximumFractionDigits: 0 } },
