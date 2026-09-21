@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { dec, prisma } from "@pyre/db";
+import { dec, Prisma, prisma } from "@pyre/db";
 import { ApproveSpecBody, CreateLaunchBody, StakeBody } from "@pyre/shared";
 import { requireAuth } from "../lib/auth.js";
 import { launchDto } from "../lib/dto.js";
@@ -91,10 +91,17 @@ launches.post(
     const body = parse(StakeBody, req.body);
     const stake = await settleStake(app, req.user!, body);
     // The status guard makes this a compare-and-set: a second submit after the first settled is a 409, never a double stake.
-    const settled = await prisma.app.updateMany({
-      where: { id: app.id, status: "AWAITING_STAKE" },
-      data: { stakeTx: stake.txHash, stakeWei: dec(stake.wei), status: "LAUNCHING" },
-    });
+    // `stakeTx` is unique, so two launches racing to claim the same external transfer cannot both win.
+    let settled: { count: number };
+    try {
+      settled = await prisma.app.updateMany({
+        where: { id: app.id, status: "AWAITING_STAKE" },
+        data: { stakeTx: stake.txHash, stakeWei: dec(stake.wei), status: "LAUNCHING" },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") throw new HttpError(409, "stake_tx_already_used");
+      throw err;
+    }
     if (settled.count === 0) throw new HttpError(409, "not_awaiting_stake", { status: "LAUNCHING" });
     await queues.launch.add("launch", { appId: app.id }, { jobId: `launch-${app.id}` });
     await publishEvent(app.id, { type: "STAGE", stage: "LAUNCH", status: "START" });

@@ -1,4 +1,5 @@
-import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type ReactNode, type Ref } from "react";
+import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type MouseEvent, type ReactNode, type Ref } from "react";
+import { Link } from "react-router-dom";
 import { cx } from "./cx.js";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "icon";
@@ -68,17 +69,29 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     </>
   );
   if ("href" in rest && typeof rest.href === "string") {
-    const { disabled, ...anchor } = rest as ButtonAsLink;
-    return (
-      <a
-        ref={ref as Ref<HTMLAnchorElement>}
-        {...anchor}
-        aria-disabled={disabled || loading || undefined}
-        aria-label={label}
-        aria-busy={loading || undefined}
-        className={classes}
-        tabIndex={disabled ? -1 : anchor.tabIndex}
-      >
+    const { disabled, href, onClick, ...anchor } = rest as ButtonAsLink;
+    const inert = disabled || loading;
+    const shared = {
+      ...anchor,
+      ref: ref as Ref<HTMLAnchorElement>,
+      "aria-disabled": inert || undefined,
+      "aria-label": label,
+      "aria-busy": loading || undefined,
+      className: classes,
+      tabIndex: disabled ? -1 : anchor.tabIndex,
+      onClick: (e: MouseEvent<HTMLAnchorElement>) => {
+        if (inert) return e.preventDefault();
+        onClick?.(e);
+      },
+    };
+    // Same-origin paths navigate client-side; anything else (external, `target`, `download`) is a plain anchor.
+    const internal = href.startsWith("/") && !href.startsWith("//") && !anchor.target && anchor.download === undefined;
+    return internal ? (
+      <Link to={href} {...shared}>
+        {content}
+      </Link>
+    ) : (
+      <a href={href} {...shared}>
         {content}
       </a>
     );

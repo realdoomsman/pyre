@@ -643,13 +643,16 @@ export const WalletVerifyBody = z.object({ address: EvmAddress, signature: z.str
 export const StakeBody = z.union([z.object({ txHash: TxHash }), z.object({ custodial: z.literal(true) })]);
 export type StakeBody = z.infer<typeof StakeBody>;
 
+/** A non-negative bigint as a decimal string: user-supplied on-chain amounts are never signed. */
+export const UnsignedBigIntString = z.string().regex(/^\d+$/, "expected a non-negative decimal integer string");
+
 export const TradeBody = z.object({
   slug: z.string().min(1),
   side: z.enum(["buy", "sell"]),
   /** Wei for buy, token base units for sell. */
-  amount: BigIntString,
-  /** Optional explicit floor; when omitted the server derives it from `slippageBps`. */
-  minOut: BigIntString.optional(),
+  amount: UnsignedBigIntString,
+  /** Optional explicit floor; when omitted the server derives it from `slippageBps`. The server never accepts a floor below 50% slippage. */
+  minOut: UnsignedBigIntString.optional(),
   slippageBps: z.number().int().min(1).max(5000).default(100),
 });
 export type TradeBody = z.infer<typeof TradeBody>;

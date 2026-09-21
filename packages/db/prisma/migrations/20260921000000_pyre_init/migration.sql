@@ -122,6 +122,17 @@ CREATE TABLE "DailyWithdraw" (
 );
 
 -- CreateTable
+CREATE TABLE "DailyAppCharge" (
+    "userId" TEXT NOT NULL,
+    "appId" TEXT NOT NULL,
+    "day" TEXT NOT NULL,
+    "usedMicros" BIGINT NOT NULL DEFAULT 0,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DailyAppCharge_pkey" PRIMARY KEY ("userId","appId","day")
+);
+
+-- CreateTable
 CREATE TABLE "App" (
     "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
@@ -706,6 +717,9 @@ CREATE UNIQUE INDEX "App_walletAddress_key" ON "App"("walletAddress");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "App_keypairIndex_key" ON "App"("keypairIndex");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "App_stakeTx_key" ON "App"("stakeTx");
 
 -- CreateIndex
 CREATE INDEX "App_status_idx" ON "App"("status");

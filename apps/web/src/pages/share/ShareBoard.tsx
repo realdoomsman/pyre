@@ -7,7 +7,7 @@ import { ShareFrame } from "./ShareFrame.js";
 export const ShareBoard = () => {
   const stats = useStats();
   useEffect(() => {
-    document.title = "Pyre — share card";
+    document.title = "Share card — Pyre";
   }, []);
   const s = stats.data;
   return (

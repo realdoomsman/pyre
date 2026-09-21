@@ -51,7 +51,7 @@ export const OpsPage = () => {
   const [slug, setSlug] = useState("");
 
   useEffect(() => {
-    document.title = "Pyre — ops";
+    document.title = "Ops — Pyre";
   }, []);
 
   if (!auth.ready || (auth.authenticated && me.isPending)) {

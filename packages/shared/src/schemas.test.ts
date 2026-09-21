@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AppChainDto, BountyBody, BuildEventPayload, EvmAddress, LAUNCH_PHASE, TopupBody, TxHash, WithdrawBody } from "./index.js";
+import { AppChainDto, BountyBody, BuildEventPayload, CreateLaunchBody, EvmAddress, LAUNCH_PHASE, MAX_CHARGE_USD, PyreManifest, TopupBody, TxHash, WithdrawBody } from "./index.js";
 
 const USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
 const HASH = "0x248e5cec83428ef05995702ff514acd1b7c472422c98e8c3e611ea07415af4b3";
@@ -67,6 +67,35 @@ describe("money bodies", () => {
     const ok = BuildEventPayload.parse({ type: "BOUNTY_CLAIMED", bountyId: "b1", amountWei: "10000000000000000", claimant: USDG.toLowerCase() });
     expect(ok).toEqual({ type: "BOUNTY_CLAIMED", bountyId: "b1", amountWei: "10000000000000000", claimant: USDG });
     expect(BuildEventPayload.safeParse({ type: "BOUNTY_CLAIMED", bountyId: "b1", amount: "1", claimant: USDG }).success).toBe(false);
+  });
+});
+
+describe("CreateLaunchBody", () => {
+  const base = { name: "Inbox Zero", ticker: "INBOX", imageUrl: "https://cdn.pyre.test/logo.png", prompt: "An app that triages email for busy founders." };
+
+  it("accepts http(s) logo and social URLs", () => {
+    expect(CreateLaunchBody.safeParse({ ...base, twitter: "https://x.com/inboxzero", website: "http://inboxzero.example" }).success).toBe(true);
+  });
+
+  it("rejects javascript:, data: and other non-http schemes anywhere a URL is rendered or written on-chain", () => {
+    for (const url of ["javascript:alert(1)", "data:text/html,<script>alert(1)</script>", "ftp://x.example/logo.png", "file:///etc/passwd"]) {
+      expect(CreateLaunchBody.safeParse({ ...base, imageUrl: url }).success).toBe(false);
+      expect(CreateLaunchBody.safeParse({ ...base, website: url }).success).toBe(false);
+      expect(CreateLaunchBody.safeParse({ ...base, twitter: url }).success).toBe(false);
+    }
+  });
+});
+
+describe("PyreManifest prices", () => {
+  it("caps every product and paid function at MAX_CHARGE_USD", () => {
+    const manifest = (priceUsd: number) => ({
+      name: "demo",
+      products: [{ id: "pro", name: "Pro", priceUsd, kind: "ONE_TIME" }],
+      functions: [{ name: "summarize", priceUsd }],
+    });
+    expect(PyreManifest.safeParse(manifest(MAX_CHARGE_USD)).success).toBe(true);
+    expect(PyreManifest.safeParse(manifest(MAX_CHARGE_USD + 0.01)).success).toBe(false);
+    expect(PyreManifest.safeParse({ name: "demo", products: [{ id: "pro", name: "Pro", priceUsd: 1_000_000, kind: "ONE_TIME" }] }).success).toBe(false);
   });
 });
 

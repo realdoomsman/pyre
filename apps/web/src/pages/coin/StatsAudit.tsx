@@ -93,7 +93,7 @@ interface Props {
   ethPriceUsd: number;
 }
 
-/** pump.fun's Stats/Audit card, with Pyre's numbers in the audit: fees, fees→agent, burned. */
+/** Windowed trade stats beside the audit: fees, fees→agent, burned, holder concentration. */
 export const StatsAudit = ({ app, trades, holders, ethPriceUsd }: Props) => {
   const [view, setView] = useState<ViewId>("stats");
   const [win, setWin] = useState<WindowId>("24h");

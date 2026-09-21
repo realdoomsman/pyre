@@ -26,7 +26,7 @@ export const Status = () => {
   const stats = useStats();
 
   useEffect(() => {
-    document.title = "Pyre — status";
+    document.title = "Status — Pyre";
   }, []);
 
   const s = status.data;

@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
 import type { Address } from "viem";
 import { type User } from "@pyre/db";
@@ -9,7 +10,7 @@ import { readJson } from "../body.js";
 import { loadFile } from "../files.js";
 import { holderInfo } from "../holder.js";
 import { appLlm } from "../llm.js";
-import { chargeUsdg, sendInsufficientFunds } from "../payments.js";
+import { chargeUsdg, reserveCharge, sendInsufficientFunds } from "../payments.js";
 import { runFunction, scheduleFunction, serializeResult, type HostApi } from "../quickjs.js";
 import type { HostContext } from "../resolve.js";
 import { recordRevenue } from "../revenue.js";
@@ -26,7 +27,43 @@ const MAX_INPUT_BYTES = 128 * 1024;
 const MAX_DEPTH = 2;
 const FETCH_TIMEOUT_MS = 5_000;
 const MAX_FETCH_BYTES = 256 * 1024;
+/**
+ * `<depth>.<issuedMs>.<mac>` on internal `ship.fetch` hops. The MAC (INTERNAL_SECRET over depth,
+ * time, target slug and function) is what makes the depth trustworthy: a browser cannot mint one,
+ * so it cannot pose as an internal hop to skip the per-caller limit or shorten the depth budget.
+ */
 export const DEPTH_HEADER = "x-pyre-fn-depth";
+const DEPTH_TTL_MS = 60_000;
+
+const depthMac = (depth: number, issued: number, slug: string, name: string): Buffer =>
+  createHmac("sha256", env.INTERNAL_SECRET).update(`${depth}.${issued}.${slug}.${name}`).digest();
+
+/** Header value for an internal hop at `depth` into `slug`'s function `name`. */
+export function signDepth(depth: number, slug: string, name: string): string {
+  const issued = Date.now();
+  return `${depth}.${issued}.${depthMac(depth, issued, slug, name).toString("base64url")}`;
+}
+
+/**
+ * Depth of the current call: 0 for a browser/SDK call (no header), else the signed depth of an
+ * internal `ship.fetch` hop. A present-but-unsigned or stale header is a 403, never a downgrade.
+ */
+export function callDepth(req: Request, slug: string, name: string): number {
+  const raw = req.headers[DEPTH_HEADER];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === undefined) return 0;
+  const parts = value.split(".");
+  const depth = Number(parts[0]);
+  const issued = Number(parts[1]);
+  if (parts.length !== 3 || !Number.isInteger(depth) || depth < 1 || depth > MAX_DEPTH || !Number.isFinite(issued)) {
+    throw new HttpError(403, "bad function call depth");
+  }
+  if (Math.abs(Date.now() - issued) > DEPTH_TTL_MS) throw new HttpError(403, "bad function call depth");
+  const expected = depthMac(depth, issued, slug, name);
+  const given = Buffer.from(parts[2]!, "base64url");
+  if (expected.length !== given.length || !timingSafeEqual(expected, given)) throw new HttpError(403, "bad function call depth");
+  return depth;
+}
 
 const API_ORIGIN_URL = new URL(env.API_ORIGIN);
 const HOSTED_FN_PATH = /^\/_pyre\/fn\/[a-z0-9_-]{1,40}$/;
@@ -37,11 +74,18 @@ function requireString(value: unknown, label: string): string {
   return value;
 }
 
+/** The `{slug, name}` a verified target URL addresses. */
+export interface FnTarget {
+  url: URL;
+  slug: string;
+  name: string;
+}
+
 /**
  * Only other Pyre functions are reachable: `https://<slug>.<APP_DOMAIN>/_pyre/fn/<name>` when apps are
  * host-routed, and `<API_ORIGIN>/a/<slug>/_pyre/fn/<name>` when they are path-routed.
  */
-export function allowedTarget(raw: string): URL {
+export function allowedTarget(raw: string): FnTarget {
   let url: URL;
   try {
     url = new URL(raw);
@@ -49,11 +93,15 @@ export function allowedTarget(raw: string): URL {
     throw new Error("ship.fetch: invalid URL");
   }
   if (url.search || url.hash) throw new Error("ship.fetch: query strings are not allowed");
-  if (url.origin === API_ORIGIN_URL.origin && PATH_ROUTED_FN_PATH.test(url.pathname)) return url;
+  const name = url.pathname.slice(url.pathname.lastIndexOf("/") + 1);
+  if (url.origin === API_ORIGIN_URL.origin && PATH_ROUTED_FN_PATH.test(url.pathname)) {
+    return { url, slug: url.pathname.slice(3, url.pathname.indexOf("/", 3)), name };
+  }
   if (env.APP_DOMAIN && url.protocol === "https:" && HOSTED_FN_PATH.test(url.pathname)) {
     const suffix = `.${env.APP_DOMAIN.toLowerCase()}`;
     const host = url.hostname.toLowerCase();
-    if (host.endsWith(suffix) && /^[a-z0-9-]{1,40}$/.test(host.slice(0, -suffix.length))) return url;
+    const slug = host.slice(0, -suffix.length);
+    if (host.endsWith(suffix) && /^[a-z0-9-]{1,40}$/.test(slug)) return { url, slug, name };
   }
   throw new Error("ship.fetch: only other Pyre app functions may be called");
 }
@@ -63,18 +111,18 @@ async function pyreFetch(raw: unknown, body: unknown, depth: number): Promise<un
   const target = allowedTarget(requireString(raw, "ship.fetch: url"));
   let response: globalThis.Response;
   try {
-    response = await fetch(target, {
+    response = await fetch(target.url, {
       method: "POST",
-      headers: { "content-type": "application/json", [DEPTH_HEADER]: String(depth + 1) },
+      headers: { "content-type": "application/json", [DEPTH_HEADER]: signDepth(depth + 1, target.slug, target.name) },
       body: JSON.stringify(body ?? {}),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (err) {
-    throw new Error(`ship.fetch: ${target.host} unreachable (${err instanceof Error ? err.message : String(err)})`);
+    throw new Error(`ship.fetch: ${target.url.host} unreachable (${err instanceof Error ? err.message : String(err)})`);
   }
   const text = await response.text();
   if (Buffer.byteLength(text) > MAX_FETCH_BYTES) throw new Error("ship.fetch: response too large");
-  if (!response.ok) throw new Error(`ship.fetch: ${target.host} returned ${response.status}`);
+  if (!response.ok) throw new Error(`ship.fetch: ${target.url.host} returned ${response.status}`);
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -108,12 +156,14 @@ async function settlePayment(
     sendInsufficientFunds(res, priceMicros, balance, wallet);
     return false;
   }
+  const release = await reserveCharge(user.id, ctx.app.id, priceMicros);
 
   let txHash: string;
   try {
     txHash = await chargeUsdg(user, priceMicros);
   } catch (err) {
     logger.error({ err, appId: ctx.app.id, name }, "host: x402 payment failed");
+    await release();
     throw new HttpError(502, "payment_failed");
   }
 
@@ -135,9 +185,7 @@ export async function fnRoute(ctx: HostContext, req: Request, res: Response, nam
   const spec = deployment.manifest.functions.find((f) => f.name === name);
   if (!spec) throw new HttpError(404, "unknown function");
 
-  const depthHeader = req.headers[DEPTH_HEADER];
-  const depth = Number(Array.isArray(depthHeader) ? depthHeader[0] : (depthHeader ?? 0));
-  if (!Number.isFinite(depth) || depth < 0 || depth > MAX_DEPTH) throw new HttpError(400, "function call depth exceeded");
+  const depth = callDepth(req, ctx.app.slug, name);
 
   const user = await currentUser(req, ctx.app.id);
   if (spec.auth && !user) throw new HttpError(401, "sign in required");

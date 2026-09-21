@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { AppSort, AppSummaryDto } from "@pyre/shared";
 import { flatPages, useApps, useStats } from "../../api/queries.js";
 import { AppCard } from "../../components/AppCard.js";
+import { AppPreview, useLatestScreenshot } from "../../components/AppPreview.js";
 import { appUrl } from "../../env.js";
 import { useTheme } from "../../lib/theme.js";
 import { formatEth, formatUsd, timeAgo } from "../../lib/format.js";
@@ -33,7 +34,7 @@ export const AppStore = () => {
   useTheme("light");
 
   useEffect(() => {
-    document.title = "Pyre — apps that pay to burn";
+    document.title = "Apps that pay to burn — Pyre";
   }, []);
 
   const all = useMemo(() => flatPages(apps.data?.pages), [apps.data]);
@@ -139,62 +140,59 @@ export const AppStore = () => {
 };
 
 /** Editorial row: the top-earning app with its one-liner set in the display face. */
-const Featured = ({ app }: { app: AppSummaryDto }) => (
-  <section className="grid gap-6 rounded-card border border-line bg-surface p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
-    <div className="flex flex-col justify-between gap-6">
-      <div className="flex flex-col gap-4">
-        <div className="eyebrow">Featured · top revenue</div>
-        <p className="display text-28 leading-tight text-ink sm:text-36">
-          <em>{app.oneLiner}</em>
-        </p>
-        <div className="flex items-center gap-3">
-          <Avatar src={app.imageUrl} name={app.ticker} size={32} shape="square" />
-          <span className="text-15 font-medium text-ink">{app.name}</span>
-          <Chip mono size="sm">
-            ${app.ticker}
-          </Chip>
+const Featured = ({ app }: { app: AppSummaryDto }) => {
+  const shot = useLatestScreenshot(app.slug);
+  const url = app.liveUrl ?? appUrl(app.slug);
+  return (
+    <section className="grid gap-6 rounded-card border border-line bg-surface p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
+      <div className="flex flex-col justify-between gap-6">
+        <div className="flex flex-col gap-4">
+          <div className="eyebrow">Featured · top revenue</div>
+          <p className="display text-28 leading-tight text-ink sm:text-36">
+            <em>{app.oneLiner}</em>
+          </p>
+          <div className="flex items-center gap-3">
+            <Avatar src={app.imageUrl} name={app.ticker} size={32} shape="square" />
+            <span className="text-15 font-medium text-ink">{app.name}</span>
+            <Chip mono size="sm">
+              ${app.ticker}
+            </Chip>
+          </div>
         </div>
-      </div>
-      <dl className="grid grid-cols-3 gap-4 text-13">
-        <div>
-          <dt className="eyebrow">Revenue · all time</dt>
-          <dd className="num text-15 text-earn">{formatUsd(BigInt(app.revenueMicros), 0)}</dd>
-        </div>
-        <div>
-          <dt className="eyebrow">Burned</dt>
-          <dd className="num text-15 text-burn">{formatEth(app.buybackWei)}</dd>
-        </div>
-        <div>
-          <dt className="eyebrow">Heat</dt>
-          <dd>
-            <HeatGauge value={app.heat} size={56} />
-          </dd>
-        </div>
-      </dl>
-      <div className="flex flex-wrap gap-2">
-        {app.liveUrl && (
-          <Button href={app.liveUrl ?? appUrl(app.slug)} target="_blank" rel="noreferrer noopener">
-            Open app ↗
+        <dl className="grid grid-cols-3 gap-4 text-13">
+          <div>
+            <dt className="eyebrow">Revenue · all time</dt>
+            <dd className="num text-15 text-earn">{formatUsd(BigInt(app.revenueMicros), 0)}</dd>
+          </div>
+          <div>
+            <dt className="eyebrow">Burned</dt>
+            <dd className="num text-15 text-burn">{formatEth(app.buybackWei)}</dd>
+          </div>
+          <div>
+            <dt className="eyebrow">Heat</dt>
+            <dd>
+              <HeatGauge value={app.heat} size={56} />
+            </dd>
+          </div>
+        </dl>
+        <div className="flex flex-wrap gap-2">
+          {app.liveUrl && (
+            <Button href={url} target="_blank" rel="noreferrer noopener">
+              Open app ↗
+            </Button>
+          )}
+          <Button variant="secondary" href={`/c/${app.slug}`}>
+            View coin
           </Button>
-        )}
-        <Button variant="secondary" href={`/c/${app.slug}`}>
-          View coin
-        </Button>
+        </div>
       </div>
-    </div>
-    <a href={app.liveUrl ?? appUrl(app.slug)} target="_blank" rel="noreferrer noopener" className="group relative block overflow-hidden rounded-card border border-line bg-mono-bg" aria-label={`Open ${app.name}`}>
-      <iframe
-        src={app.liveUrl ?? appUrl(app.slug)}
-        title={`${app.name} preview`}
-        loading="lazy"
-        sandbox="allow-scripts"
-        tabIndex={-1}
-        className="pointer-events-none aspect-[16/10] w-full origin-top-left scale-100 border-0 bg-white"
-      />
-      <span className="absolute inset-0 transition-colors duration-(--duration-ui) group-hover:bg-[color-mix(in_oklab,var(--color-accent)_8%,transparent)]" aria-hidden />
-    </a>
-  </section>
-);
+      <a href={url} target="_blank" rel="noreferrer noopener" className="group relative block overflow-hidden rounded-card border border-line" aria-label={`Open ${app.name}`}>
+        {shot.isPending ? <Skeleton className="aspect-[16/10] w-full" /> : <AppPreview app={app} screenshot={shot.data} />}
+        <span className="absolute inset-0 transition-colors duration-(--duration-ui) group-hover:bg-[color-mix(in_oklab,var(--color-accent)_8%,transparent)]" aria-hidden />
+      </a>
+    </section>
+  );
+};
 
 /**
  * Ash & Relight: a dormant app, desaturated. The relight itself — funding the agent again by

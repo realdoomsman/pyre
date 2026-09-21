@@ -6,7 +6,7 @@ import { custodialUsdgBalance } from "../../lib/custodial.js";
 import { HttpError, parse } from "../../lib/errors.js";
 import { logger } from "../../lib/logger.js";
 import { readJson } from "../body.js";
-import { chargeUsdg, sendInsufficientFunds } from "../payments.js";
+import { chargeUsdg, reserveCharge, sendInsufficientFunds } from "../payments.js";
 import type { HostContext } from "../resolve.js";
 import { recordRevenue } from "../revenue.js";
 import { currentUser } from "../session.js";
@@ -19,6 +19,7 @@ const SUBSCRIPTION_DAYS = 30;
  * `POST /_pyre/checkout` — charges the product price in USDG from the caller's custodial wallet to
  * the treasury (EIP-3009 authorization signed server-side, relayed by the treasury) and records the
  * already-PAID purchase. The browser never builds or signs a transaction and the wallet needs no ETH.
+ * The price is the live manifest's, bounded by the platform charge caps (`reserveCharge`).
  */
 export async function checkoutStart(ctx: HostContext, req: Request, res: Response): Promise<void> {
   const user = await currentUser(req, ctx.app.id);
@@ -36,6 +37,7 @@ export async function checkoutStart(ctx: HostContext, req: Request, res: Respons
     sendInsufficientFunds(res, priceMicros, balance, wallet);
     return;
   }
+  const release = await reserveCharge(user.id, ctx.app.id, priceMicros);
 
   const expiresAt =
     product.kind === "SUBSCRIPTION_MONTHLY" ? new Date(Date.now() + SUBSCRIPTION_DAYS * 86_400_000) : null;
@@ -57,9 +59,10 @@ export async function checkoutStart(ctx: HostContext, req: Request, res: Respons
     txHash = await chargeUsdg(user, priceMicros);
   } catch (err) {
     logger.error({ err, purchaseId: purchase.id, appId: ctx.app.id }, "host: checkout payment failed");
-    await prisma.purchase
-      .update({ where: { id: purchase.id }, data: { status: "FAILED" } })
-      .catch(() => undefined);
+    await Promise.all([
+      prisma.purchase.update({ where: { id: purchase.id }, data: { status: "FAILED" } }).catch(() => undefined),
+      release(),
+    ]);
     throw new HttpError(502, "payment_failed");
   }
 

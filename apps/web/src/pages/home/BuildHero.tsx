@@ -5,12 +5,13 @@ import type { AppSummaryDto, BuildEventDto } from "@pyre/shared";
 import { api } from "../../api/client.js";
 import { flatPages, useApps } from "../../api/queries.js";
 import type { GlobalFrame } from "../../api/types.js";
+import { AppPreview, latestScreenshot } from "../../components/AppPreview.js";
 import { consoleRow, isBuildEvent } from "../../components/FeedEvent.js";
 import { AGENT_CHIP } from "../../components/CoinCard.js";
 import { IconArrowRight } from "../../components/icons.js";
 import { useLiveFrames } from "../../layout/LiveContext.js";
 import { formatUsdCompact, timeAgo } from "../../lib/format.js";
-import { Avatar, Button, Chip, ConsoleFrame, EmptyState, Skeleton, useIsMobile, type ConsoleRow } from "../../ui/index.js";
+import { Button, Chip, ConsoleFrame, EmptyState, Skeleton, useIsMobile, type ConsoleRow } from "../../ui/index.js";
 
 interface FeedPage {
   events: BuildEventDto[];
@@ -77,13 +78,7 @@ export const BuildHero = () => {
   }, [tail.data, liveRows]);
 
   const rows = useMemo<ConsoleRow[]>(() => events.map(consoleRow), [events]);
-  const screenshot = useMemo(() => {
-    for (let i = events.length - 1; i >= 0; i--) {
-      const p = events[i].payload;
-      if (p.type === "SCREENSHOT") return p;
-    }
-    return null;
-  }, [events]);
+  const screenshot = useMemo(() => latestScreenshot(events), [events]);
   const lastFinished = useMemo(() => {
     for (let i = events.length - 1; i >= 0; i--) {
       const p = events[i].payload;
@@ -137,14 +132,8 @@ export const BuildHero = () => {
         height={mobile ? 220 : 300}
       />
       <aside className="flex flex-col overflow-hidden rounded-card border border-line bg-surface">
-        <Link to={`/c/${app.slug}`} className="relative hidden aspect-[16/10] overflow-hidden border-b border-line bg-mono-bg sm:block">
-          {screenshot ? (
-            <img src={screenshot.url} alt={`${app.name}: ${screenshot.label}`} loading="lazy" decoding="async" className="h-full w-full object-cover object-top" />
-          ) : (
-            <span className="grid h-full w-full place-items-center">
-              <Avatar src={app.imageUrl} name={app.ticker} size={64} shape="square" />
-            </span>
-          )}
+        <Link to={`/c/${app.slug}`} className="relative hidden border-b border-line sm:block">
+          <AppPreview app={app} screenshot={screenshot} />
           {app.liveUrl && <span className="num absolute bottom-2 left-2 rounded-pill bg-canvas/80 px-2 py-0.5 text-12 text-ink-2">v{app.liveVersion}</span>}
         </Link>
         <div className="flex flex-1 flex-col gap-3 p-4">

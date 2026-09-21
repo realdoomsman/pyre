@@ -22,7 +22,7 @@ export const MePage = () => {
   const [withdraw, setWithdraw] = useState(false);
 
   useEffect(() => {
-    document.title = "Pyre — account";
+    document.title = "Account — Pyre";
   }, []);
 
   const data = me.data;

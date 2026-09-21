@@ -1,6 +1,6 @@
 import { getAddress, isAddress } from "viem/utils";
 import { z } from "zod";
-import { LAUNCH_PHASE } from "./constants.js";
+import { LAUNCH_PHASE, MAX_CHARGE_USD } from "./constants.js";
 
 /* ─────────────────────────── Chain primitives ─────────────────────────── */
 
@@ -244,8 +244,8 @@ export const PyreManifest = z.object({
     .array(
       z.object({
         name: z.string().regex(/^[a-z0-9_-]{1,40}$/),
-        /** Price per call in USD (x402). 0 = free. */
-        priceUsd: z.number().min(0).default(0),
+        /** Price per call in USD (x402). 0 = free; never above MAX_CHARGE_USD. */
+        priceUsd: z.number().min(0).max(MAX_CHARGE_USD).default(0),
         /** Require an authenticated user. */
         auth: z.boolean().default(false),
         /** Require the holder tier. */
@@ -259,7 +259,8 @@ export const PyreManifest = z.object({
       z.object({
         id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
         name: z.string().max(80),
-        priceUsd: z.number().positive(),
+        /** USD per purchase; the host refuses anything above MAX_CHARGE_USD regardless of the manifest. */
+        priceUsd: z.number().positive().max(MAX_CHARGE_USD),
         kind: z.enum(["ONE_TIME", "SUBSCRIPTION_MONTHLY"]),
       }),
     )
@@ -271,6 +272,14 @@ export type PyreManifest = z.infer<typeof PyreManifest>;
 
 /* ─────────────────────────── Public API DTOs ─────────────────────────── */
 
+/** Absolute http(s) URL only: `javascript:`/`data:` never reach an `<a href>` or the on-chain metadata. */
+export const httpUrl = (maxLength: number) =>
+  z
+    .string()
+    .max(maxLength)
+    .url()
+    .refine((u) => /^https?:\/\//i.test(u), "expected an http(s) URL");
+
 export const CreateLaunchBody = z.object({
   name: z.string().min(2).max(32),
   ticker: z
@@ -278,10 +287,10 @@ export const CreateLaunchBody = z.object({
     .min(2)
     .max(10)
     .regex(/^[A-Z0-9]+$/),
-  imageUrl: z.string().url().max(500),
+  imageUrl: httpUrl(500),
   prompt: z.string().min(20).max(4000),
-  twitter: z.string().url().max(200).optional(),
-  website: z.string().url().max(200).optional(),
+  twitter: httpUrl(200).optional(),
+  website: httpUrl(200).optional(),
   forkOfAppId: z.string().optional(),
 });
 export type CreateLaunchBody = z.infer<typeof CreateLaunchBody>;

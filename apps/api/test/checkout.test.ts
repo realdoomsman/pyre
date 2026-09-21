@@ -41,8 +41,10 @@ const fixtures = vi.hoisted(() => {
   };
   const balances = { usdgUnits: 100_000_000n };
   const account = { address: "0x1111111111111111111111111111111111111111" };
+  const dailyCharges: Record<string, bigint> = {};
   return {
     purchases,
+    dailyCharges,
     sessionUser,
     balances,
     account,
@@ -98,6 +100,26 @@ vi.mock("@pyre/db", () => ({
         const row = (fixtures.purchases as unknown as PurchaseRow[]).find((p) => p.id === where.id);
         if (row) Object.assign(row, data);
         return row ?? ({ id: where.id } as PurchaseRow);
+      },
+    },
+    // Per-user, per-app, per-day charge total: the same conditional-increment contract as Postgres.
+    dailyAppCharge: {
+      upsert: async ({ where }: { where: { userId_appId_day: { userId: string; appId: string; day: string } } }) => {
+        const k = where.userId_appId_day;
+        const id = `${k.userId}|${k.appId}|${k.day}`;
+        fixtures.dailyCharges[id] ??= 0n;
+        return { ...k, usedMicros: fixtures.dailyCharges[id] };
+      },
+      updateMany: async ({ where, data }: { where: { userId: string; appId: string; day: string; usedMicros?: { lte: bigint } }; data: { usedMicros: { increment?: bigint; decrement?: bigint } } }) => {
+        const id = `${where.userId}|${where.appId}|${where.day}`;
+        const used = fixtures.dailyCharges[id] ?? 0n;
+        if (where.usedMicros && used > where.usedMicros.lte) return { count: 0 };
+        fixtures.dailyCharges[id] = used + (data.usedMicros.increment ?? 0n) - (data.usedMicros.decrement ?? 0n);
+        return { count: 1 };
+      },
+      findUnique: async ({ where }: { where: { userId_appId_day: { userId: string; appId: string; day: string } } }) => {
+        const k = where.userId_appId_day;
+        return { ...k, usedMicros: fixtures.dailyCharges[`${k.userId}|${k.appId}|${k.day}`] ?? 0n };
       },
     },
   },
@@ -164,6 +186,7 @@ const ONE_OFF = [{ id: "pro", kind: "ONE_OFF", priceUsd: 5 }];
 
 beforeEach(() => {
   purchases.length = 0;
+  for (const k of Object.keys(fixtures.dailyCharges)) delete fixtures.dailyCharges[k];
   sessionUser.id = "user_1";
   sessionUser.wallet = PAYER;
   balances.usdgUnits = 100_000_000n;
@@ -266,5 +289,43 @@ describe("checkoutStart (custodial USDG)", () => {
     const { res } = response();
     await expect(checkoutStart(ctx(ONE_OFF), request({ productId: "nope" }), res)).rejects.toMatchObject({ status: 404 });
     expect(custodialUsdgBalance).not.toHaveBeenCalled();
+  });
+
+  it("refuses a single charge above the platform ceiling with 402 charge_limit, before any signing", async () => {
+    // The manifest schema rejects such a product, but the host must not trust the manifest alone.
+    balances.usdgUnits = 1_000_000_000_000n;
+    const { res } = response();
+    await expect(checkoutStart(ctx([{ id: "whale", kind: "ONE_OFF", priceUsd: 250.01 }]), request({ productId: "whale" }), res)).rejects.toMatchObject({
+      status: 402,
+      message: "charge_limit",
+      extra: { reason: "single", maxChargeUsd: 250 },
+    });
+    expect(signUsdgAuthorization).not.toHaveBeenCalled();
+    expect(purchases).toHaveLength(0);
+  });
+
+  it("caps what one app can charge one user per day at $1,000 and releases the reservation when payment fails", async () => {
+    balances.usdgUnits = 1_000_000_000_000n;
+    const products = [{ id: "big", kind: "ONE_OFF", priceUsd: 250 }];
+    for (let i = 0; i < 4; i++) await checkoutStart(ctx(products), request({ productId: "big" }), response().res);
+    expect(recordRevenue).toHaveBeenCalledTimes(4);
+
+    // $1,000 spent today with this app: the fifth charge is refused, whatever the balance.
+    await expect(checkoutStart(ctx(products), request({ productId: "big" }), response().res)).rejects.toMatchObject({
+      status: 402,
+      message: "charge_limit",
+      extra: { reason: "daily", dailyCapUsd: 1000, usedTodayUsd: 1000 },
+    });
+    expect(signUsdgAuthorization).toHaveBeenCalledTimes(4);
+
+    // Another app has its own budget with this user.
+    const other = { ...ctx(products), app: { id: "app_2", slug: "other" } } as unknown as HostContext;
+    await checkoutStart(other, request({ productId: "big" }), response().res);
+    expect(recordRevenue).toHaveBeenCalledTimes(5);
+
+    // A failed relay gives the reservation back: the user is not "charged" for money that never moved.
+    relayUsdgAuthorization.mockRejectedValueOnce(new Error("rpc down"));
+    await expect(checkoutStart(other, request({ productId: "big" }), response().res)).rejects.toMatchObject({ status: 502 });
+    expect(fixtures.dailyCharges[`user_1|app_2|${new Date().toISOString().slice(0, 10)}`]).toBe(250_000_000n);
   });
 });

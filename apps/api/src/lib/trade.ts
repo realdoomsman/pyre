@@ -32,6 +32,9 @@ import { logger } from "./logger.js";
  * hard on-chain bound (`minOut`), never a soft check.
  */
 
+/** Widest slippage a caller may accept, explicit `minOut` included; mirrors `TradeBody.slippageBps.max`. */
+const MAX_SLIPPAGE_BPS = 5000;
+
 /** PONS meme-hook base fee on graduated pools: 1% of the ETH leg. */
 export const POOL_FEE_BPS = 100n;
 
@@ -130,6 +133,10 @@ export const buildQuote = (app: Pick<App, "slug">, body: TradeBody, ctx: QuoteCo
 
   const minOut = body.minOut !== undefined ? BigInt(body.minOut) : withSlippage(amountOut, body.slippageBps);
   if (minOut > amountOut) throw new HttpError(400, "slippage_exceeded", { amountOut: amountOut.toString(), minOut: minOut.toString() });
+  // An explicit floor can tighten the tolerance but never loosen it past the schema's 50% ceiling:
+  // a phished UI must not be able to turn a custodial trade into a 100%-slippage fill.
+  const floor = withSlippage(amountOut, MAX_SLIPPAGE_BPS);
+  if (minOut < floor) throw new HttpError(400, "min_out_too_low", { minOut: minOut.toString(), floor: floor.toString(), maxSlippageBps: MAX_SLIPPAGE_BPS });
 
   const execEthPerToken = body.side === "buy" ? Number(amountIn - refundWei) / Number(amountOut) : Number(amountOut) / Number(amountIn);
   return {

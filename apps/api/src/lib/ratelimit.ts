@@ -1,9 +1,10 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import type { Callback, Result } from "ioredis";
 import type { Request, RequestHandler, Response } from "express";
 import { HttpError } from "./errors.js";
 import { logger } from "./logger.js";
 import { redis } from "./redis.js";
+import { verifySession } from "./session.js";
 
 /**
  * Redis-backed sliding-window limiter. One sorted set per (class, identity): entries are request
@@ -164,23 +165,33 @@ export async function consumeRate(res: Response, bucket: RateBucket, identity: s
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 /**
- * Best identity available. The guard runs before `requireAuth` (verifying a session costs a
- * network call), so an authenticated caller is identified by a hash of their bearer token — stable
- * per session and never shared across users behind one NAT.
+ * Identities to charge for a platform request, always including the client IP. The guard runs
+ * before `requireAuth`, so a bearer token only counts as an identity after its HS256 signature
+ * verifies (no DB hit) — an unverified header or a self-chosen body field must never mint a fresh
+ * bucket, or the limit is bypassed by rotating them. Wallet-login routes are additionally keyed by
+ * the claimed address so one attacker cannot stale a victim's challenge from many IPs.
  */
-export function callerIdentity(req: Request): string {
-  if (req.user) return `u:${req.user.id}`;
+export async function callerIdentities(req: Request): Promise<string[]> {
+  const ip = `ip:${clientIp(req)}`;
+  const out = [ip];
+  if (req.user) {
+    out.push(`u:${req.user.id}`);
+    return out;
+  }
   const bearer = req.headers.authorization;
   if (bearer?.startsWith("Bearer ")) {
     const token = bearer.slice(7).trim();
-    if (token.length > 0) return `t:${createHash("sha256").update(token).digest("base64url").slice(0, 32)}`;
+    const session = token.length > 0 ? await verifySession(token) : null;
+    if (session) out.push(`u:${session.userId}`);
   }
-  const body: unknown = req.body;
-  if (body !== null && typeof body === "object" && !Array.isArray(body) && "address" in body) {
-    const wallet: unknown = body.address;
-    if (typeof wallet === "string" && EVM_ADDRESS.test(wallet)) return `w:${wallet.toLowerCase()}`;
+  if (req.path.startsWith("/auth/wallet/")) {
+    const body: unknown = req.body;
+    if (body !== null && typeof body === "object" && !Array.isArray(body) && "address" in body) {
+      const wallet: unknown = body.address;
+      if (typeof wallet === "string" && EVM_ADDRESS.test(wallet)) out.push(`w:${wallet.toLowerCase()}`);
+    }
   }
-  return `ip:${clientIp(req)}`;
+  return out;
 }
 
 /** Trusts exactly one proxy hop (Railway's edge); `app.set("trust proxy", 1)` makes `req.ip` the client. */
@@ -210,7 +221,8 @@ function classify(req: Request): RateBucket | null {
 
 /**
  * Mounted on the `/v1` router: every platform endpoint gets a class-appropriate limit keyed by
- * caller identity, before auth or the database is touched.
+ * caller identity, before auth or the database is touched. Every identity (always the IP, plus the
+ * verified user / claimed wallet where applicable) must have budget; the first exhausted one wins.
  */
 export const rateLimitGuard: RequestHandler = (req, res, next) => {
   const bucket = classify(req);
@@ -218,7 +230,10 @@ export const rateLimitGuard: RequestHandler = (req, res, next) => {
     next();
     return;
   }
-  consumeRate(res, bucket, callerIdentity(req))
+  callerIdentities(req)
+    .then(async (identities) => {
+      for (const identity of identities) await consumeRate(res, bucket, identity);
+    })
     .then(() => next())
     .catch(next);
 };

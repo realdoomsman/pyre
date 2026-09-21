@@ -5,7 +5,7 @@ import { Button, EmptyState } from "../ui/index.js";
 export const NotFound = () => {
   const { pathname } = useLocation();
   useEffect(() => {
-    document.title = "Pyre — not found";
+    document.title = "Not found — Pyre";
   }, []);
   return (
     <div className="mx-auto mt-12 max-w-md">

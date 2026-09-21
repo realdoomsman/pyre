@@ -103,7 +103,7 @@ export const UiGallery = () => {
   );
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.title = "Pyre — UI";
+    document.title = "UI — Pyre";
   }, [theme]);
   // The page mounts after the hash is applied; honour `#section` links ourselves.
   useEffect(() => {

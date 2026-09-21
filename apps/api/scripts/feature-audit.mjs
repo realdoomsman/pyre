@@ -71,7 +71,7 @@ import {
 /* ───────────────────────────── configuration ───────────────────────────── */
 
 /** Transport base for the HTTP checks. Repointed at the in-process app when PYRE_PROBE=local. */
-let API = (process.env.PYRE_API_ORIGIN ?? process.env.API_ORIGIN ?? "https://api-production-17ab9.up.railway.app").replace(/\/+$/, "");
+let API = (process.env.PYRE_API_ORIGIN ?? process.env.API_ORIGIN ?? "https://api.pyre.fun").replace(/\/+$/, "");
 /**
  * The origin the api believes it serves apps on. Path-routed apps always resolve `ctx.origin` from
  * `API_ORIGIN`, so this — not the transport base — is what the CSRF check is compared against.

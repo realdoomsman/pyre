@@ -51,8 +51,8 @@ export const Avatar = ({ src, name, size = 40, shape = "circle", className }: Av
     <span
       role="img"
       aria-label={name}
-      className={cx("inline-flex shrink-0 items-center justify-center border border-line font-medium text-ink-2 light:bg-(--tint-light)", radius, className)}
-      style={{ ...style, backgroundColor: TINTS[i], "--tint-light": LIGHT_TINTS[i] } as CSSProperties}
+      className={cx("inline-flex shrink-0 items-center justify-center border border-line bg-(--tint) font-medium text-ink-2 light:bg-(--tint-light)", radius, className)}
+      style={{ ...style, "--tint": TINTS[i], "--tint-light": LIGHT_TINTS[i] } as CSSProperties}
     >
       {initialsOf(name)}
     </span>

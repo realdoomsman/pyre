@@ -32,7 +32,7 @@ export const LegalPage = () => {
   });
 
   useEffect(() => {
-    document.title = key ? `Pyre — ${DOCS[key].title}` : "Pyre — document not found";
+    document.title = key ? `${DOCS[key].title} — Pyre` : "Document not found — Pyre";
   }, [key]);
 
   // The date lives in the markdown; hoist it into the eyebrow rather than printing it twice.

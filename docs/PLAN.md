@@ -145,3 +145,12 @@ export const attestationHash: (ids: string[]) => Hex;
 - Post-graduation sweeps that need internal swaps are operator-only; Pyre relies on PONS operator cadence for those and shows accruing balances honestly.
 - Public RPC rate limits: all chain reads go through a cached, batched client; prod uses Alchemy.
 - Universal Router v4 swap path not yet executed on this chain — Gate 2 dry run covers it (or falls back to `PoolSwapTest`-style direct PoolManager unlock via a tiny helper contract if the router is missing).
+
+## 7. Status (2026-09-21)
+
+**Shipped.**
+
+- Waves 1–3: `@pyre/chain` on viem (PONS v2 factory/curve/escrow/hook, Uniswap v4 quoter + Universal Router, USDG EIP-3009 relay, burn + `0x5059524501‖sha256` attestation, Blockscout holders, on-chain trade/candle indexer); `@pyre/shared`/`@pyre/db` in wei/USDG with the squashed migration; API on Google + EIP-191 auth with custodial HD wallets (`m/44'/60'/0'/0/<user>`, `m/44'/60'/1'/0/<app>`), `POST /v1/rpc` read allowlist, USDG checkout/per-call; runner workers `launch` (with `LAUNCH_GATED` + 10 min retry), `feeSweep` (sweep → claim → 60/25/15 split → credits funding), `buyback` (curve or v4 → `burn()` → attest), `price`, `holders`, `market`, six-check `reconcile`; web on the Obsidian Temper system with all routes (`/`, `/launch`, `/c/:slug`, `/apps`, `/burns`, `/me`, `/pyre`, `/governance`, `/ops`, `/status`, `/legal/:doc`, share cards, `/_ui`). Only GitHub remains as an inbound webhook.
+- Wave 4: scope renamed to `@pyre/*`; public repo `realdoomsman/pyre`; Railway project `pyre` (api, runner, web, Postgres, Redis) live on `pyre.fun` / `api.pyre.fun` / `*.pyre.fun` with valid certificates; E2B template `pyre-builder` built and set; new `PLATFORM_MASTER_SEED_HEX` (treasury `0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54`, backed up in `.secrets/pyre-keys.env`); README, architecture, economics, runbook, go-live and legal docs rewritten for Robinhood Chain; `npm run build` green, `npm test` 349 passing.
+
+**Open** (see `docs/go-live.md`): treasury ETH funding, Anthropic credit balance check, `$PYRE` launch + `PYRE_TOKEN`, optional Alchemy / Blockscout / X keys, demo-data purge, and the production audits (feature-audit, security-check, web audit, on-chain dry run with recorded hashes). Wave 5 (X presence) not started.

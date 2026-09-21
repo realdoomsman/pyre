@@ -7,7 +7,9 @@ export function applySecurityHeaders(res: Response): void {
   res.setHeader("Content-Security-Policy", APP_CSP);
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Referrer-Policy", "no-referrer");
+  // Same-origin only: nothing leaks to third parties, but same-origin `/_pyre/*` requests carry the
+  // page URL, which is how a path-routed app proves its page to `enforceSameOrigin` (lib/origin.ts).
+  res.setHeader("Referrer-Policy", "same-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
 }

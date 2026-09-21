@@ -35,7 +35,7 @@ export const Governance = () => {
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = "Pyre — governance";
+    document.title = "Governance — Pyre";
   }, []);
 
   const page = q.data;

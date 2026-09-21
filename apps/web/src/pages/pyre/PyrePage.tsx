@@ -11,7 +11,7 @@ import { MyStakes, StakeForm, TopStakes } from "./Staking.js";
 export const PyrePage = () => {
   const q = usePyre();
   useEffect(() => {
-    document.title = "Pyre — $PYRE";
+    document.title = "$PYRE — Pyre";
   }, []);
 
   if (q.isPending) {

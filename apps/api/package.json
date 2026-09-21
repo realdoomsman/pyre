@@ -28,7 +28,8 @@
     "pino-http": "^10.3.0",
     "quickjs-emscripten": "^0.31.0",
     "tar-stream": "^3.1.7",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@jitl/quickjs-wasmfile-release-sync": "^0.31.0"
   },
   "devDependencies": {
     "@types/compression": "^1.7.5",

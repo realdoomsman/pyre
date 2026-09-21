@@ -18,7 +18,7 @@ const IconWallet = () => (
 
 /**
  * Two ways in. Google gives a custodial wallet the server signs for; an
- * injected wallet (EIP-6963) signs a one-line challenge with `personal_sign`
+ * injected wallet (EIP-6963) signs a SIWE (EIP-4361) challenge with `personal_sign`
  * and then signs its own trades. Both end in the same platform session.
  */
 export const SignInSheet = ({ open, onClose, onSession }: SignInSheetProps) => {

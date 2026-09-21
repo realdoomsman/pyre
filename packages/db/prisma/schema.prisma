@@ -124,6 +124,17 @@ model DailyWithdraw {
   @@id([userId, day])
 }
 
+/** Durable per-user, per-app, per-UTC-day in-app charge total (USD micros): checkout + x402. Backs the atomic daily charge cap. */
+model DailyAppCharge {
+  userId     String
+  appId      String
+  day        String // UTC date "YYYY-MM-DD"
+  usedMicros BigInt   @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@id([userId, appId, day])
+}
+
 /* ─────────────────────────── Apps / coins ─────────────────────────── */
 
 enum AppStatus {
@@ -180,9 +191,9 @@ model App {
   twitterUrl     String?
   websiteUrl     String?
 
-  // stake (wei)
+  // stake (wei). `stakeTx` is unique: one treasury transfer can only ever settle one launch.
   stakeWei       Decimal @db.Decimal(78, 0)     @default(0)
-  stakeTx        String?
+  stakeTx        String?    @unique
   stakeRefundTx  String?
   stakeRefundedAt DateTime?
 

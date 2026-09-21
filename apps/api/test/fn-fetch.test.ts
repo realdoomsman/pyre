@@ -32,23 +32,67 @@ vi.mock("@pyre/chain", () => ({
 vi.mock("../src/lib/custodial.js", () => ({ custodialAccount: () => ({}), custodialUsdgBalance: async () => 0n }));
 vi.mock("../src/lib/treasury.js", () => ({ TREASURY_WALLET: "0x2222222222222222222222222222222222222222" }));
 
-import { allowedTarget } from "../src/host/routes/fn.js";
+import type { Request } from "express";
+import { DEPTH_HEADER, allowedTarget, callDepth, signDepth } from "../src/host/routes/fn.js";
 
 describe("allowedTarget accepts", () => {
-  it("a path-routed function on the API origin", () => {
-    expect(allowedTarget("https://api.pyre.test/a/inboxzero/_pyre/fn/summarize").toString()).toBe(
-      "https://api.pyre.test/a/inboxzero/_pyre/fn/summarize",
-    );
-    expect(allowedTarget("https://api.pyre.test/a/demo/_pyre/fn/hello").pathname).toBe("/a/demo/_pyre/fn/hello");
+  it("a path-routed function on the API origin, naming the target app and function", () => {
+    const t = allowedTarget("https://api.pyre.test/a/inboxzero/_pyre/fn/summarize");
+    expect(t.url.toString()).toBe("https://api.pyre.test/a/inboxzero/_pyre/fn/summarize");
+    expect(t).toMatchObject({ slug: "inboxzero", name: "summarize" });
+    expect(allowedTarget("https://api.pyre.test/a/demo/_pyre/fn/hello").url.pathname).toBe("/a/demo/_pyre/fn/hello");
   });
 
   it("a host-routed function on an app subdomain over TLS", () => {
-    expect(allowedTarget("https://inboxzero.apps.pyre.test/_pyre/fn/summarize").host).toBe("inboxzero.apps.pyre.test");
-    expect(allowedTarget("https://INBOXZERO.APPS.PYRE.TEST/_pyre/fn/summarize").hostname).toBe("inboxzero.apps.pyre.test");
+    const t = allowedTarget("https://inboxzero.apps.pyre.test/_pyre/fn/summarize");
+    expect(t.url.host).toBe("inboxzero.apps.pyre.test");
+    expect(t).toMatchObject({ slug: "inboxzero", name: "summarize" });
+    expect(allowedTarget("https://INBOXZERO.APPS.PYRE.TEST/_pyre/fn/summarize").url.hostname).toBe("inboxzero.apps.pyre.test");
   });
 
   it("function names with underscores and digits", () => {
-    expect(allowedTarget("https://demo.apps.pyre.test/_pyre/fn/do_thing_2").pathname).toBe("/_pyre/fn/do_thing_2");
+    expect(allowedTarget("https://demo.apps.pyre.test/_pyre/fn/do_thing_2").url.pathname).toBe("/_pyre/fn/do_thing_2");
+  });
+});
+
+describe("callDepth (signed x-pyre-fn-depth)", () => {
+  const withHeader = (value?: string): Request => ({ headers: value === undefined ? {} : { [DEPTH_HEADER]: value } }) as unknown as Request;
+
+  it("is 0 for a browser call that carries no header", () => {
+    expect(callDepth(withHeader(), "demo", "hello")).toBe(0);
+  });
+
+  it("trusts a depth the platform signed for exactly this app and function", () => {
+    expect(callDepth(withHeader(signDepth(1, "demo", "hello")), "demo", "hello")).toBe(1);
+    expect(callDepth(withHeader(signDepth(2, "demo", "hello")), "demo", "hello")).toBe(2);
+  });
+
+  it("refuses a bare depth a browser could send, so it cannot pose as an internal hop", () => {
+    expect(() => callDepth(withHeader("1"), "demo", "hello")).toThrow(expect.objectContaining({ status: 403 }));
+    expect(() => callDepth(withHeader("0"), "demo", "hello")).toThrow(expect.objectContaining({ status: 403 }));
+  });
+
+  it("refuses a signature minted for another target or a tampered depth", () => {
+    expect(() => callDepth(withHeader(signDepth(1, "other", "hello")), "demo", "hello")).toThrow(expect.objectContaining({ status: 403 }));
+    expect(() => callDepth(withHeader(signDepth(1, "demo", "bye")), "demo", "hello")).toThrow(expect.objectContaining({ status: 403 }));
+    const [, issued, mac] = signDepth(1, "demo", "hello").split(".");
+    expect(() => callDepth(withHeader(`2.${issued}.${mac}`), "demo", "hello")).toThrow(expect.objectContaining({ status: 403 }));
+  });
+
+  it("refuses a depth past the app-to-app ceiling even when signed", () => {
+    expect(() => callDepth(withHeader(signDepth(3, "demo", "hello")), "demo", "hello")).toThrow(expect.objectContaining({ status: 403 }));
+  });
+
+  it("refuses a stale signature", () => {
+    const now = Date.now();
+    vi.useFakeTimers({ now });
+    try {
+      const header = signDepth(1, "demo", "hello");
+      vi.setSystemTime(now + 61_000);
+      expect(() => callDepth(withHeader(header), "demo", "hello")).toThrow(expect.objectContaining({ status: 403 }));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

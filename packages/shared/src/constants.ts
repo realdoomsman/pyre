@@ -72,6 +72,10 @@ export const PLATFORM_PROPOSAL_QUORUM_BPS = 1000; // 10% of supply
 export const PLATFORM_PROPOSAL_STALE_DAYS = 21;
 /** Per-user daily withdrawal cap (USD): blast-radius limit if a session is compromised. */
 export const WITHDRAW_DAILY_CAP_USD = 25_000;
+/** Largest single in-app charge (checkout product or x402 call) in USD; manifests above it are rejected. */
+export const MAX_CHARGE_USD = 250;
+/** Per-user, per-app daily in-app spend cap (USD): an app can never drain a wallet in one sitting. */
+export const DAILY_CHARGE_CAP_USD = 1_000;
 
 /** Buyback executor: minimum accumulated revenue before a swap is worth the fees. */
 export const MIN_BUYBACK_USD = 5;

@@ -18,6 +18,7 @@ vi.mock("../src/lib/custodial.js", () => ({
 vi.mock("../src/lib/events.js", () => ({ publishEvent: vi.fn(), publishGlobal: vi.fn() }));
 
 import { BPS, quoteBuy, quoteSell, type CurveState, type LaunchRecord } from "@pyre/chain";
+import { TradeBody } from "@pyre/shared";
 import { buildQuote, executeTrade, quoteTrade, type TradeChain } from "../src/lib/trade.js";
 
 const ETH = 10n ** 18n;
@@ -121,6 +122,20 @@ describe("buildQuote on the curve", () => {
     expect(() =>
       buildQuote(app, { slug: "cool", side: "buy", amount: (ETH / 10n).toString(), minOut: (expected.tokensOut + 1n).toString(), slippageBps: 100 }, { launch: launch(0), ethPriceUsd: 2000, curve: state }),
     ).toThrow(expect.objectContaining({ status: 400, message: "slippage_exceeded" }));
+  });
+
+  it("never accepts an explicit minOut below the 50% slippage ceiling, and the schema refuses negative amounts", () => {
+    const state = curve();
+    const expected = quoteBuy(state, ETH / 10n);
+    const halve = (expected.tokensOut * (BPS - 5000n)) / BPS;
+    const quoteWith = (minOut: bigint) =>
+      buildQuote(app, { slug: "cool", side: "buy", amount: (ETH / 10n).toString(), minOut: minOut.toString(), slippageBps: 100 }, { launch: launch(0), ethPriceUsd: 2000, curve: state });
+    expect(quoteWith(halve).minOut).toBe(halve.toString());
+    for (const minOut of [halve - 1n, 1n, 0n]) {
+      expect(() => quoteWith(minOut)).toThrow(expect.objectContaining({ status: 400, message: "min_out_too_low", extra: expect.objectContaining({ floor: halve.toString() }) }));
+    }
+    expect(TradeBody.safeParse({ slug: "cool", side: "buy", amount: "1", minOut: "-1" }).success).toBe(false);
+    expect(TradeBody.safeParse({ slug: "cool", side: "buy", amount: "-1" }).success).toBe(false);
   });
 
   it("rejects non-positive amounts", () => {

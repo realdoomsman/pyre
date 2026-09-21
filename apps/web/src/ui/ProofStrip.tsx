@@ -45,10 +45,10 @@ const Rotating = ({ items }: { items: ReadonlyArray<ProofItem> }) => {
   if (!item) return null;
   return (
     <div className="relative flex min-w-0 items-baseline gap-2 py-1.5">
-      <span key={item.id} className="eyebrow truncate animate-fade-in">
+      <span key={`${item.id}-label`} className="eyebrow truncate animate-fade-in">
         {item.label}
       </span>
-      <NumberFlow key={item.id} value={item.value} format={item.format} prefix={item.prefix} suffix={item.suffix} className="shrink-0 text-13 font-medium text-ink" />
+      <NumberFlow key={`${item.id}-value`} value={item.value} format={item.format} prefix={item.prefix} suffix={item.suffix} className="shrink-0 text-13 font-medium text-ink" />
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { ROBINHOOD_CHAIN_ID } from "@pyre/shared";
 import { env } from "../env.js";
 import { HttpError } from "../lib/errors.js";
 import { enforceSameOrigin } from "../lib/origin.js";
-import { clientIp, consumeRate } from "../lib/ratelimit.js";
+import { clientIp, consumeRate, type RateBucket } from "../lib/ratelimit.js";
 import { TREASURY_WALLET } from "../lib/treasury.js";
 import { serveStatic } from "./files.js";
 import { applySecurityHeaders } from "./headers.js";
@@ -13,7 +13,7 @@ import { matchAppRequest, resolveApp, type HostContext, type RouteMatch } from "
 import { adClickRoute, adRoute } from "./routes/ad.js";
 import { authExchange, authLogout } from "./routes/auth.js";
 import { checkoutStart } from "./routes/checkout.js";
-import { DEPTH_HEADER, fnRoute } from "./routes/fn.js";
+import { callDepth, fnRoute } from "./routes/fn.js";
 import { kvAppRoute, kvUserRoute } from "./routes/kv.js";
 import { meRoute } from "./routes/me.js";
 import { readVisitor, trackRoute } from "./routes/track.js";
@@ -74,34 +74,45 @@ function pyreIdentity(req: Request, appId: string): string {
 
 /**
  * Per-class limits for the app platform endpoints. Function calls are bounded twice (per app and
- * per caller) because they occupy the shared QuickJS pool.
+ * per caller) because they occupy the shared QuickJS pool. Cookie identities (user, visitor) are
+ * charged alongside the client IP: `/_pyre/track` mints a visitor id for any cookieless POST, so
+ * an identity alone would let one IP multiply its quota by minting ids.
  */
-async function limitPyre(ctx: HostContext, req: Request, res: Response, head: string | undefined): Promise<void> {
+async function limitPyre(ctx: HostContext, req: Request, res: Response, head: string | undefined, name: string | undefined): Promise<void> {
   const identity = pyreIdentity(req, ctx.app.id);
+  const ip = `ip:${clientIp(req)}`;
+  const identities = identity === ip ? [identity] : [identity, ip];
+  const charge = async (bucket: RateBucket, prefix: string): Promise<void> => {
+    for (const id of identities) await consumeRate(res, bucket, `${prefix}${id}`);
+  };
   if (head === "fn") {
     await consumeRate(res, "appFnApp", `app:${ctx.app.id}`);
-    // App-to-app `ship.fetch` hops all share the API's egress IP; the per-app bucket already bounds them.
-    if (req.headers[DEPTH_HEADER] === undefined) await consumeRate(res, "appFnCaller", `${ctx.app.id}:${identity}`);
+    // App-to-app `ship.fetch` hops all share the API's egress IP; the per-app bucket already bounds
+    // them. Only a hop the platform signed counts — a bare header is refused, not trusted.
+    if (callDepth(req, ctx.app.slug, name ?? "") === 0) await charge("appFnCaller", `${ctx.app.id}:`);
     return;
   }
   if (head === "checkout" && req.method === "POST") {
-    await consumeRate(res, "checkout", `${ctx.app.id}:${identity}`);
+    await charge("checkout", `${ctx.app.id}:`);
     return;
   }
   if (req.method === "GET" || req.method === "HEAD") {
-    await consumeRate(res, "read", `app:${ctx.app.id}:${identity}`);
+    await charge("read", `app:${ctx.app.id}:`);
     return;
   }
-  await consumeRate(res, "appWrite", `${ctx.app.id}:${identity}`);
+  await charge("appWrite", `${ctx.app.id}:`);
 }
 
 /** JSON platform endpoints living under every app origin. */
 async function handlePyre(ctx: HostContext, req: Request, res: Response, pathname: string): Promise<void> {
   res.setHeader("Cache-Control", "no-store");
-  // CSRF: a mutating request must prove it came from this app's own origin before it touches state.
+  // CSRF + app binding: a request must prove it came from this app's own origin and page (path-routed
+  // apps share the API origin) before it touches state. The cookie itself is app-bound too: a
+  // session minted under app X never verifies for app Y (`verifySessionCookie`).
   enforceSameOrigin(req, {
     origin: ctx.origin,
     basePath: ctx.basePath,
+    appId: ctx.app.id,
     credentialed: readCookie(req, SESSION_COOKIE) !== null,
   });
   if (ctx.app.status === "DORMANT") throw new HttpError(503, "app is out of budget");
@@ -116,7 +127,7 @@ async function handlePyre(ctx: HostContext, req: Request, res: Response, pathnam
     }
   }
   const [head, second, third] = segments;
-  await limitPyre(ctx, req, res, head);
+  await limitPyre(ctx, req, res, head, second);
 
   if (head === "env.js" && segments.length === 1) {
     requireMethod(req, res, "GET");

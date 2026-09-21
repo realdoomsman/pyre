@@ -1,5 +1,9 @@
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import {
-  newQuickJSWASMModule,
+  newQuickJSWASMModuleFromVariant,
+  newVariant,
+  RELEASE_SYNC,
   type QuickJSContext,
   type QuickJSDeferredPromise,
   type QuickJSHandle,
@@ -31,7 +35,33 @@ const MAX_RESULT_BYTES = 1024 * 1024;
 const STACK_BYTES = 256 * 1024;
 const MODULE_NAME = "ship:function";
 
+/**
+ * Ceiling on the wasm linear memory of one QuickJS module (every concurrent runtime shares it).
+ * `runtime.setMemoryLimit` is not a real bound in the emscripten build — its accounting sees only
+ * the 8-byte block overhead (`dumpMemoryUsage` reports ~8 bytes "allocated" per multi-MB array), so
+ * a runaway guest is stopped only when the heap itself can no longer grow. Without this cap that
+ * is the wasm32 maximum (2 GB) per fault. A wasm heap never shrinks, so a module whose heap has
+ * been blown is replaced after the call (see `runFunction`).
+ */
+const WASM_HEAP_MAX_BYTES = 256 * 1024 * 1024;
+const WASM_HEAP_INITIAL_BYTES = 16 * 1024 * 1024;
+const WASM_PAGE_BYTES = 65_536;
+
+const require = createRequire(import.meta.url);
+
+/** The wasm binary is compiled once per process; replacing a module only re-instantiates it. */
+let compiledWasm: Promise<WebAssembly.Module> | null = null;
+const compileWasm = (): Promise<WebAssembly.Module> =>
+  (compiledWasm ??= readFile(require.resolve("@jitl/quickjs-wasmfile-release-sync/wasm")).then((bytes) => WebAssembly.compile(bytes)));
+
 let modulePromise: Promise<QuickJSWASMModule> | null = null;
+const loadModule = (): Promise<QuickJSWASMModule> =>
+  (modulePromise ??= newQuickJSWASMModuleFromVariant(
+    newVariant(RELEASE_SYNC, {
+      wasmModule: compileWasm,
+      wasmMemory: async () => new WebAssembly.Memory({ initial: WASM_HEAP_INITIAL_BYTES / WASM_PAGE_BYTES, maximum: WASM_HEAP_MAX_BYTES / WASM_PAGE_BYTES }),
+    }),
+  ));
 
 function injectJson(vm: QuickJSContext, value: unknown): QuickJSHandle {
   if (value === undefined) return vm.undefined;
@@ -120,8 +150,8 @@ function buildApi(session: Session, node: HostApi | unknown): QuickJSHandle {
  * Returns the handler's JSON-compatible result.
  */
 export async function runFunction(opts: RunOptions): Promise<unknown> {
-  modulePromise ??= newQuickJSWASMModule();
-  const mod = await modulePromise;
+  const loaded = loadModule();
+  const mod = await loaded;
   const runtime = mod.newRuntime();
   runtime.setMemoryLimit(opts.memoryBytes);
   runtime.setMaxStackSize(STACK_BYTES);
@@ -137,7 +167,14 @@ export async function runFunction(opts: RunOptions): Promise<unknown> {
   const vm = runtime.newContext();
   const session: Session = { vm, deferreds: new Set(), inflight: 0, wake: () => {} };
   const deadline = Date.now() + opts.wallMs;
-  let poisoned = false;
+  /**
+   * Set when this call left objects QuickJS cannot free (an out-of-memory abort, or a host
+   * exception that escaped mid-call). `JS_FreeRuntime` would then assert and abort the whole wasm
+   * instance — including every concurrent tenant on it — so the runtime is not disposed; instead
+   * the module is retired and, once its in-flight calls finish, nothing references it and the GC
+   * reclaims the runtime together with the instance and its heap.
+   */
+  let retired = false;
   const slice = <T>(fn: () => T): T => {
     sliceStart = Date.now();
     executing = true;
@@ -150,15 +187,14 @@ export async function runFunction(opts: RunOptions): Promise<unknown> {
   };
 
   /**
-   * Turns a guest error message into the HTTP failure. After an out-of-memory abort QuickJS asserts
-   * inside JS_FreeRuntime, so that runtime is leaked and the wasm module is rebuilt for later calls.
+   * Turns a guest error message into the HTTP failure. An out-of-memory abort means the shared
+   * wasm heap is at its ceiling (`WASM_HEAP_MAX_BYTES`) and will never shrink: retire the module.
    */
   const fail: (message: string) => never = (message) => {
     runtime.setMemoryLimit(-1);
     if (message.includes("interrupted")) throw new HttpError(504, "function exceeded its execution time");
     if (message.includes("out of memory")) {
-      poisoned = true;
-      modulePromise = null;
+      retired = true;
       throw new HttpError(500, "function exceeded its memory limit");
     }
     throw new HttpError(500, message);
@@ -236,14 +272,11 @@ export async function runFunction(opts: RunOptions): Promise<unknown> {
     }
   } catch (err) {
     if (err instanceof HttpError) throw err;
-    // A host exception escaping the VM (e.g. V8 RangeError) leaves leaked handles; disposing would abort
-    // the whole wasm instance, so leak this runtime and replace the module for future calls.
-    poisoned = true;
+    retired = true;
     logger.error({ err, filename: opts.filename }, "host: quickjs runtime fault; replacing wasm module");
-    modulePromise = null;
     throw new HttpError(500, "function runtime fault");
   } finally {
-    if (!poisoned) {
+    if (!retired) {
       try {
         for (const d of session.deferreds) d.dispose();
         session.deferreds.clear();
@@ -252,9 +285,12 @@ export async function runFunction(opts: RunOptions): Promise<unknown> {
       } catch (err) {
         // A teardown fault leaves the wasm instance in an unknown state: never reuse it.
         logger.error({ err, filename: opts.filename }, "host: quickjs teardown failed; replacing wasm module");
-        modulePromise = null;
+        retired = true;
       }
     }
+    // Retire only the module this call ran on (a concurrent fault may already have replaced it);
+    // the wasm was compiled once, so the replacement is a cheap re-instantiation with a fresh heap.
+    if (retired && modulePromise === loaded) modulePromise = null;
   }
 }
 

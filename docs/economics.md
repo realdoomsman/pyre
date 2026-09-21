@@ -4,7 +4,7 @@ All constants live in `packages/shared/src/constants.ts`. Percentages are basis 
 
 ## Where a coin comes from
 
-Every Pyre coin is a **PONS v2** launch on **Robinhood Chain** (chain id 4663). The launch is sent from the app's own derived wallet (`App.walletAddress`, HD path `m/44'/60'/0'/0/<index>`), so PONS records that wallet as the creator and as `creatorFeeRecipient`. The treasury pre-funds that wallet with the PONS launch fee (`PONS_LAUNCH_FEE_WEI`, 0.0005 ETH) plus gas. `creatorTaxBps` is 0 and PONS's own buyback flag is off: Pyre does its own buy-and-burn so every burn is attributable and attested.
+Every Pyre coin is a **PONS v2** launch on **Robinhood Chain** (chain id 4663). The launch is sent from the app's own derived wallet (`App.walletAddress`, HD path `m/44'/60'/1'/0/<index>`), so PONS records that wallet as the creator and as `creatorFeeRecipient`. The treasury pre-funds that wallet with the PONS launch fee (`PONS_LAUNCH_FEE_WEI`, 0.0005 ETH) plus gas. `creatorTaxBps` is 0 and PONS's own buyback flag is off: Pyre does its own buy-and-burn so every burn is attributable and attested.
 
 The whole supply (`PONS_TOTAL_SUPPLY`, 1 000 000 000 tokens) is minted to a per-launch bonding curve. Buys and sells on the curve pay a 1% fee. When the curve has raised `PONS_GRADUATION_THRESHOLD_WEI` (**4.2 ETH**) it closes and liquidity moves into a **Uniswap v4** pool whose hook charges the same 1% on every swap. In both phases **70% of that 1% goes to the creator wallet** — the app — and the remaining 30% stays with PONS. There is no team allocation, no pre-mine and no launcher supply: every token is bought on the curve or in the pool like anyone else's.
 

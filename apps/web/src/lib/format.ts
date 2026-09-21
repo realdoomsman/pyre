@@ -179,13 +179,3 @@ export const formatDuration = (ms: number): string => {
   if (m < 60) return `${m}m ${s % 60}s`;
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 };
-
-/* ───────── legacy — removed in Wave 3 ─────────
-   Kept only so the pre-cutover pages compile until they are rewritten. */
-export const formatSol = (sol: number): string =>
-  sol >= 1000 ? `${(sol / 1000).toFixed(2)}k SOL` : sol >= 1 ? `${sol.toFixed(3)} SOL` : `${sol.toFixed(4)} SOL`;
-export const formatNum = (n: number): string => formatCount(Math.round(n));
-export const formatPrice = formatPriceUsd;
-export const shortAddr = (a: string, n = 4) => (a.length > n * 2 + 1 ? `${a.slice(0, n)}…${a.slice(-n)}` : a);
-export const formatRatio = (r: number | null): string =>
-  r === null || !Number.isFinite(r) ? "—" : r >= 1000 ? `${(r / 1000).toFixed(1)}k×` : `${r.toFixed(r >= 100 ? 0 : 1)}×`;

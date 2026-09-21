@@ -10,9 +10,13 @@ import type { Address, Hash } from "viem";
 
 const fx = vi.hoisted(() => ({
   findFirst: vi.fn(async (): Promise<{ id: string } | null> => null),
+  userFindFirst: vi.fn(async (): Promise<{ id: string } | null> => null),
 }));
 
-vi.mock("@pyre/db", () => ({ prisma: { app: { findFirst: fx.findFirst } }, Prisma: { PrismaClientKnownRequestError: class {} } }));
+vi.mock("@pyre/db", () => ({
+  prisma: { app: { findFirst: fx.findFirst }, user: { findFirst: fx.userFindFirst } },
+  Prisma: { PrismaClientKnownRequestError: class {} },
+}));
 vi.mock("@pyre/chain", () => ({
   deriveAppWallet: () => ({ address: "0x2222222222222222222222222222222222222222" }),
   deriveWallet: () => ({ address: "0x84F8E5a324466Deb7447048C014CF0245ce04afA", account: { address: "0x84F8E5a324466Deb7447048C014CF0245ce04afA" } }),
@@ -45,6 +49,8 @@ const chain = (over: Partial<StakeChain> = {}): StakeChain & { verifyEthTransfer
 beforeEach(() => {
   fx.findFirst.mockReset();
   fx.findFirst.mockResolvedValue(null);
+  fx.userFindFirst.mockReset();
+  fx.userFindFirst.mockResolvedValue(null);
 });
 
 describe("external stake ({txHash})", () => {
@@ -56,10 +62,31 @@ describe("external stake ({txHash})", () => {
     expect(c.transferEth).not.toHaveBeenCalled();
   });
 
-  it("does not pin `from` for a Google user without a proven external wallet", async () => {
+  it("refuses an external hash from a launcher without a proven wallet (any inbound treasury tx would otherwise be claimable)", async () => {
     const c = chain();
-    await settleStake(APP, { ...USER, authWallet: null }, { txHash: HASH }, c);
-    expect(c.verifyEthTransfer.mock.calls[0]?.[1]).toEqual({ to: TREASURY, minWei: LAUNCH_STAKE_WEI });
+    await expect(settleStake(APP, { ...USER, authWallet: null }, { txHash: HASH }, c)).rejects.toMatchObject({ status: 400, message: "external_wallet_required" });
+    expect(c.verifyEthTransfer).not.toHaveBeenCalled();
+  });
+
+  it("credits exactly LAUNCH_STAKE_WEI when the transfer overpays, so the refund never exceeds the stake", async () => {
+    const c = chain({ verifyEthTransfer: vi.fn(async () => ({ ok: true, from: EXTERNAL, wei: LAUNCH_STAKE_WEI * 500n })) });
+    const out = await settleStake(APP, USER, { txHash: HASH }, c);
+    expect(out.wei).toBe(LAUNCH_STAKE_WEI);
+  });
+
+  it("rejects a transfer whose sender is the treasury (a fee sweep / drain is not a stake)", async () => {
+    const c = chain({ verifyEthTransfer: vi.fn(async () => ({ ok: true, from: TREASURY, wei: LAUNCH_STAKE_WEI })) });
+    await expect(settleStake(APP, { ...USER, authWallet: TREASURY }, { txHash: HASH }, c)).rejects.toMatchObject({
+      status: 400,
+      message: "stake_tx_invalid",
+      extra: { reason: "platform-sender" },
+    });
+  });
+
+  it("rejects a transfer whose sender is a custodial or app wallet", async () => {
+    fx.userFindFirst.mockResolvedValue({ id: "someone" });
+    const c = chain();
+    await expect(settleStake(APP, USER, { txHash: HASH }, c)).rejects.toMatchObject({ status: 400, message: "stake_tx_invalid", extra: { reason: "platform-sender" } });
   });
 
   it("rejects an unverified transfer with the reason and the expected destination", async () => {

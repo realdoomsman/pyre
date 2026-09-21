@@ -85,7 +85,7 @@ export const Launch = () => {
   const [peek, setPeek] = useState<Step | null>(null);
 
   useEffect(() => {
-    document.title = "Pyre — launch a coin";
+    document.title = "Launch a coin — Pyre";
   }, []);
 
   // Fork: prefill the coin form from the parent.

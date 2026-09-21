@@ -33,7 +33,7 @@ export const Card = ({ tone = "surface", padding = "md", interactive, ash, as: T
       TONE[tone],
       PAD[padding],
       interactive &&
-        "cursor-pointer transition-[border-color,background-color] duration-(--duration-ui) ease-(--ease-ui) hover:border-line-3 focus-within:border-line-3",
+        "cursor-pointer transition-[border-color,background-color] duration-(--duration-ui) ease-(--ease-ui) hover:border-line-3 focus-within:border-line-3 has-[>a:focus-visible]:outline-2 has-[>a:focus-visible]:outline-offset-2 has-[>a:focus-visible]:outline-accent",
       ash && "ash",
       className,
     )}

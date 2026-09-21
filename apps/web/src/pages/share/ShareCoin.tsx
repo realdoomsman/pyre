@@ -11,7 +11,7 @@ export const ShareCoin = () => {
   const q = useApp(slug);
   const app = q.data;
   useEffect(() => {
-    document.title = app ? `$${app.ticker} — Pyre` : "Pyre — coin card";
+    document.title = app ? `$${app.ticker} — Pyre` : "Coin card — Pyre";
   }, [app]);
 
   if (q.isError) {

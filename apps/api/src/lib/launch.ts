@@ -93,6 +93,7 @@ export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: A
 
 export interface StakeSettlement {
   txHash: Hash;
+  /** The refundable stake credited to the launch: exactly `LAUNCH_STAKE_WEI`, never the transfer's full value. */
   wei: bigint;
   from: Address;
   /** True when the platform signed the transfer from the user's custodial wallet. */
@@ -101,7 +102,7 @@ export interface StakeSettlement {
 
 /** Minimal chain surface `settleStake` needs; injected so the decision logic is testable offline. */
 export interface StakeChain {
-  verifyEthTransfer: (hash: Hash, opts: { to: Address; minWei: bigint; from?: Address }) => Promise<EthTransferCheck>;
+  verifyEthTransfer: (hash: Hash, opts: { to: Address; minWei: bigint; from: Address }) => Promise<EthTransferCheck>;
   transferEth: (from: LocalAccount, to: Address, wei: bigint) => Promise<Hash>;
   ethBalance: (wallet: Address) => Promise<bigint>;
 }
@@ -109,12 +110,30 @@ export interface StakeChain {
 const liveChain: StakeChain = { verifyEthTransfer, transferEth, ethBalance: custodialEthBalance };
 
 /**
+ * True when `address` is a wallet the platform itself signs for: the treasury, any user's custodial
+ * wallet, or any app wallet. Transfers from those are platform money movements (fee sweeps, drains,
+ * escrows), never a launcher's stake — even if a launcher somehow proved such an address.
+ */
+const isPlatformWallet = async (address: Address): Promise<boolean> => {
+  if (address.toLowerCase() === TREASURY_WALLET.toLowerCase()) return true;
+  const [user, app] = await Promise.all([
+    prisma.user.findFirst({ where: { wallet: { equals: address, mode: "insensitive" } }, select: { id: true } }),
+    prisma.app.findFirst({ where: { walletAddress: { equals: address, mode: "insensitive" } }, select: { id: true } }),
+  ]);
+  return user !== null || app !== null;
+};
+
+/**
  * Settles the refundable launch stake (`LAUNCH_STAKE_WEI`, ETH) into the treasury:
- *  - `{txHash}`: an external-wallet transfer the launcher already sent. Verified on chain
- *    (mined, success, `to` = treasury, value ≥ stake, and `from` = the launcher's proven
- *    `authWallet` when they have one — otherwise anyone's tx could be claimed as a stake).
- *    A hash can only ever settle one launch (`stakeTx` is checked for reuse).
+ *  - `{txHash}`: an external-wallet transfer the launcher already sent. Only launchers with a
+ *    proven `authWallet` may use it, and the tx must be mined, successful, `to` = treasury,
+ *    value ≥ stake and `from` = that `authWallet` — otherwise any inbound treasury tx (fee sweeps,
+ *    escrows) could be claimed as a stake and refunded. The sender must not be a platform wallet.
+ *    A hash can only ever settle one launch (`App.stakeTx` is unique; checked here for an early
+ *    409 and enforced by the database on write).
  *  - `{custodial:true}`: the platform signs the transfer out of the launcher's custodial wallet.
+ * The credited stake is always exactly `LAUNCH_STAKE_WEI`: an overpaid external transfer is not
+ * refunded beyond the stake.
  */
 export const settleStake = async (
   app: Pick<App, "id">,
@@ -124,15 +143,16 @@ export const settleStake = async (
 ): Promise<StakeSettlement> => {
   const wei = env.LAUNCH_STAKE_WEI;
   if ("txHash" in body) {
+    if (!user.authWallet) throw new HttpError(400, "external_wallet_required", { hint: "sign in with the wallet that sent the stake, or use {custodial:true}" });
+    const from = user.authWallet as Address;
     const reused = await prisma.app.findFirst({ where: { stakeTx: body.txHash, NOT: { id: app.id } }, select: { id: true } });
     if (reused) throw new HttpError(409, "stake_tx_already_used");
-    const check = await chain.verifyEthTransfer(body.txHash, {
-      to: TREASURY_WALLET,
-      minWei: wei,
-      ...(user.authWallet ? { from: user.authWallet as Address } : {}),
-    });
+    const check = await chain.verifyEthTransfer(body.txHash, { to: TREASURY_WALLET, minWei: wei, from });
     if (!check.ok) throw new HttpError(400, "stake_tx_invalid", { reason: check.reason ?? "unverified", to: TREASURY_WALLET, minWei: wei.toString() });
-    return { txHash: body.txHash, wei: check.wei, from: check.from, custodial: false };
+    if (await isPlatformWallet(check.from)) {
+      throw new HttpError(400, "stake_tx_invalid", { reason: "platform-sender", to: TREASURY_WALLET, minWei: wei.toString() });
+    }
+    return { txHash: body.txHash, wei, from: check.from, custodial: false };
   }
   if (!user.wallet) throw new HttpError(400, "wallet_required");
   const wallet = user.wallet as Address;
