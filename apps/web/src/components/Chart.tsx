@@ -52,7 +52,7 @@ const readTokens = () => {
     line: read("--color-line-2", "rgba(255,255,255,.12)"),
     grid: read("--color-line", "rgba(255,255,255,.07)"),
     ink2: read("--color-ink-2", "#9b9891"),
-    ink3: read("--color-ink-3", "#62605b"),
+    ink3: read("--color-ink-3", "#8a877f"),
     accent: read("--color-accent", "#9d8cff"),
     build: read("--color-build", "#3e8bff"),
     mono: read("--font-mono", "ui-monospace, monospace"),

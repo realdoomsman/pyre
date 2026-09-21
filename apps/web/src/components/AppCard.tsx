@@ -24,7 +24,7 @@ export const AppCard = ({ app, className }: AppCardProps) => {
         <div className="flex items-start gap-3">
           <Avatar src={app.imageUrl} name={app.name} size={44} shape="square" />
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-15 font-medium text-ink">{app.name}</h3>
+            <h2 className="truncate text-15 font-medium text-ink">{app.name}</h2>
             <div className="num text-12 text-ink-3">
               ${app.ticker} · {app.liveUrl ? `v${app.liveVersion}` : "not deployed"} · {timeAgo(app.launchedAt ?? app.createdAt)}
             </div>

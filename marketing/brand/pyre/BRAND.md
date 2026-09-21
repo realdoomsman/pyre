@@ -44,7 +44,7 @@ Dark is the default. Light ("Ash Paper") is for the app store and docs only.
 | `line` | `rgba(255,255,255,.07)` | hairlines, dividers |
 | `ink` | `#F3F2EE` | primary text, line-art |
 | `ink-2` | `#9B9891` | secondary text, mono labels |
-| `ink-3` | `#62605B` | tertiary text, ash / dormant, disabled |
+| `ink-3` | `#8A877F` | tertiary text, ash / dormant, disabled |
 | `accent` | `#9D8CFF` | tempered violet — links, the emphasised word, focus |
 | `accent-strong` | `#7A66F5` | buttons, active states |
 | `build` | `#3E8BFF` | agent / build activity |
@@ -57,7 +57,7 @@ Dark is the default. Light ("Ash Paper") is for the app store and docs only.
 
 **Ash Paper (light)**: paper `#F4F1EA`, ink `#141311`, cobalt `#1F3DE8`. Use `mark-mono-dark.svg` or the colour mark; the colour mark's tile is dark enough to sit on paper.
 
-Contrast on `canvas`: `ink` 17.7:1, `accent` 7.2:1, `ink-2` 6.9:1, `ink-3` 3.1:1 (large text and decoration only).
+Contrast on `canvas`: `ink` 17.7:1, `accent` 7.2:1, `ink-2` 6.9:1, `ink-3` 5.5:1 (4.9:1 on `raised` — still AA at 12px). On Ash Paper `ink-3` is `#6B665D` (5.1:1 on paper).
 
 ## 3. Type
 

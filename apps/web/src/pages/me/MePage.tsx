@@ -1,15 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { explorerAddressUrl } from "@pyre/shared";
 import { useMe } from "../../api/queries.js";
 import { useAuth } from "../../auth/useAuth.js";
 import { formatEth, formatTokenUnits, formatUsd, shortAddress } from "../../lib/format.js";
 import { Address, Avatar, Button, Card, Chip, EthFlow, Skeleton, Tabs, UsdFlow, cx, panelId, tabId } from "../../ui/index.js";
-import { DepositTray } from "./DepositTray.js";
 import { Launched } from "./Launched.js";
 import { Notifications } from "./Notifications.js";
 import { Positions } from "./Positions.js";
-import { WithdrawTray } from "./WithdrawTray.js";
+
+// Dynamic on purpose: the trays are the only reason this page would need the sheet and its
+// motion runtime, and a static import would put both in /me's initial graph.
+const DepositTray = lazy(async () => ({ default: (await import("./DepositTray.js")).DepositTray }));
+const WithdrawTray = lazy(async () => ({ default: (await import("./WithdrawTray.js")).WithdrawTray }));
+
+/** True from the first time `open` is true: a tray mounts on first open and then stays mounted so it can animate out. */
+const useMounted = (open: boolean): boolean => {
+  const [mounted, setMounted] = useState(open);
+  if (open && !mounted) setMounted(true);
+  return mounted;
+};
 
 type Section = "positions" | "launched" | "notifications";
 
@@ -20,6 +30,8 @@ export const MePage = () => {
   const [section, setSection] = useState<Section>("positions");
   const [deposit, setDeposit] = useState(false);
   const [withdraw, setWithdraw] = useState(false);
+  const depositMounted = useMounted(deposit);
+  const withdrawMounted = useMounted(withdraw);
 
   useEffect(() => {
     document.title = "Account — Pyre";
@@ -199,8 +211,10 @@ export const MePage = () => {
         </div>
       </section>
 
-      <DepositTray open={deposit} onClose={() => setDeposit(false)} address={data.wallet} />
-      <WithdrawTray open={withdraw} onClose={() => setWithdraw(false)} me={data} />
+      <Suspense fallback={null}>
+        {depositMounted && <DepositTray open={deposit} onClose={() => setDeposit(false)} address={data.wallet} />}
+        {withdrawMounted && <WithdrawTray open={withdraw} onClose={() => setWithdraw(false)} me={data} />}
+      </Suspense>
     </div>
   );
 };

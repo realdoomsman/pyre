@@ -54,7 +54,7 @@ export const CardHeader = ({ eyebrow, title, description, actions, className }: 
   <header className={cx("mb-4 flex items-start justify-between gap-4", className)}>
     <div className="min-w-0">
       {eyebrow && <div className="eyebrow mb-1">{eyebrow}</div>}
-      <h3 className="h3 truncate text-ink">{title}</h3>
+      <h2 className="h3 truncate text-ink">{title}</h2>
       {description && <p className="small mt-0.5 text-ink-2">{description}</p>}
     </div>
     {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

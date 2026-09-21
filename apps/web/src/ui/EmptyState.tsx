@@ -32,7 +32,7 @@ export const EmptyState = ({ title, body, icon, action, variant = "default", onR
     <div className={cx("flex flex-col items-center justify-center gap-3 rounded-card border border-dashed border-line px-6 py-12 text-center", className)}>
       <div className={cx("grid h-12 w-12 place-items-center rounded-card border border-line", ash ? "ash text-ink-3" : "bg-fill text-accent")}>{icon ?? <Ember />}</div>
       <div className="max-w-sm">
-        <h3 className={cx("text-15 font-medium", ash ? "text-ink-2" : "text-ink")}>{title}</h3>
+        <h2 className={cx("text-15 font-medium", ash ? "text-ink-2" : "text-ink")}>{title}</h2>
         {body && <p className="small mt-1 text-ink-3">{body}</p>}
       </div>
       {ash && onRelight ? (

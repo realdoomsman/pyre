@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { createContext, forwardRef, useContext, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cx } from "./cx.js";
 
 /*
@@ -19,29 +19,47 @@ export interface FieldProps {
   children: ReactNode;
 }
 
-export const Field = ({ label, hint, error, required, meta, htmlFor, className, children }: FieldProps) => (
-  <div className={cx("flex flex-col gap-1.5", className)}>
-    <div className="flex items-baseline justify-between gap-3">
-      <label htmlFor={htmlFor} className="text-13 font-medium text-ink">
-        {label}
-        {required && (
-          <span className="ml-1 text-burn" aria-hidden>
-            *
-          </span>
-        )}
-      </label>
-      {meta && <span className="num text-12 text-ink-3">{meta}</span>}
-    </div>
-    {children}
-    {error ? (
-      <p className="text-12 text-danger" role="alert">
-        {error}
-      </p>
-    ) : hint ? (
-      <p className="text-12 text-ink-3">{hint}</p>
-    ) : null}
-  </div>
-);
+/** Ids a Field hands to the control it wraps; explicit `id` / `aria-describedby` on the control win. */
+const FieldContext = createContext<{ id: string; describedBy?: string } | null>(null);
+
+export const Field = ({ label, hint, error, required, meta, htmlFor, className, children }: FieldProps) => {
+  const auto = useId();
+  const id = htmlFor ?? auto;
+  const noteId = `${id}-note`;
+  const describedBy = error || hint ? noteId : undefined;
+  return (
+    <FieldContext.Provider value={{ id, describedBy }}>
+      <div className={cx("flex flex-col gap-1.5", className)}>
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor={id} className="text-13 font-medium text-ink">
+            {label}
+            {required && (
+              <span className="ml-1 text-burn" aria-hidden>
+                *
+              </span>
+            )}
+          </label>
+          {meta && <span className="num text-12 text-ink-3">{meta}</span>}
+        </div>
+        {children}
+        {error ? (
+          <p id={noteId} className="text-12 text-danger" role="alert">
+            {error}
+          </p>
+        ) : hint ? (
+          <p id={noteId} className="text-12 text-ink-3">
+            {hint}
+          </p>
+        ) : null}
+      </div>
+    </FieldContext.Provider>
+  );
+};
+
+const useFieldWiring = (rest: { id?: string; "aria-describedby"?: string }) => {
+  const field = useContext(FieldContext);
+  return { id: rest.id ?? field?.id, "aria-describedby": rest["aria-describedby"] ?? field?.describedBy };
+};
 
 const CONTROL =
   "w-full min-w-0 rounded-control border bg-canvas text-15 text-ink placeholder:text-ink-3 transition-[border-color,background-color] duration-(--duration-ui) ease-(--ease-ui) focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-55";
@@ -59,11 +77,13 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ invalid, prefix, suffix, mono, className, ...rest }, ref) {
+  const wiring = useFieldWiring(rest);
   const control = (
     <input
       ref={ref}
       aria-invalid={invalid || undefined}
       {...rest}
+      {...wiring}
       className={cx(CONTROL, border(invalid), "h-10 px-3", mono && "num", prefix ? "pl-8" : undefined, suffix ? "pr-14" : undefined, className)}
     />
   );
@@ -82,12 +102,14 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea({ invalid, className, ...rest }, ref) {
+  const wiring = useFieldWiring(rest);
   return (
     <textarea
       ref={ref}
       aria-invalid={invalid || undefined}
       rows={4}
       {...rest}
+      {...wiring}
       className={cx(CONTROL, border(invalid), "resize-y px-3 py-2.5 leading-6", className)}
     />
   );
@@ -98,9 +120,10 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select({ invalid, className, children, ...rest }, ref) {
+  const wiring = useFieldWiring(rest);
   return (
     <div className="relative">
-      <select ref={ref} aria-invalid={invalid || undefined} {...rest} className={cx(CONTROL, border(invalid), "h-10 appearance-none pl-3 pr-9", className)}>
+      <select ref={ref} aria-invalid={invalid || undefined} {...rest} {...wiring} className={cx(CONTROL, border(invalid), "h-10 appearance-none pl-3 pr-9", className)}>
         {children}
       </select>
       <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>

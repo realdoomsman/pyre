@@ -2406,6 +2406,15 @@ async function setup() {
   });
 
   await check("fixtures", async () => {
+    // A run that died before teardown leaves fixture users whose deterministic custodial addresses
+    // collide with this run's. Fixtures are namespaced by the `audit:` googleSub prefix, so sweep
+    // any survivors (users cascade their apps, sessions and stakes) before creating ours.
+    const stale = await prisma.user.findMany({ where: { googleSub: { startsWith: "audit:" } }, select: { id: true } });
+    for (const u of stale) {
+      await prisma.ledgerEntry.deleteMany({ where: { account: `LAUNCHER:${u.id}` } });
+      await prisma.user.delete({ where: { id: u.id } });
+    }
+    await prisma.app.deleteMany({ where: { slug: { startsWith: "audit-" } } });
     // `owner` holds every fixture app so the launcher's 24h launch quota starts empty.
     await createUser("owner");
     await createUser("launcher");

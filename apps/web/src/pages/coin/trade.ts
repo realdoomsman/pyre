@@ -1,14 +1,5 @@
-import {
-  createPublicClient,
-  http,
-  maxUint160,
-  maxUint256,
-  type Address,
-  type Hash,
-  type PublicClient,
-  type TransactionReceipt,
-  type WalletClient,
-} from "viem";
+import { createClient, http, maxUint160, maxUint256, type Address, type Client, type Hash, type TransactionReceipt, type WalletClient } from "viem";
+import { getBalance, getTransactionReceipt, readContract, simulateContract } from "viem/actions";
 import {
   BPS,
   PONS_ADDRESSES,
@@ -35,7 +26,7 @@ import {
 } from "@pyre/chain/browser";
 import type { AppDetailDto, TradeQuoteDto } from "@pyre/shared";
 import { env } from "../../env.js";
-import { getWalletClient, type Eip1193Provider } from "../../lib/wallet.js";
+import type { Eip1193Provider } from "../../lib/wallet.js";
 
 /*
  * External-wallet trading. Reads go through the API's JSON-RPC proxy
@@ -70,11 +61,15 @@ export const fromServerQuote = (q: TradeQuoteDto): Quote => ({
   priceImpactPct: q.priceImpactPct,
 });
 
-let reader: PublicClient | undefined;
+let reader: Client | undefined;
 
-/** Read-only client over the API proxy; multicall folds the curve reads into one `eth_call`. */
-export const rpcClient = (): PublicClient => {
-  reader ??= createPublicClient({ chain: pyreChain, transport: http(`${env.apiOrigin}/v1/rpc`, { batch: false, retryCount: 2 }), batch: { multicall: true } });
+/**
+ * Read-only client over the API proxy; multicall folds the curve reads into one `eth_call`.
+ * A bare `createClient` plus `viem/actions` rather than `createPublicClient`: the latter
+ * pins every public action (and their signature/CCIP dependencies) into the coin page.
+ */
+export const rpcClient = (): Client => {
+  reader ??= createClient({ chain: pyreChain, transport: http(`${env.apiOrigin}/v1/rpc`, { batch: false, retryCount: 2 }), batch: { multicall: true } });
   return reader;
 };
 
@@ -93,15 +88,18 @@ const launchCache: Record<string, Promise<LaunchRecord>> = {};
 
 /** Factory record for a graduated launch (pool key, fee, tick spacing); cached per token. */
 export const readLaunch = (token: Address): Promise<LaunchRecord> => {
-  launchCache[token] ??= rpcClient()
-    .readContract({ address: PONS_ADDRESSES.factory, abi: factoryAbi, functionName: "getLaunchedToken", args: [token] })
-    .then((rec) => launchRecordFrom(token, rec));
+  launchCache[token] ??= readContract(rpcClient(), { address: PONS_ADDRESSES.factory, abi: factoryAbi, functionName: "getLaunchedToken", args: [token] }).then((rec) =>
+    launchRecordFrom(token, rec),
+  );
   return launchCache[token]!;
 };
 
 export const balancesOf = async (token: Address, owner: Address): Promise<{ ethWei: bigint; units: bigint }> => {
   const client = rpcClient();
-  const [ethWei, units] = await Promise.all([client.getBalance({ address: owner }), client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [owner] })]);
+  const [ethWei, units] = await Promise.all([
+    getBalance(client, { address: owner }),
+    readContract(client, { address: token, abi: erc20Abi, functionName: "balanceOf", args: [owner] }),
+  ]);
   return { ethWei, units };
 };
 
@@ -112,7 +110,7 @@ export async function quoteExternal(app: AppDetailDto, side: Side, amount: bigin
   const client = rpcClient();
 
   if (market.phase === 0) {
-    const state = await readCurveState(market.curve, recipient, client);
+    const state = await readCurveState(market.curve, recipient, { readContract: (args) => readContract(client, args) });
     if (side === "buy") {
       const q = quoteBuy(state, amount);
       const snipe = effectiveSnipeTaxBps(state);
@@ -150,13 +148,13 @@ export async function quoteExternal(app: AppDetailDto, side: Side, amount: bigin
   const input = side === "buy" ? { ethIn: amount } : { tokensIn: amount };
   const { key, zeroForOne } = swapDirection(launch, input);
   const [{ result }, slot0] = await Promise.all([
-    client.simulateContract({
+    simulateContract(client, {
       address: PONS_ADDRESSES.quoter,
       abi: v4QuoterAbi,
       functionName: "quoteExactInputSingle",
       args: [{ poolKey: key, zeroForOne, exactAmount: amount, hookData: "0x" }],
     }),
-    client.readContract({ address: PONS_ADDRESSES.stateView, abi: stateViewAbi, functionName: "getSlot0", args: [launch.poolId] }),
+    readContract(client, { address: PONS_ADDRESSES.stateView, abi: stateViewAbi, functionName: "getSlot0", args: [launch.poolId] }),
   ]);
   const amountOut = result[0];
   const tokenIs0 = key.currency0.toLowerCase() === launch.token.toLowerCase();
@@ -182,10 +180,10 @@ const RECEIPT_POLL_MS = 400;
 const RECEIPT_TIMEOUT_MS = 120_000;
 
 /** Polls `eth_getTransactionReceipt` at block cadence; the proxy allows nothing fancier. */
-export async function waitForReceipt(hash: Hash, client: PublicClient = rpcClient()): Promise<TransactionReceipt> {
+export async function waitForReceipt(hash: Hash, client: Client = rpcClient()): Promise<TransactionReceipt> {
   const deadline = Date.now() + RECEIPT_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    const receipt = await client.getTransactionReceipt({ hash }).catch(() => null);
+    const receipt = await getTransactionReceipt(client, { hash }).catch(() => null);
     if (receipt) {
       if (receipt.status !== "success") throw new Error(`transaction ${hash} reverted`);
       return receipt;
@@ -214,6 +212,9 @@ export async function executeExternal(
 ): Promise<ExecuteResult> {
   const market = marketOf(app);
   const client = rpcClient();
+  // Dynamic on purpose: a static import would put viem's wallet stack (the `wallet-*` chunk) in
+  // the coin page's initial graph, and only a signing external wallet ever needs it.
+  const { getWalletClient } = await import("../../lib/wallet.js");
   const signer = await getWalletClient(wallet.provider, wallet.address);
   const from = wallet.address;
 
@@ -222,7 +223,7 @@ export async function executeExternal(
     if (side === "buy") {
       hash = await send(signer, from, encodeCurveBuy(market.curve, quote.amountIn, quote.minOut, from));
     } else {
-      const allowance = await client.readContract({ address: market.token, abi: erc20Abi, functionName: "allowance", args: [from, market.curve] });
+      const allowance = await readContract(client, { address: market.token, abi: erc20Abi, functionName: "allowance", args: [from, market.curve] });
       if (allowance < quote.amountIn) await waitForReceipt(await send(signer, from, encodeApprove(market.token, market.curve, quote.amountIn)), client);
       hash = await send(signer, from, encodeCurveSell(market.curve, quote.amountIn, quote.minOut, from));
     }
@@ -233,9 +234,9 @@ export async function executeExternal(
       hash = await send(signer, from, encodeV4Swap(launch, { ethIn: quote.amountIn }, quote.minOut, from, from, deadline));
     } else {
       const { permit2, universalRouter } = PONS_ADDRESSES;
-      const erc20Allowance = await client.readContract({ address: market.token, abi: erc20Abi, functionName: "allowance", args: [from, permit2] });
+      const erc20Allowance = await readContract(client, { address: market.token, abi: erc20Abi, functionName: "allowance", args: [from, permit2] });
       if (erc20Allowance < quote.amountIn) await waitForReceipt(await send(signer, from, encodeApprove(market.token, permit2, maxUint256)), client);
-      const [allowed, expiration] = await client.readContract({ address: permit2, abi: permit2Abi, functionName: "allowance", args: [from, market.token, universalRouter] });
+      const [allowed, expiration] = await readContract(client, { address: permit2, abi: permit2Abi, functionName: "allowance", args: [from, market.token, universalRouter] });
       const now = Math.floor(Date.now() / 1000);
       if (allowed < quote.amountIn || expiration <= now + 60) {
         const approveHash = await signer.writeContract({

@@ -494,8 +494,10 @@ const A11Y_PROBE = `(() => {
     }
   }
 
-  // 8. focus is visible
-  const focusables = [...document.querySelectorAll("a[href], button, input, select, textarea, [tabindex]")].filter(visible);
+  // 8. focus is visible. Disabled controls cannot take focus at all, so they have nothing to show.
+  const focusables = [...document.querySelectorAll("a[href], button, input, select, textarea, [tabindex]")].filter(
+    (el) => visible(el) && !el.matches(":disabled"),
+  );
   if (focusables.length) mark("focus-visible");
   const active = document.activeElement;
   for (const el of focusables.slice(0, 30)) {

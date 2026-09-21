@@ -54,7 +54,7 @@
   /* ── ink ── */
   --color-ink: #f3f2ee;
   --color-ink-2: #9b9891;
-  --color-ink-3: #62605b;
+  --color-ink-3: #8a877f;
 
   /* ── accent (tempered violet) ── */
   --color-accent: #9d8cff;
@@ -338,7 +338,7 @@
   --color-scrim: rgba(42, 38, 34, 0.45);
   --color-ink: #141311;
   --color-ink-2: #5c5852;
-  --color-ink-3: #8f8a82;
+  --color-ink-3: #6b665d;
   --color-accent: #1f3de8;
   --color-accent-strong: #1731b8;
   --color-accent-ink: #ffffff;

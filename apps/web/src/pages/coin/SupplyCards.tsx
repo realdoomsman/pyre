@@ -27,7 +27,7 @@ export const GraduationCard = ({ app }: { app: AppDetailDto }) => {
         </GraduationRing>
         <div className="min-w-0 flex-1">
           <div className="eyebrow">Graduation</div>
-          <h3 className="mt-0.5 text-15 font-medium text-ink">{copy.title}</h3>
+          <h2 className="mt-0.5 text-15 font-medium text-ink">{copy.title}</h2>
           <div className="num mt-1 text-13 text-ink-2">
             <EthFlow wei={raised} digits={3} /> <span className="text-ink-3">of {formatEth(threshold, { digits: 1 })} raised</span>
           </div>
