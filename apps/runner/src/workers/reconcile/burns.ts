@@ -1,5 +1,5 @@
 import { big, prisma } from "@pyre/db";
-import { getTokenInfo } from "@pyre/chain";
+import { getTokenInfo, publicClient } from "@pyre/chain";
 import type { Address } from "viem";
 import type { WorkerContext } from "../../lib/queues.js";
 import { chainWorkerEnv } from "../chain/env.js";
@@ -15,6 +15,10 @@ const PYRE_STUCK_AFTER_MS = 30 * 60_000;
  * ledger (anyone may burn), but the ledger can never exceed the chain. The $PYRE leg does the
  * same over `PyreBurn` rows and additionally reports rows stuck between buy and burn, since bought
  * $PYRE sitting in the treasury is indistinguishable from staked custody. Reports only.
+ *
+ * A `tokenAddress` with no bytecode (seeded demo rows carry synthetic addresses) has no supply
+ * to read: it is noted as `BURN_TOKEN_NOT_A_CONTRACT` and skipped rather than failing the pass —
+ * every real launch token has code, so the check still fails on a genuinely unreadable one.
  */
 export const checkBurns = async (ctx: WorkerContext): Promise<CheckOutcome> => {
   const outcome = emptyOutcome();
@@ -37,16 +41,24 @@ export const checkBurns = async (ctx: WorkerContext): Promise<CheckOutcome> => {
   const byApp: Record<string, { burnedUnits: bigint; tokensBurned: bigint; count: number }> = {};
   for (const row of sums) byApp[row.appId] = { burnedUnits: big(row._sum.burnedUnits), tokensBurned: big(row._sum.tokensBurned), count: row._count };
 
+  const client = publicClient();
   for (const app of apps) {
     const ledger = byApp[app.id] ?? { burnedUnits: 0n, tokensBurned: 0n, count: 0 };
+    const token = app.tokenAddress as Address;
     let onChain: bigint;
     try {
-      onChain = (await getTokenInfo(app.tokenAddress as Address)).burnedUnits;
+      const code = await client.getCode({ address: token });
+      if (code === undefined || code === "0x") {
+        outcome.findings.push({ code: "BURN_TOKEN_NOT_A_CONTRACT", detail: `no bytecode at ${token}; burn accounting skipped`, appId: app.id, slug: app.slug });
+        log.warn({ appId: app.id, token }, "token address is not a contract");
+        continue;
+      }
+      onChain = (await getTokenInfo(token)).burnedUnits;
     } catch (err) {
       outcome.ok = false;
       outcome.findings.push({
         code: "BURN_SUPPLY_UNREADABLE",
-        detail: `token reads failed for ${app.tokenAddress}: ${err instanceof Error ? err.message : String(err)}`,
+        detail: `token reads failed for ${token}: ${err instanceof Error ? err.message : String(err)}`,
         appId: app.id,
         slug: app.slug,
       });

@@ -16,8 +16,8 @@
  *                                      for the throwaway users, so the whole middleware chain
  *                                      (rate limit → auth → route) runs unmodified end to end
  *   - hosting, app runtime, perimeter→ plain HTTP against the deployed public origin
- *   - wallet login                   → a throwaway viem account signs the EIP-191 challenge, so
- *                                      the external-wallet path is proven without a browser
+ *   - wallet login                   → a throwaway viem account signs the EIP-4361 (SIWE) challenge
+ *                                      with personal_sign, so the external-wallet path is proven without a browser
  *
  * Every row it writes is created under a per-run `audit:<runId>` tag and removed again on the way
  * out (LIFO), including the rows Prisma will not cascade: LedgerEntry, JobToken, PyreStake,
@@ -41,6 +41,7 @@ import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 import { privateKeyToAccount } from "viem/accounts";
+import { parseSiweMessage } from "viem/siwe";
 import { big, dec, prisma } from "@pyre/db";
 import { attestationHash, deriveAppWallet, deriveWallet, getEthPriceUsd, publicClient, treasury } from "@pyre/chain";
 import {
@@ -261,11 +262,12 @@ const blockedOffline = (reached) => ({ blocked: true, detail: `${reached}; ${off
 
 /* ───────────────────────────── fixtures ───────────────────────────── */
 
-const createUser = async (label, { admin = false } = {}) => {
+const createUser = async (label, { admin = false, authWallet = null } = {}) => {
   const user = await prisma.user.create({
     data: {
       googleSub: `${TAG}:${label}`,
       wallet: fixtureAddress(Object.keys(state.users).length + 1),
+      authWallet,
       displayName: `audit ${label}`,
       isAdmin: admin,
     },
@@ -478,7 +480,15 @@ async function launchChecks() {
   });
 
   await check("spec_approval", async () => {
-    await prisma.app.update({ where: { id: second.id }, data: { status: "SPEC_READY", spec: AUDIT_SPEC } });
+    // The live intake worker consumes `second` too and, without Anthropic credits, settles it FAILED.
+    // Take the job off the queue first — or, if a worker already holds it, wait for that run to
+    // land — so the SPEC_READY fixture state below is not overwritten mid-check.
+    const intake = await state.queues.intake.getJob(`intake-${second.id}`);
+    if (intake) {
+      const removed = await intake.remove().then(() => true, () => false);
+      if (!removed) await until(async () => ["completed", "failed"].includes(await intake.getState()), 150_000, 3_000);
+    }
+    await prisma.app.update({ where: { id: second.id }, data: { status: "SPEC_READY", spec: AUDIT_SPEC, killedReason: null } });
     const res = await call(local(`/v1/launches/${second.id}/approve`), {
       method: "POST",
       headers: jsonHeaders(launcher),
@@ -532,26 +542,36 @@ async function launchChecks() {
   });
 
   await check("stake_external_tx_rejected", async () => {
-    // An external-wallet stake is `{txHash}` verified on chain; a hash the chain has never seen is refused.
+    // `{txHash}` is the external-wallet stake: the transfer is verified on chain against the sender
+    // the launcher proved at login. Body guards first, then the two launcher kinds.
     const e = expect();
     const malformed = await call(local(`/v1/launches/${second.id}/stake`), { method: "POST", headers: jsonHeaders(launcher), body: "{}" });
     e.eq(malformed.status, 400, "empty body status").eq(malformed.json?.error, "validation_failed", "empty body code");
     const badHash = await call(local(`/v1/launches/${second.id}/stake`), { method: "POST", headers: jsonHeaders(launcher), body: JSON.stringify({ txHash: "0xnope" }) });
     e.eq(badHash.status, 400, "malformed hash status").eq(badHash.json?.error, "validation_failed", "malformed hash code");
 
-    const res = await call(local(`/v1/launches/${second.id}/stake`), { method: "POST", headers: jsonHeaders(launcher), body: JSON.stringify({ txHash: fakeTxHash() }) });
+    // A Google-only launcher has no proven sender to hold the transfer against: refused before any chain read.
+    const googleOnly = await call(local(`/v1/launches/${second.id}/stake`), { method: "POST", headers: jsonHeaders(launcher), body: JSON.stringify({ txHash: fakeTxHash() }) });
+    e.eq(googleOnly.status, 400, "google-only launcher status").eq(googleOnly.json?.error, "external_wallet_required", "google-only launcher code");
     const row = await prisma.app.findUnique({ where: { id: second.id }, select: { status: true, stakeTx: true } });
     e.eq(row.status, "AWAITING_STAKE", "status must not advance").eq(row.stakeTx, null, "stakeTx must stay null");
+
+    // A launcher who signed in with a wallet reaches the chain read; a hash the chain has never seen is refused.
+    const external = state.users.external;
+    const ext = await createApp("externalStake", { launcherId: external.id, status: "AWAITING_STAKE", walletAddress: fixtureAddress(503), spec: AUDIT_SPEC, specApprovedAt: new Date() });
+    const res = await call(local(`/v1/launches/${ext.id}/stake`), { method: "POST", headers: jsonHeaders(external), body: JSON.stringify({ txHash: fakeTxHash() }) });
+    const extRow = await prisma.app.findUnique({ where: { id: ext.id }, select: { status: true, stakeTx: true } });
+    e.eq(extRow.status, "AWAITING_STAKE", "external launch status must not advance").eq(extRow.stakeTx, null, "external launch stakeTx must stay null");
     if (unreachable(res)) {
       const done = e.done("");
-      return done.ok ? blockedOffline("body guards refuse; on-chain verification of the fake hash reached") : done;
+      return done.ok ? blockedOffline("body guards and the Google-only refusal hold; on-chain verification of the fake hash reached") : done;
     }
     e.eq(res.status, 400, "unknown tx status")
       .eq(res.json?.error, "stake_tx_invalid", "unknown tx code")
       .eq(res.json?.reason, "not-found", "reason")
       .eq(res.json?.to, state.treasury, "to")
       .eq(res.json?.minWei, LAUNCH_STAKE_WEI.toString(), "minWei");
-    return e.done("{} and a malformed hash → 400 validation_failed; a never-mined hash → 400 stake_tx_invalid (not-found); app stays AWAITING_STAKE");
+    return e.done("{} and a malformed hash → 400 validation_failed; Google-only launcher → 400 external_wallet_required; wallet launcher + never-mined hash → 400 stake_tx_invalid (not-found); both launches stay AWAITING_STAKE");
   });
 
   await check("illegal_transitions_refused", async () => {
@@ -867,7 +887,7 @@ async function moneyChecks() {
     const a = ["c", "a", "b"];
     e.eq(attestationHash(a), attestationHash([...a].reverse()), "hash must be order independent")
       .ok(attestationHash(a) !== attestationHash(["a", "b"]), "hash must depend on the full set")
-      .eq(attestationHash([]).length, 64, "hash is sha256 hex");
+      .ok(HASH_RE.test(attestationHash([])), `hash is 0x-prefixed sha256 hex (got ${attestationHash([])})`);
     // Every stored buyback must still be recomputable from the revenue it claims.
     const rows = await prisma.buyback.findMany({ select: { id: true, appId: true, attestHash: true, revenueEvents: { select: { id: true, usdMicros: true } } } });
     let checked = 0;
@@ -1285,17 +1305,28 @@ async function platformChecks() {
   const launcher = state.users.launcher;
 
   await check("wallet_login_challenge_verify", async () => {
-    // A throwaway external wallet: the same EIP-191 personal_sign flow an injected wallet performs.
+    // A throwaway external wallet: the same EIP-191 personal_sign flow an injected wallet performs
+    // over an EIP-4361 (Sign-In with Ethereum) message bound to the platform domain and chain.
     const account = privateKeyToAccount(`0x${randomBytes(32).toString("hex")}`);
     onExit("wallet-login user", async () => {
       await prisma.user.deleteMany({ where: { authWallet: account.address } });
     });
     const e = expect();
     const challenge = await call(local("/v1/auth/wallet/challenge"), { method: "POST", headers: jsonHeaders(), body: JSON.stringify({ address: account.address.toLowerCase() }) });
+    const siwe = typeof challenge.json?.message === "string" ? parseSiweMessage(challenge.json.message) : {};
+    const webOrigin = new URL(process.env.WEB_ORIGIN);
     e.eq(challenge.status, 200, "challenge status")
       .eq(challenge.json?.address, account.address, "address echoed checksummed")
-      .ok(typeof challenge.json?.message === "string" && challenge.json.message.includes(account.address) && challenge.json.message.includes(challenge.json?.nonce ?? "\0"), "message binds address and nonce")
-      .ok(/^[0-9a-f]{32}$/.test(challenge.json?.nonce ?? ""), "nonce is 16 random bytes")
+      .eq(siwe.domain, webOrigin.host, "siwe domain is the platform web host")
+      .eq(siwe.uri, process.env.WEB_ORIGIN, "siwe uri is the platform web origin")
+      .eq(siwe.address, account.address, "siwe address is the checksummed caller")
+      .eq(siwe.chainId, ROBINHOOD_CHAIN_ID, "siwe chainId is Robinhood Chain")
+      .eq(siwe.version, "1", "siwe version")
+      .ok(typeof siwe.statement === "string" && siwe.statement.length > 0, "siwe statement explains the signature costs no gas")
+      .eq(siwe.nonce, challenge.json?.nonce, "siwe nonce is the issued nonce")
+      .ok(/^[a-zA-Z0-9]{8,}$/.test(challenge.json?.nonce ?? ""), `nonce is alphanumeric and ≥8 chars (got ${JSON.stringify(challenge.json?.nonce)})`)
+      .eq(siwe.issuedAt?.toISOString(), challenge.json?.issued, "siwe issuedAt is the issued timestamp")
+      .eq(siwe.expirationTime?.toISOString(), challenge.json?.expiresAt, "siwe expirationTime is expiresAt")
       .eq(challenge.json?.ttlSeconds, 300, "ttlSeconds")
       .ok(Date.parse(challenge.json?.expiresAt ?? "") - Date.parse(challenge.json?.issued ?? "") === 300_000, "expiresAt is issued + ttl");
 
@@ -1604,7 +1635,8 @@ async function platformChecks() {
       .ok(Array.isArray(j.alerts) && j.alerts.every((a) => ["info", "warn", "critical"].includes(a.level) && typeof a.code === "string"), "alerts[{level, code}]")
       .ok(Array.isArray(j.running) && Array.isArray(j.failed) && Array.isArray(j.flagList) && Array.isArray(j.reportList) && Array.isArray(j.killed), "running/failed/flagList/reportList/killed lists")
       .ok(j.running?.some((job) => job.id === state.proxy.jobId), "the RUNNING proxy fixture job is listed")
-      .ok(Array.isArray(j.reconcileRuns) && Array.isArray(j.audit) && Array.isArray(j.users), "reconcileRuns/audit/users lists")
+      .ok(Array.isArray(j.reconcileRuns) && Array.isArray(j.audit), "reconcileRuns/audit lists")
+      .ok(Number.isInteger(j.users) && j.users > 0, `users is the platform user count (got ${JSON.stringify(j.users)})`)
       .ok(j.credits && typeof j.credits === "object", "credits rollup");
     if (!j.chain?.rpcOk) e.ok(j.alerts?.some((a) => a.code === "rpc_down"), "an unreachable RPC must raise the rpc_down alert");
     return e.done(`OpsDto: treasury ${j.treasury?.address?.slice(0, 10)}… ${j.treasury?.ethWei} wei / ${j.treasury?.usdgUnits} USDG, chain ${j.chain?.chainId} block ${j.chain?.blockNumber} (rpcOk=${j.chain?.rpcOk}), ${j.alerts?.length} alerts, ${j.running?.length} running; non-admin → ${forbidden.status}`);
@@ -1628,16 +1660,25 @@ async function hostingChecks() {
   await check("demo_app_csp", async () => {
     if (!state.demo) return { ok: false, detail: `no app with slug "${DEMO_SLUG}"` };
     const res = await call(`${demoBase}/`);
+    const csp = res.headers.get("content-security-policy") ?? "";
+    const directive = (name) => csp.split(";").map((d) => d.trim()).find((d) => d.startsWith(`${name} `) || d === name) ?? "";
     return expect()
       .eq(res.status, 200, "http status")
-      .eq(res.headers.get("content-security-policy"), APP_CSP, "CSP must match APP_CSP verbatim")
+      .eq(csp, APP_CSP, "CSP must match APP_CSP verbatim")
+      .eq(directive("default-src"), "default-src 'self'", "default-src is self only")
+      .eq(directive("script-src"), "script-src 'self' https://accounts.google.com/gsi/client", "script-src is self plus Google Identity")
+      .eq(directive("form-action"), "form-action 'none'", "no form posts leave the app")
+      .eq(directive("base-uri"), "base-uri 'none'", "base-uri is locked")
+      .eq(directive("frame-src"), "frame-src https://accounts.google.com/gsi/", "only the Google sign-in frame may be embedded")
       .eq(res.headers.get("x-frame-options"), "DENY", "X-Frame-Options")
       .eq(res.headers.get("x-content-type-options"), "nosniff", "X-Content-Type-Options")
-      .eq(res.headers.get("referrer-policy"), "no-referrer", "Referrer-Policy")
+      // Same-origin: nothing leaks to third parties, while same-origin `/_pyre/*` calls still carry
+      // the page URL that proves a path-routed app's provenance (lib/origin.ts).
+      .eq(res.headers.get("referrer-policy"), "same-origin", "Referrer-Policy")
       .eq(res.headers.get("cross-origin-opener-policy"), "same-origin-allow-popups", "COOP")
-      .ok((res.headers.get("permissions-policy") ?? "").includes("camera=()"), "Permissions-Policy")
+      .eq(res.headers.get("permissions-policy"), "camera=(), microphone=(), geolocation=(), payment=(), usb=()", "Permissions-Policy")
       .ok(res.text.includes("<"), "body must be html")
-      .done(`GET /a/${DEMO_SLUG}/ → 200 with script-src 'self' and the full header set`);
+      .done(`GET /a/${DEMO_SLUG}/ → 200 with the locked-down CSP, Referrer-Policy same-origin and the full header set`);
   });
 
   await check("env_js_payload", async () => {
@@ -1755,6 +1796,9 @@ async function hostingChecks() {
   });
 
   await check("ad_selection", async () => {
+    // Selection is cpm-weighted across every ACTIVE campaign, so the pick may be a live campaign
+    // rather than this fixture: the bookkeeping is asserted for whichever campaign was served, and
+    // a live campaign's counters are put back afterwards — the audit's traffic is not real reach.
     const campaign = await prisma.adCampaign.create({
       data: { advertiserAppId: state.apps.feeParent.id, headline: `${TAG} ad`, body: "audit fixture campaign", targetUrl: "https://example.com/audit", cpmMicros: 2_000n, budgetMicros: 1_000_000n, status: "ACTIVE" },
     });
@@ -1762,29 +1806,48 @@ async function hostingChecks() {
       await prisma.adImpression.deleteMany({ where: { advertiserAppId: campaign.advertiserAppId } });
       await prisma.adCampaign.delete({ where: { id: campaign.id } }).catch(() => {});
     });
+    const eligible = await prisma.adCampaign.findMany({ where: { status: "ACTIVE", advertiserAppId: { not: rig.id } } });
+    const before = Object.fromEntries(eligible.map((c) => [c.id, c]));
+
     const res = await call(`${rigBase}/_pyre/ad`);
-    const charge = campaign.cpmMicros / 1000n;
-    const after = await prisma.adCampaign.findUnique({ where: { id: campaign.id } });
-    const impression = await prisma.adImpression.findFirst({ where: { appId: rig.id, advertiserAppId: campaign.advertiserAppId } });
-    const revenue = await prisma.revenueEvent.findFirst({ where: { appId: rig.id, source: "AD", reference: campaign.id } });
-    if (revenue) onExit("ad revenue", async () => { await prisma.ledgerEntry.deleteMany({ where: { refId: revenue.id } }); await prisma.revenueEvent.delete({ where: { id: revenue.id } }).catch(() => {}); });
-    const e = expect()
-      .eq(res.status, 200, "http status")
-      .eq(res.json?.id, campaign.id, "selected campaign")
-      .eq(res.json?.headline, campaign.headline, "headline")
-      .eq(res.json?.clickUrl, `/a/${rig.slug}/_pyre/ad/click/${campaign.id}`, "click url")
-      .eq(after.impressions, 1, "impression counted")
-      .eq(after.spentMicros, charge, "campaign charged cpm/1000")
+    const chosenBefore = before[res.json?.id];
+    const e = expect().eq(res.status, 200, "http status").ok(chosenBefore !== undefined, `the served campaign must be one of the ${eligible.length} ACTIVE campaigns (got ${res.json?.id})`);
+    if (!chosenBefore) return e.done("");
+    const ours = chosenBefore.id === campaign.id;
+    const charge = chosenBefore.cpmMicros / 1000n;
+    const after = await prisma.adCampaign.findUnique({ where: { id: chosenBefore.id } });
+    const impression = await prisma.adImpression.findFirst({ where: { appId: rig.id, advertiserAppId: chosenBefore.advertiserAppId }, orderBy: { createdAt: "desc" } });
+    const revenue = await prisma.revenueEvent.findFirst({ where: { appId: rig.id, source: "AD", reference: chosenBefore.id }, orderBy: { createdAt: "desc" } });
+    onExit("ad impression", async () => {
+      if (impression) await prisma.adImpression.delete({ where: { id: impression.id } }).catch(() => {});
+      if (revenue) {
+        await prisma.ledgerEntry.deleteMany({ where: { refId: revenue.id } });
+        await prisma.revenueEvent.delete({ where: { id: revenue.id } }).catch(() => {});
+      }
+    });
+    e.eq(res.json?.headline, chosenBefore.headline, "headline")
+      .eq(res.json?.clickUrl, `/a/${rig.slug}/_pyre/ad/click/${chosenBefore.id}`, "click url")
+      .eq(after.impressions, chosenBefore.impressions + 1, "impression counted")
+      .eq(after.spentMicros, chosenBefore.spentMicros + charge, "campaign charged cpm/1000")
       .ok(impression !== null, "AdImpression row must be written")
       .eq(impression?.usdMicros, charge, "impression amount")
-      .ok(revenue !== null, "impression must be credited as revenue to the host app")
-      .eq(revenue?.usdMicros, charge, "revenue amount");
-    const click = await call(`${rigBase}/_pyre/ad/click/${campaign.id}`);
-    e.eq(click.status, 302, "click status").eq(click.headers.get("location"), "https://example.com/audit", "click redirect");
-    e.eq((await prisma.adCampaign.findUnique({ where: { id: campaign.id } })).clicks, 1, "click counted");
+      // A cpm under $0.001 rounds to a zero charge, which is never booked as revenue.
+      .ok(charge === 0n ? revenue === null : revenue !== null, charge === 0n ? "a zero charge must not book revenue" : "impression must be credited as revenue to the host app")
+      .eq(revenue?.usdMicros ?? 0n, charge, "revenue amount");
+
+    const click = await call(`${rigBase}/_pyre/ad/click/${chosenBefore.id}`);
+    // The route redirects to the parsed target (`new URL(...).toString()`), which normalises a bare origin with a trailing slash.
+    e.eq(click.status, 302, "click status").eq(click.headers.get("location"), new URL(chosenBefore.targetUrl).toString(), "click redirect");
+    e.eq((await prisma.adCampaign.findUnique({ where: { id: chosenBefore.id } })).clicks, chosenBefore.clicks + 1, "click counted");
+    if (!ours) {
+      // Synthetic traffic against a live campaign: give the advertiser their money and counters back.
+      onExit("live ad campaign counters", async () => {
+        await prisma.adCampaign.update({ where: { id: chosenBefore.id }, data: { spentMicros: { decrement: charge }, impressions: { decrement: 1 }, clicks: { decrement: 1 } } }).catch(() => {});
+      });
+    }
     const noSlot = await call(`${API}/a/${DEMO_SLUG}/_pyre/ad`);
     e.eq(noSlot.status, 404, "an app without an ad slot must 404");
-    return e.done(`served 1 impression at $${(Number(charge) / 1e6).toFixed(6)}, charged the advertiser, credited the host, click redirected`);
+    return e.done(`served 1 impression of ${ours ? "the fixture campaign" : `live campaign "${chosenBefore.headline}"`} (${eligible.length} eligible) at $${(Number(charge) / 1e6).toFixed(6)}, charged the advertiser, credited the host, click redirected${ours ? "" : "; live counters restored"}`);
   });
 
   await check("track_heartbeat", async () => {
@@ -1852,24 +1915,6 @@ async function perimeterChecks() {
   section("perimeter");
   const rig = state.apps.rig;
   const rigBase = `${API}/a/${rig.slug}`;
-
-  await check("rate_limit_trips", async () => {
-    // `write` tier is 30/60s, keyed on a bearer hash before auth runs, so this burns only our bucket.
-    const token = `audit-ratelimit-${RUN}`;
-    let limited = 0;
-    let attempts = 0;
-    let lastHeader = "";
-    for (let i = 0; i < 40 && limited === 0; i++) {
-      attempts++;
-      const res = await call(`${API}/v1/queue/does-not-exist/vote`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: "{}" });
-      lastHeader = res.headers.get("ratelimit") ?? lastHeader;
-      if (res.status === 429) limited = i + 1;
-    }
-    return expect()
-      .ok(limited > 0, `no 429 within ${attempts} requests (RateLimit: ${lastHeader || "absent"})`)
-      .ok(limited <= 35, `429 arrived at request ${limited}, later than the 30/min write tier allows`)
-      .done(`429 at request ${limited} of the 30/min write tier (RateLimit: ${lastHeader})`);
-  });
 
   await check("cross_origin_mutation_blocked", async () => {
     const e = expect();
@@ -1962,9 +2007,14 @@ async function perimeterChecks() {
     const badToken = await call(`${API}/v1/proxy/anthropic/v1/messages`, { method: "POST", headers: { "content-type": "application/json", "x-api-key": `nope-${RUN}` }, body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 8, messages: [] }) });
     e.eq(badToken.status, 401, "bad token status").eq(badToken.json?.error, "invalid_token", "bad token code");
 
+    // A revoked token on a settled build is exactly what the live JOBTOKENS reconcile deletes (and
+    // reports as drift) once the build is a minute old: stamp the build fresh so the sweep's grace
+    // covers the fixture, and drop the token as soon as the probe has used it.
+    await prisma.buildJob.update({ where: { id: state.proxy.revokedJobId }, data: { finishedAt: new Date() } });
     const revoked = await prisma.jobToken.create({ data: { token: `${TAG}-revoked`, jobId: state.proxy.revokedJobId, appId: state.apps.gate.id, budgetMicros: 1_000_000n, expiresAt: new Date(Date.now() + 3_600_000), revoked: true } });
     onExit("revoked job token", async () => { await prisma.jobToken.deleteMany({ where: { token: revoked.token } }); });
     const revokedRes = await call(`${API}/v1/proxy/anthropic/v1/messages`, { method: "POST", headers: { "content-type": "application/json", "x-api-key": revoked.token }, body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 8, messages: [] }) });
+    await prisma.jobToken.deleteMany({ where: { token: revoked.token } });
     e.eq(revokedRes.status, 401, "revoked token status");
 
     const badModel = await call(`${API}/v1/proxy/anthropic/v1/messages`, { method: "POST", headers: { "content-type": "application/json", "x-api-key": JOB_TOKEN }, body: JSON.stringify({ model: "gpt-4o", max_tokens: 8, messages: [{ role: "user", content: "hi" }] }) });
@@ -2023,6 +2073,36 @@ async function perimeterChecks() {
       if (res.status !== 401 && res.status !== 403 && res.status !== 404) bad.push(`${method} ${path} → ${res.status}`);
     }
     return bad.length === 0 ? { ok: true, detail: `${routes.length} privileged routes all refuse anonymous callers` } : { ok: false, detail: bad.join("; ") };
+  });
+
+  await check("rate_limit_trips", async () => {
+    // `write` tier is 30/60s. The guard charges every identity it can verify before auth runs: the
+    // client IP and, for a validly signed session, `u:<userId>`. A fixture user's real session is
+    // used so the bucket that trips is ours alone and does not depend on how the edge reports our
+    // address (an unverifiable bearer would leave only the IP, which the whole run shares).
+    const outsider = state.users.outsider;
+    let limited = 0;
+    let attempts = 0;
+    let lastHeader = "";
+    let lastStatus = 0;
+    for (let i = 0; i < 40 && limited === 0; i++) {
+      attempts++;
+      const res = await call(`${API}/v1/queue/does-not-exist-${RUN}/vote`, { method: "POST", headers: jsonHeaders(outsider), body: "{}" });
+      lastHeader = res.headers.get("ratelimit") ?? lastHeader;
+      lastStatus = res.status;
+      if (res.status === 429) limited = i + 1;
+    }
+    const e = expect()
+      .ok(limited > 0, `no 429 within ${attempts} requests (last ${lastStatus}, RateLimit: ${lastHeader || "absent"})`)
+      .ok(limited <= 35, `429 arrived at request ${limited}, later than the 30/min write tier allows`);
+    if (limited > 0) {
+      const tripped = await call(`${API}/v1/queue/does-not-exist-${RUN}/vote`, { method: "POST", headers: jsonHeaders(outsider), body: "{}" });
+      e.eq(tripped.status, 429, "the bucket stays closed once tripped")
+        .eq(tripped.json?.error, "rate_limited", "429 body code")
+        .ok(Number(tripped.headers.get("retry-after")) > 0, "Retry-After is set")
+        .ok(/^limit=30, remaining=0, reset=\d+$/.test(tripped.headers.get("ratelimit") ?? ""), `RateLimit header on refusal (${tripped.headers.get("ratelimit")})`);
+    }
+    return e.done(`429 at request ${limited} of the 30/min write tier for u:${outsider.id.slice(0, 8)}… (RateLimit: ${lastHeader}); stays closed with Retry-After`);
   });
 }
 
@@ -2240,8 +2320,9 @@ async function dataChecks() {
 
   await check("enum_and_counter_sanity", async () => {
     const e = expect();
+    // Wei/base-unit columns are Decimal(78,0): Prisma filters them with a number or string, not a BigInt.
     const negative = await prisma.app.count({
-      where: { OR: [{ budgetMicros: { lt: 0n } }, { spentMicros: { lt: 0n } }, { revenueMicros: { lt: 0n } }, { pendingRevenueMicros: { lt: 0n } }, { burnedTokens: { lt: 0n } }, { feesWei: { lt: 0n } }, { buybackWei: { lt: 0n } }, { stakeWei: { lt: 0n } }] },
+      where: { OR: [{ budgetMicros: { lt: 0n } }, { spentMicros: { lt: 0n } }, { revenueMicros: { lt: 0n } }, { pendingRevenueMicros: { lt: 0n } }, { burnedTokens: { lt: 0 } }, { feesWei: { lt: 0 } }, { buybackWei: { lt: 0 } }, { stakeWei: { lt: 0 } }] },
     });
     e.eq(negative, 0, "no app may hold a negative money counter");
     const overPending = await prisma.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "App" WHERE "pendingRevenueMicros" > "revenueMicros"`);
@@ -2331,6 +2412,8 @@ async function setup() {
     await createUser("holder");
     await createUser("outsider");
     await createUser("admin", { admin: true });
+    // Signed in with an injected wallet: the only kind of launcher who may settle a stake with `{txHash}`.
+    await createUser("external", { authWallet: fixtureAddress(700) });
     // Tokenised apps carry a (fixture) PONS token address so they are public; feeParent also gets
     // an app wallet so the custodial top-up path can be reached.
     await createApp("rig", { tokenAddress: fixtureAddress(500) });
@@ -2373,7 +2456,7 @@ async function setup() {
       .eq(Object.keys(state.apps).length, 6, "fixture apps")
       .eq(state.apps.rig.liveVersion, 1, "rig deployment")
       .address(state.apps.rig.tokenAddress, "rig token address")
-      .done(`5 users, 6 apps, 1 deployment, 3 job tokens — all tagged ${TAG}`);
+      .done(`6 users, 6 apps, 1 deployment, 3 job tokens — all tagged ${TAG}`);
   });
 }
 

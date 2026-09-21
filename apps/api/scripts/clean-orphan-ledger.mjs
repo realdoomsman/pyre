@@ -6,7 +6,9 @@
  *   2. any row whose refType/refId points at a FeeEvent/RevenueEvent/Buyback/BuildJob/CreditFunding
  *      that no longer exists (this is how demo PYRE_TOKEN/OPS rows survive an app purge).
  * Neither is cascaded by the DB because these are string keys, not FK columns. This reports both
- * and, with --remove, deletes them. TREASURY and other rows with a live/unknown ref are left alone.
+ * and, with --remove, deletes them. TREASURY and other rows with a live/unknown ref are left alone,
+ * as are seed rows whose refId is a live app id (seed-demo-data.mjs writes its per-app BUILD and
+ * Buyback aggregates against the app itself; they net to the app's counters and go with the app).
  *
  *   node apps/api/scripts/clean-orphan-ledger.mjs            # report only
  *   node apps/api/scripts/clean-orphan-ledger.mjs --remove   # delete orphans
@@ -44,6 +46,7 @@ const orphans = rows.filter((r) => {
     if (id && APP_ACCOUNTS[kind] && !appIds.has(id)) return true;
     if (id && kind === "LAUNCHER" && !userIds.has(id)) return true;
   }
+  if (appIds.has(r.refId)) return false;
   const refSet = REF_SETS[r.refType];
   return refSet !== undefined && !refSet.has(r.refId);
 });

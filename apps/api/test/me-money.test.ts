@@ -110,7 +110,8 @@ vi.mock("@pyre/chain", () => ({
   treasury: () => ({ address: "0x0000000000000000000000000000000000000001", account: { address: "0x0000000000000000000000000000000000000001" } }),
 }));
 vi.mock("../src/lib/metrics.js", () => ({ db: { ledgerEntry: { aggregate: fx.aggregate } } }));
-vi.mock("../src/lib/cache.js", () => ({ cached: <T,>(_k: unknown, _ttl: unknown, fn: () => Promise<T>) => fn() }));
+// The shared cache tier is JSON: round-tripping every cached value is what a Redis hit does to it.
+vi.mock("../src/lib/cache.js", () => ({ cached: async <T,>(_k: unknown, _ttl: unknown, fn: () => Promise<T>): Promise<T> => JSON.parse(JSON.stringify(await fn())) as T }));
 vi.mock("../src/lib/custodial.js", () => ({
   custodialAccount: fx.custodialAccount,
   custodialEthBalance: fx.custodialEthBalance,
@@ -131,7 +132,7 @@ vi.mock("../src/lib/dto.js", () => ({
   APP_SUMMARY_SELECT: {},
 }));
 
-import { claimHandler, withdrawHandler } from "../src/routes/me.js";
+import { balancesOf, claimHandler, withdrawHandler } from "../src/routes/me.js";
 
 interface TestUser {
   id: string;
@@ -228,6 +229,14 @@ describe("claim (fee payout)", () => {
   it("requires a wallet on the account", async () => {
     const { r } = res();
     await expect(claimHandler(req({}, { ...USER, wallet: null }), r)).rejects.toMatchObject({ status: 400, message: "wallet_required" });
+  });
+});
+
+describe("balances", () => {
+  it("survive the JSON cache tier as decimal strings (a BigInt would fail to serialize and 500 /v1/me)", async () => {
+    fx.state.ethBalance = 123_000_000_000_000_000n;
+    fx.state.usdgBalance = 4_500_000n;
+    expect(await balancesOf(USER.wallet as `0x${string}`)).toEqual({ ethWei: "123000000000000000", usdgUnits: "4500000", ethPriceUsd: 2000 });
   });
 });
 

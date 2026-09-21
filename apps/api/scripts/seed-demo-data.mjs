@@ -131,17 +131,26 @@ const fakeAddress = (seed) => getAddress(`0x${createHash("sha256").update(seed).
 /**
  * Deleting an App cascades everything that points at it with a relation, but the ledger, job
  * tokens, stakes and ad rows address apps by plain id — so they survive and become orphans that
- * still carry a balance. Every removal path has to go through here.
+ * still carry a balance. Ledger rows reference the app either directly (`refId` = app id, the
+ * seed's placeholder for BUILD/Buyback rows) or through a FeeEvent/RevenueEvent/Buyback the
+ * cascade is about to remove (PYRE_TOKEN, OPS and LAUNCHER:<user> rows), so both sets are
+ * collected before the delete. Every removal path has to go through here.
  */
 const purgeApps = async (where) => {
   const apps = await prisma.app.findMany({ where, select: { id: true } });
   if (apps.length === 0) return 0;
   const ids = apps.map((a) => a.id);
+  const [fees, revenues, buybacks] = await Promise.all([
+    prisma.feeEvent.findMany({ where: { appId: { in: ids } }, select: { id: true } }),
+    prisma.revenueEvent.findMany({ where: { appId: { in: ids } }, select: { id: true } }),
+    prisma.buyback.findMany({ where: { appId: { in: ids } }, select: { id: true } }),
+  ]);
+  const refIds = [...ids, ...fees.map((r) => r.id), ...revenues.map((r) => r.id), ...buybacks.map((r) => r.id)];
   await prisma.ledgerEntry.deleteMany({
     where: {
       OR: [
-        ...ids.flatMap((id) => [{ account: `BUILD:${id}` }, { account: `STAKERS:${id}` }, { account: `CONTRIB:${id}` }]),
-        { refId: { in: ids } },
+        ...ids.flatMap((id) => [{ account: `BUILD:${id}` }, { account: `STAKERS:${id}` }, { account: `CONTRIB:${id}` }, { account: `CREDITS:${id}` }]),
+        { refId: { in: refIds } },
       ],
     },
   });
@@ -265,7 +274,10 @@ async function repair() {
 async function main() {
   if (remove) {
     const count = await purgeApps({ prompt: { startsWith: DEMO_TAG } });
-    await prisma.user.deleteMany({ where: { googleSub: { startsWith: "seed:demo" } } });
+    // A user is addressed by the ledger through LAUNCHER:<id> only: sweep those rows with the row.
+    const seedUsers = await prisma.user.findMany({ where: { googleSub: { startsWith: "seed:demo" } }, select: { id: true } });
+    await prisma.ledgerEntry.deleteMany({ where: { account: { in: seedUsers.map((u) => `LAUNCHER:${u.id}`) } } });
+    await prisma.user.deleteMany({ where: { id: { in: seedUsers.map((u) => u.id) } } });
     console.log(`removed ${count} demo apps`);
     return;
   }

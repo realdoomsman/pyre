@@ -23,7 +23,13 @@ declare module "node:http" {
 
 export const app = express();
 
-app.set("trust proxy", 1);
+// Railway's HTTP edge terminates TLS and rewrites `X-Forwarded-For` to `<client>, <edge>` on every
+// ingress path (a client-supplied header is replaced, not appended to), then hands the request to
+// an internal hop before it reaches this process — so the socket peer is 100.64.0.0/10 and the edge
+// address is the rightmost entry. Railway documents no proxy CIDR and no fixed hop count: trusting
+// every hop makes `req.ip` the leftmost entry, the client. A hop count (`1`) keyed rate limits on
+// the edge node — shared by every client behind it — instead of the caller.
+app.set("trust proxy", true);
 app.set("json replacer", (_key: string, value: unknown) => (typeof value === "bigint" ? value.toString() : value));
 app.disable("x-powered-by");
 

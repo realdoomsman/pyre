@@ -194,7 +194,7 @@ export async function callerIdentities(req: Request): Promise<string[]> {
   return out;
 }
 
-/** Trusts exactly one proxy hop (Railway's edge); `app.set("trust proxy", 1)` makes `req.ip` the client. */
+/** The caller's address as `trust proxy` resolves it (app.ts): the client entry of Railway's rewritten `X-Forwarded-For`. */
 export const clientIp = (req: Request): string => req.ip ?? req.socket.remoteAddress ?? "unknown";
 
 const READ_METHODS: Record<string, true> = { GET: true, HEAD: true, OPTIONS: true };

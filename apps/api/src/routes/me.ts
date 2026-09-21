@@ -44,14 +44,17 @@ const launcherClaimableMicros = async (userId: string): Promise<bigint> => {
   return agg._sum.deltaMicros ?? 0n;
 };
 
-/** ETH + USDG of the custodial wallet, read fresh (a few seconds of cache absorbs a page's parallel calls). */
+/**
+ * ETH + USDG of the custodial wallet, read fresh (a few seconds of cache absorbs a page's parallel
+ * calls). Cached in wire shape: the Redis tier is JSON, and a BigInt does not survive it.
+ */
 export const balancesOf = async (wallet: Address): Promise<BalancesDto> => {
   const [ethWei, usdgUnits, ethPriceUsd] = await Promise.all([
-    cached(`bal:eth:${wallet}`, 3_000, () => custodialEthBalance(wallet)),
-    cached(`bal:usdg:${wallet}`, 3_000, () => custodialUsdgBalance(wallet)),
+    cached(`bal:eth:${wallet}`, 3_000, async () => (await custodialEthBalance(wallet)).toString()),
+    cached(`bal:usdg:${wallet}`, 3_000, async () => (await custodialUsdgBalance(wallet)).toString()),
     getEthPriceUsd(),
   ]);
-  return { ethWei: ethWei.toString(), usdgUnits: usdgUnits.toString(), ethPriceUsd };
+  return { ethWei, usdgUnits, ethPriceUsd };
 };
 
 /**
@@ -70,7 +73,7 @@ const positionsOf = async (wallets: Address[], ethPriceUsd: number): Promise<Pos
   const live = await Promise.all(
     rows.map((r) =>
       r.wallet === wallets[0]
-        ? cached(`bal:tok:${r.app.tokenAddress}:${r.wallet}`, 10_000, () => getErc20Balance(r.app.tokenAddress as Address, r.wallet as Address)).catch(() => big(r.amount))
+        ? cached(`bal:tok:${r.app.tokenAddress}:${r.wallet}`, 10_000, async () => (await getErc20Balance(r.app.tokenAddress as Address, r.wallet as Address)).toString()).then(BigInt, () => big(r.amount))
         : Promise.resolve(big(r.amount)),
     ),
   );

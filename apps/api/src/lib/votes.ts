@@ -25,11 +25,11 @@ export const PLATFORM_PROPOSAL_MIN_HOLD = (SUPPLY_BASE_UNITS * BigInt(PLATFORM_P
 /** Capped $PYRE weight at which a proposal is considered "backed" (base units) — the ≥10% quorum. */
 export const PLATFORM_PROPOSAL_QUORUM = (SUPPLY_BASE_UNITS * BigInt(PLATFORM_PROPOSAL_QUORUM_BPS)) / 10_000n;
 
-/** Live $PYRE balance (base units) of a wallet; 0 before $PYRE launches. Cached briefly: governance reads are bursty. */
+/** Live $PYRE balance (base units) of a wallet; 0 before $PYRE launches. Cached briefly (as a decimal string: the Redis tier is JSON): governance reads are bursty. */
 export const pyreBalance = async (wallet: Address | null): Promise<bigint> => {
   if (!wallet || !env.PYRE_TOKEN) return 0n;
   const token = env.PYRE_TOKEN;
-  return cached(`pyrebal:${wallet}`, 15_000, () => getErc20Balance(token, wallet));
+  return BigInt(await cached(`pyrebal:${wallet}`, 15_000, async () => (await getErc20Balance(token, wallet)).toString()));
 };
 
 /**

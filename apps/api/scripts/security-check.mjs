@@ -55,7 +55,7 @@ const AUTHED_ROUTES = [
   ["GET", "/v1/admin/audit?limit=1"],
   ["GET", "/v1/admin/jobs"],
   ["POST", "/v1/launches"],
-  ["POST", "/v1/ship/stake"],
+  ["POST", "/v1/pyre/stake"],
 ];
 
 async function authChecks() {
@@ -214,18 +214,6 @@ async function webhookChecks() {
     return { ok: res.status === 401 || res.status === 503, detail: `${res.status} ${res.json?.error ?? ""}` };
   });
 
-  await check("auth   wallet challenge floods hit the auth rate limit", async () => {
-    const headers = { "content-type": "application/json" };
-    const address = `0x${randomBytes(20).toString("hex")}`;
-    let limited = null;
-    for (let i = 0; i < 40 && limited === null; i++) {
-      const res = await call(`${API}/v1/auth/wallet/challenge`, { method: "POST", headers, body: JSON.stringify({ address }) });
-      if (res.status === 429) limited = { after: i + 1, retryAfter: res.headers.get("retry-after") };
-      else if (res.status !== 200 && res.status !== 400) return { ok: false, detail: `unexpected ${res.status} on request ${i + 1}` };
-    }
-    return { ok: limited !== null, detail: limited ? `429 after ${limited.after} requests (Retry-After ${limited.retryAfter})` : "no 429 within 40 requests" };
-  });
-
   await check("rpc    write/sign methods refused, batches refused", async () => {
     const headers = { "content-type": "application/json" };
     const send = await call(`${API}/v1/rpc`, { method: "POST", headers, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_sendRawTransaction", params: ["0x00"] }) });
@@ -252,6 +240,19 @@ async function webhookChecks() {
       ok: challenge.status === 200 && typeof challenge.json?.message === "string" && forged.status === 401 && badAddress.status === 400,
       detail: `challenge ${challenge.status} / forged ${forged.status} ${forged.json?.error ?? ""} / bad address ${badAddress.status}`,
     };
+  });
+
+  // Last of the auth-bucket probes: it exhausts this client's `auth` budget for the next minute.
+  await check("auth   wallet challenge floods hit the auth rate limit", async () => {
+    const headers = { "content-type": "application/json" };
+    const address = `0x${randomBytes(20).toString("hex")}`;
+    let limited = null;
+    for (let i = 0; i < 40 && limited === null; i++) {
+      const res = await call(`${API}/v1/auth/wallet/challenge`, { method: "POST", headers, body: JSON.stringify({ address }) });
+      if (res.status === 429) limited = { after: i + 1, retryAfter: res.headers.get("retry-after") };
+      else if (res.status !== 200 && res.status !== 400) return { ok: false, detail: `unexpected ${res.status} on request ${i + 1}` };
+    }
+    return { ok: limited !== null, detail: limited ? `429 after ${limited.after} requests (Retry-After ${limited.retryAfter})` : "no 429 within 40 requests" };
   });
 
   const githubSecret = process.env.PYRE_GITHUB_SECRET;
@@ -363,19 +364,17 @@ async function proxyChecks() {
 /* ───────────────── rate limiting (runs last: it consumes a bucket) ───────────────── */
 
 async function rateLimitChecks() {
-  // A fixed (invalid) bearer gives the limiter a stable identity: keying on the source IP alone is
-  // unreliable from hosts behind a rotating NAT, which would make this check flap.
-  const probeBearer = `Bearer security-check-${randomBytes(12).toString("hex")}`;
-
   await check("rate   write class trips 429", async () => {
-    // Unauthenticated POSTs: the limiter runs before auth, so these cost nothing but a 401 each.
+    // Anonymous POSTs: the limiter runs before auth and an unverifiable bearer mints no identity,
+    // so this burst is charged to the client IP alone — the bucket the api resolves from Railway's
+    // rewritten X-Forwarded-For. Each attempt costs nothing but a 401.
     const attempts = 45;
     let last = 0;
     const remaining = [];
     for (let i = 0; i < attempts; i++) {
       const res = await call(`${API}/v1/queue/security-check-probe/vote`, {
         method: "POST",
-        headers: { "content-type": "application/json", authorization: probeBearer },
+        headers: { "content-type": "application/json" },
         body: "{}",
       });
       last = res.status;
