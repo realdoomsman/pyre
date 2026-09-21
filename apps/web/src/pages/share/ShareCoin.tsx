@@ -1,0 +1,49 @@
+import { useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { useApp } from "../../api/queries.js";
+import { formatEth, formatUsdCompact } from "../../lib/format.js";
+import { Avatar } from "../../ui/index.js";
+import { ShareFrame } from "./ShareFrame.js";
+
+/** `/c/:slug/card` — one coin's share composition: what its app earned, what it burned. */
+export const ShareCoin = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const q = useApp(slug);
+  const app = q.data;
+  useEffect(() => {
+    document.title = app ? `$${app.ticker} — Pyre` : "Pyre — coin card";
+  }, [app]);
+
+  if (q.isError) {
+    return <ShareFrame headline={<>this coin is <em>not</em> here.</>} stats={[{ label: "slug", value: slug ?? "—" }]} />;
+  }
+
+  return (
+    <ShareFrame
+      eyebrow={app ? `$${app.ticker} · pyre.fun` : "pyre.fun · Robinhood Chain"}
+      media={app ? <Avatar src={app.imageUrl} name={app.ticker} size={168} shape="square" /> : undefined}
+      headline={
+        app ? (
+          <>
+            {app.name.toLowerCase()}
+            <br />
+            <span className="text-ink-2">earned</span> {formatUsdCompact(app.revenueMicros)}.
+            <br />
+            <em>burned</em> {app.burnedPct.toFixed(2)}%.
+          </>
+        ) : (
+          <>
+            coins that build apps.
+            <br />
+            revenue <em>burns</em> them.
+          </>
+        )
+      }
+      stats={[
+        { label: "market cap", value: app ? formatUsdCompact(Math.round(app.mcapUsd * 1e6)) : "—" },
+        { label: "fees → agent", value: app ? formatUsdCompact(app.budgetMicros) : "—" },
+        { label: "bought back", value: app ? formatEth(app.buybackWei) : "—" },
+      ]}
+    />
+  );
+};

@@ -1,0 +1,77 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+:root{--bg:#08090b;--fg:#f3f5f7;--fg2:#9ba5b4;--fg3:#7c8798;--line:#1e232c;--line2:#2d3440;--g:#35d07f;--r:#f2564d;}
+html,body{margin:0;padding:0;background:#000;}
+#stage{width:1920px;height:1080px;background:var(--bg);position:relative;overflow:hidden;font-family:Inter,sans-serif;color:var(--fg);}
+#grid{position:absolute;inset:0;background-image:linear-gradient(#0f141a 1px,transparent 1px),linear-gradient(90deg,#0f141a 1px,transparent 1px);background-size:48px 48px;opacity:.5;}
+#c{position:absolute;inset:0;}
+#vig{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 260px 60px rgba(0,0,0,.6);}
+.pix{font-family:Silkscreen,monospace;} .mono{font-family:'JetBrains Mono',monospace;}
+</style></head>
+<body>
+<div id="stage"><div id="grid"></div><div id="c"></div><div id="vig"></div></div>
+<script>
+window.BERTH_MARK=["................",".......##.......","......####......",".....######.....","....########....","...##########...","..############..","..##..####..##..","......####......","......####......","......####......","................","................",".######..######.",".######..######.","................"];
+window.markSvg=function(size,color){const rows=window.BERTH_MARK;let r="";for(let y=0;y<16;y++)for(let x=0;x<16;x++){if(rows[y][x]==='#')r+=`<rect x="${x}" y="${y}" width="1" height="1"/>`;}return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="${color}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${r}</svg>`;};
+</script>
+<script>
+const C=document.getElementById('c');
+const clamp=x=>Math.max(0,Math.min(1,x)); const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eO=x=>x>=1?1:1-Math.pow(2,-10*x); const eC=x=>1-Math.pow(1-x,3); const lerp=(a,b,x)=>a+(b-a)*x; const px=v=>v+'px';
+function el(t,css,html){const e=document.createElement(t);if(css)Object.assign(e.style,css);if(html!=null)e.innerHTML=html;C.appendChild(e);return e;}
+const G='#35d07f',R='#f2564d';
+const IMGROOT='file:///C:/tech/ship/marketing/x/';
+const STEPS=[
+ {n:'1',t:'write one sentence',d:"describe the app you want built. that's the whole input \u2014 no code, no spec doc.",img:'cap/launch.png'},
+ {n:'2',t:'approve the spec',d:'an agent turns it into a concrete spec: what it does, who pays, the MVP, the price. you approve it, and it pins to the coin page.',img:'posts/spec.png'},
+ {n:'3',t:'stake 0.05 SOL',d:'a small, refundable stake launches the coin. it is spam control, and it comes back to you at the first build.',img:'posts/stake.png'},
+ {n:'4',t:'your coin goes live',d:'a per-app keypair creates the coin on pump.fun and becomes its fee creator. trading begins.',img:'cap/el/card-coin.png'},
+ {n:'5',t:'fees fund the build',d:'60% of fees become the build budget. at $50 accrued, the first build starts and streams live to the coin page.',img:'cap/el/buildlog.png'},
+ {n:'6',t:'revenue burns the coin',d:'the app charges users. 85% of revenue buys the coin back on the open market and burns it \u2014 attested on-chain.',img:'cap/el/attest.png'},
+];
+const scenes={};
+scenes.title=()=> {
+  const wrap=el('div',{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',textAlign:'center',width:'80%'});
+  wrap.innerHTML=`<div style="font-family:Silkscreen,monospace;font-size:22px;letter-spacing:8px;color:#7c8798;text-transform:uppercase">a step-by-step guide</div>
+  <div id="tt" style="font-weight:700;font-size:120px;letter-spacing:-2px;line-height:1;margin-top:22px">how to launch</div>
+  <div style="font-size:40px;color:#9ba5b4;margin-top:20px">a coin that builds an app</div>`;
+  return (t)=>{ const p=eO(seg(t,0,1)); wrap.style.opacity=p; wrap.style.transform=`translate(-50%, calc(-50% + ${px((1-p)*30)}))`; C.style.opacity=1-seg(t,3.4,3.8); };
+};
+function stepScene(i){ return ()=>{
+  const s=STEPS[i];
+  const hd=el('div',{position:'absolute',left:'96px',right:'96px',top:'70px',display:'flex',alignItems:'center',justifyContent:'space-between'});
+  hd.innerHTML=`<div style="display:flex;align-items:center;gap:14px"><span id="mk"></span><span style="font-family:Silkscreen,monospace;font-size:26px;letter-spacing:1px">berth</span></div><div style="font-family:Silkscreen,monospace;font-size:15px;letter-spacing:3px;color:#7c8798">STEP ${s.n} / 6</div>`;
+  const num=el('div',{position:'absolute',left:'96px',top:'250px',fontFamily:"'JetBrains Mono',monospace",fontWeight:'700',fontSize:'150px',color:G,lineHeight:'1'},s.n);
+  const h=el('div',{position:'absolute',left:'96px',top:'430px',width:'760px',fontWeight:'700',fontSize:'64px',lineHeight:'1.05',letterSpacing:'-1px'},s.t);
+  const d=el('div',{position:'absolute',left:'96px',top:'600px',width:'720px',fontSize:'31px',lineHeight:'1.4',color:'#c7cfdb'},s.d);
+  const panel=el('div',{position:'absolute',right:'96px',top:'150px',width:'880px',height:'780px',border:'1px solid #2d3440',background:'#0d0f13',boxShadow:'8px 8px 0 rgba(0,0,0,.55)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'});
+  const bar=el('div',{position:'absolute',right:'96px',top:'150px',width:'880px',height:'36px',background:'#0b0d11',borderBottom:'1px solid #1e232c',display:'flex',alignItems:'center',gap:'8px',paddingLeft:'14px',boxSizing:'border-box'}); bar.innerHTML='<i style="width:10px;height:10px;background:#35d07f;display:inline-block"></i><i style="width:10px;height:10px;background:#2d3440;display:inline-block"></i><i style="width:10px;height:10px;background:#2d3440;display:inline-block"></i>';
+  const img=document.createElement('img'); Object.assign(img.style,{maxWidth:'94%',maxHeight:'700px',marginTop:'36px',objectFit:'contain'}); img.src=IMGROOT+s.img; panel.appendChild(img);
+  document.getElementById('mk').innerHTML=window.markSvg(26,G);
+  return (t)=>{
+    hd.style.opacity=seg(t,0,0.4);
+    const np=eO(seg(t,0.15,0.8)); num.style.opacity=np; num.style.transform=`scale(${lerp(.6,1,np)})`;
+    const hp=eC(seg(t,0.4,1.0)); h.style.opacity=hp; h.style.transform=`translateY(${px((1-hp)*26)})`;
+    d.style.opacity=eC(seg(t,0.7,1.4));
+    const ip=eC(seg(t,0.5,1.3)); panel.style.opacity=ip; bar.style.opacity=ip; const dx=(1-ip)*70; panel.style.transform=`translateX(${px(dx)})`; bar.style.transform=`translateX(${px(dx)})`;
+    C.style.opacity=1-seg(t,4.15,4.6);
+  };
+}}
+for(let i=0;i<6;i++) scenes['s'+(i+1)]=stepScene(i);
+scenes.end=()=>{
+  const wrap=el('div',{position:'absolute',left:'50%',top:'44%',transform:'translate(-50%,-50%)',display:'flex',alignItems:'center',gap:'24px'});
+  const mk=document.createElement('span'); mk.style.lineHeight='0'; mk.innerHTML=window.markSvg(92,G); wrap.appendChild(mk);
+  const wd=document.createElement('span'); Object.assign(wd.style,{fontFamily:'Silkscreen,monospace',fontSize:'110px',letterSpacing:'4px'}); wd.textContent='berth'; wrap.appendChild(wd);
+  const sub=el('div',{position:'absolute',left:'50%',top:'57%',transform:'translate(-50%,-50%)',fontSize:'34px',color:'#c7cfdb'},'start with one sentence.');
+  const url=el('div',{position:'absolute',left:'50%',top:'66%',transform:'translate(-50%,-50%)',fontFamily:'Silkscreen,monospace',fontSize:'40px',letterSpacing:'3px'},'berth.fun');
+  const ul=el('div',{position:'absolute',left:'50%',top:'71%',transform:'translateX(-50%)',height:'3px',background:G,width:'0'});
+  const foot=el('div',{position:'absolute',left:'50%',top:'80%',transform:'translate(-50%,-50%)',fontSize:'22px',color:'#7c8798'},'fees fund the build. <span style="color:'+G+'">revenue funds the burn.</span>');
+  return (t)=>{ const p=eO(seg(t,0,1.1)); wrap.style.opacity=p; wrap.style.transform=`translate(-50%, calc(-50% + ${px((1-p)*22)})) scale(${lerp(.94,1,p)})`; sub.style.opacity=seg(t,0.9,1.7); url.style.opacity=eO(seg(t,1.6,2.4)); ul.style.width=px(lerp(0,360,eC(seg(t,2.0,3.0)))); foot.style.opacity=seg(t,2.2,3.0); C.style.opacity=Math.min(1,1-seg(t,3.9,4.2)); };
+};
+const p=new URLSearchParams(location.search);
+const name=p.get('scene')||'title'; const render=scenes[name](); window.__seek=t=>render(t);
+const tt=parseFloat(p.get('t')||'0'); window.__seek(isNaN(tt)?0:tt); window.__ready=true;
+</script>
+</body></html>

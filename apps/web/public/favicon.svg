@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Pyre">
+  <defs>
+    <linearGradient id="fav-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1C1C22"/>
+      <stop offset="0.30" stop-color="#141418"/>
+      <stop offset="0.50" stop-color="#1C1B2E"/>
+      <stop offset="0.66" stop-color="#3B2F7A"/>
+      <stop offset="0.80" stop-color="#7A66F5"/>
+      <stop offset="0.90" stop-color="#3E8BFF"/>
+      <stop offset="0.96" stop-color="#9CD2FF"/>
+      <stop offset="1" stop-color="#E9F1FF"/>
+    </linearGradient>
+    <radialGradient id="fav-core" cx="0.5" cy="1.0" r="1.0" gradientTransform="translate(0.5,1.0) scale(1,0.30) translate(-0.5,-1.0)">
+      <stop offset="0" stop-color="#E9F1FF" stop-opacity="1"/>
+      <stop offset="0.12" stop-color="#9CD2FF" stop-opacity="0.8"/>
+      <stop offset="0.30" stop-color="#3E8BFF" stop-opacity="0.4"/>
+      <stop offset="0.55" stop-color="#7A66F5" stop-opacity="0.14"/>
+      <stop offset="0.8" stop-color="#7A66F5" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#7A66F5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fav-lip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9F1FF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="fav-edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.02"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="fav-sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="0.38" stop-color="#FFFFFF" stop-opacity="0.012"/>
+      <stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="fav-clip"><rect width="512" height="512" rx="113"/></clipPath>
+  </defs>
+  <g clip-path="url(#fav-clip)">
+    <rect width="512" height="512" fill="url(#fav-body)"/>
+    <rect width="512" height="512" fill="url(#fav-sheen)"/>
+    <rect width="512" height="512" fill="url(#fav-core)"/>
+    <rect y="497.664" width="512" height="14.336" fill="url(#fav-lip)"/>
+    <path d="M0 307.2 Q256 235.52 512 307.2" fill="none" stroke="#E9F1FF" stroke-opacity="0.13" stroke-width="2"/>
+  </g>
+  <rect x="1.5" y="1.5" width="509" height="509" rx="111.5" fill="none" stroke="url(#fav-edge)" stroke-width="3"/>
+</svg>

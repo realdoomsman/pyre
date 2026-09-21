@@ -1,0 +1,864 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ─────────────────────────── Identity ─────────────────────────── */
+
+model User {
+  id            String   @id @default(cuid())
+  googleSub     String?  @unique // Google account subject (google-login users)
+  authWallet    String?  @unique // external EVM address (0x, checksummed) proved at login via EIP-191 personal_sign
+  walletIndex   Int      @unique @default(autoincrement()) // custodial HD index: m/44'/60'/0'/0/{walletIndex} (index 0 = treasury, sequence starts at 1)
+  wallet        String?  @unique // custodial EVM address (0x, checksummed) derived from walletIndex (server-signs)
+  xHandle       String?
+  xUserId       String?
+  displayName   String?
+  avatarUrl     String?
+  reputation    Int      @default(0) // builds completed + revenue-derived score
+  isAdmin       Boolean  @default(false)
+  bannedAt      DateTime?
+  tokenVersion  Int      @default(0) // bump to revoke all of a user's outstanding session JWTs
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  launches      App[]            @relation("Launcher")
+  queueItems    PromptQueueItem[]
+  votes         Vote[]
+  bounties      Bounty[]         @relation("BountyAuthor")
+  claims        Bounty[]         @relation("BountyClaimant")
+  purchases     Purchase[]
+  contributions Contributor[]
+  appSessions   AppUserSession[]
+  maintainerOf  App[]            @relation("Maintainer")
+  maintainerVotes MaintainerVote[]
+  proposals     Proposal[]       @relation("ProposalAuthor")
+  proposalVotes ProposalVote[]
+  proposalComments ProposalComment[]
+  notifications    Notification[]
+}
+
+/* ─────────────────────────── Platform governance ($PYRE) ─────────────────────────── */
+
+enum ProposalStatus {
+  OPEN
+  PLANNED
+  BUILDING
+  SHIPPED
+  DECLINED
+}
+
+/** A $PYRE holder's proposal to improve Pyre itself. Advisory: the owner builds what is chosen. */
+model Proposal {
+  id        String         @id @default(cuid())
+  authorId  String
+  author    User           @relation("ProposalAuthor", fields: [authorId], references: [id])
+  title     String
+  body      String
+  status    ProposalStatus @default(OPEN)
+  ownerNote String? // owner's note when the status changes
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  votes     ProposalVote[]
+  comments  ProposalComment[]
+
+  @@index([status, createdAt])
+}
+
+/** One holder's capped $PYRE-weighted vote on a proposal. */
+model ProposalVote {
+  id         String   @id @default(cuid())
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  weight     Decimal @db.Decimal(78, 0) // capped $PYRE balance (base units) at vote time
+  createdAt  DateTime @default(now())
+
+  @@unique([proposalId, userId])
+  @@index([userId])
+}
+
+/** Threaded discussion on a governance proposal. Any authenticated user may comment. */
+model ProposalComment {
+  id         String   @id @default(cuid())
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([proposalId, createdAt])
+}
+
+/** In-app notification: build finished, fees claimable, proposal status changed, etc. */
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // BUILD_DONE | FEES_CLAIMABLE | PROPOSAL_STATUS | REWARDS_CLAIMABLE
+  title     String
+  body      String?
+  href      String? // deep link into the app
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+/** Durable per-user, per-UTC-day withdrawal total (USD micros). Backs the atomic daily withdraw cap. */
+model DailyWithdraw {
+  userId     String
+  day        String // UTC date "YYYY-MM-DD"
+  usedMicros BigInt   @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@id([userId, day])
+}
+
+/* ─────────────────────────── Apps / coins ─────────────────────────── */
+
+enum AppStatus {
+  DRAFT            // prompt submitted, spec generating
+  SPEC_READY       // spec awaiting launcher approval
+  AWAITING_STAKE   // spec approved, waiting for stake tx
+  LAUNCHING        // creating token on PONS v2
+  LAUNCH_GATED     // PONS canLaunch() = false for the app wallet; stake stays in the app wallet, retryable
+  LIVE             // coin live, build loop active when budget exists
+  DORMANT          // budget zero — behind "buy to revive"
+  KILLED           // moderation kill switch
+  FAILED           // launch failed (stake refunded)
+}
+
+enum Template {
+  WEB_TOOL
+  GAME
+  AGENT_API
+}
+
+model App {
+  id             String     @id @default(cuid())
+  slug           String     @unique
+  name           String
+  ticker         String
+  imageUrl       String
+  prompt         String
+  spec           Json?
+  specApprovedAt DateTime?
+  template       Template   @default(WEB_TOOL)
+  status         AppStatus  @default(DRAFT)
+  killedReason   String?
+
+  launcherId     String
+  launcher       User       @relation("Launcher", fields: [launcherId], references: [id])
+  maintainerId   String?
+  maintainer     User?      @relation("Maintainer", fields: [maintainerId], references: [id])
+
+  // on-chain (addresses are 0x checksummed; tx fields are 0x 32-byte hashes)
+  tokenAddress   String?    @unique // PONS v2 launch token (ERC-20, 18 decimals)
+  walletAddress  String?    @unique // per-app derived EVM wallet: PONS creator + creatorFeeRecipient
+  keypairIndex   Int        @unique @default(autoincrement()) // HD index of walletAddress: m/44'/60'/1'/0/{keypairIndex} (separate branch from users)
+  launchPhase    Int        @default(0) // PONS LaunchedToken.phase: 0 curve, 1 swept, 2 v4 pool, 3 rescued (LAUNCH_PHASE)
+  curveAddress   String?    // per-launch bonding curve (phase 0 trading + fee accrual)
+  poolId         String?    // Uniswap v4 poolId (bytes32) once graduated
+  launchedAt     DateTime?  // set by the launch worker when launchTx is mined
+  graduatedAt    DateTime?
+  progress       Float      @default(0) // curve raise ÷ graduation threshold, 0..1 (1 once graduated); refreshed by the price worker
+  unsweptWei     Decimal @db.Decimal(78, 0)     @default(0) // creator fees still accruing on the curve/hook (not yet swept)
+  escrowWei      Decimal @db.Decimal(78, 0)     @default(0) // claimable FeeEscrow balance snapshot
+  launchBlock    BigInt?    // block of launchTx (trade indexer start)
+  lastIndexedBlock BigInt?  // trade indexer cursor
+  launchTx       String?
+  twitterUrl     String?
+  websiteUrl     String?
+
+  // stake (wei)
+  stakeWei       Decimal @db.Decimal(78, 0)     @default(0)
+  stakeTx        String?
+  stakeRefundTx  String?
+  stakeRefundedAt DateTime?
+
+  // fork
+  forkOfId       String?
+  forkOf         App?       @relation("Forks", fields: [forkOfId], references: [id])
+  forks          App[]      @relation("Forks")
+
+  // budgets (USD, 1e6 = $1 for exactness; ETH in wei)
+  budgetMicros   BigInt     @default(0) // accrued, unspent build budget
+  spentMicros    BigInt     @default(0) // lifetime agent spend
+  feesWei        Decimal @db.Decimal(78, 0)     @default(0) // lifetime creator fees claimed from the PONS escrow
+  revenueMicros  BigInt     @default(0) // lifetime revenue
+  buybackWei     Decimal @db.Decimal(78, 0)     @default(0) // lifetime ETH spent on buybacks
+  burnedTokens   Decimal @db.Decimal(78, 0)     @default(0) // base units (18 decimals), from totalSupply() deltas
+  pendingRevenueMicros BigInt @default(0) // revenue not yet routed to buyback
+
+  // metrics
+  usersCount     Int        @default(0)
+  uptimeBps      Int        @default(10000)
+  healthy        Boolean    @default(true)
+  consecutiveFails Int      @default(0)
+  lastHealthAt   DateTime?
+  priceUsd       Float      @default(0)
+  marketCapUsd   Float      @default(0)
+  holdersCount   Int        @default(0)
+  lastPriceAt    DateTime?
+  change24hPct   Float      @default(0)
+  volume24hUsd   Float      @default(0)
+
+  // deploy
+  liveVersion    Int        @default(0)
+  repoUrl        String?
+  repoFullName   String?    // owner/name
+  firstBuildAt   DateTime?
+  mvpLiveAt      DateTime?
+  firstRevenueAt DateTime?
+  milestones     Json       @default("[]")
+  growthEnabled  Boolean    @default(false)
+  xAccount       String?
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  jobs           BuildJob[]
+  events         BuildEvent[]
+  deployments    Deployment[]
+  feeEvents      FeeEvent[]
+  revenueEvents  RevenueEvent[]
+  buybacks       Buyback[]
+  queueItems     PromptQueueItem[]
+  bounties       Bounty[]
+  pullRequests   PullRequest[]
+  contributors   Contributor[]
+  purchases      Purchase[]
+  holderSnapshots HolderBalance[]
+  trades         Trade[]
+  candles        Candle[]
+  kv             AppKv[]
+  sessions       AppUserSession[]
+  abuseFlags     AbuseFlag[]
+  maintainerVotes MaintainerVote[]
+  adImpressions  AdImpression[]
+  creditFundings CreditFunding[]
+
+  @@index([status])
+  @@index([revenueMicros])
+  @@index([createdAt])
+}
+
+/* ─────────────────────────── Build engine ─────────────────────────── */
+
+enum JobStage {
+  SCAFFOLD
+  MVP
+  DEPLOY
+  VERIFY
+  ITERATE
+  SELF_HEAL
+  PR_REVIEW
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model BuildJob {
+  id           String    @id @default(cuid())
+  appId        String
+  app          App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  stage        JobStage
+  status       JobStatus @default(QUEUED)
+  budgetMicros BigInt
+  costMicros   BigInt    @default(0)
+  model        String?
+  sandboxId    String?
+  instruction  String?
+  taskIds      String[]  @default([])
+  prNumber     Int?
+  reviewVerdict String?
+  summary      String?
+  error        String?
+  commitSha    String?
+  deploymentId String?   @unique
+  deployment   Deployment? @relation(fields: [deploymentId], references: [id])
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  events       BuildEvent[]
+
+  @@index([appId, createdAt])
+  @@index([status])
+  // Stuck-job reaper scans RUNNING jobs by age.
+  @@index([status, startedAt])
+  @@index([appId, status])
+}
+
+model BuildEvent {
+  id        String   @id @default(cuid())
+  appId     String
+  app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  jobId     String?
+  job       BuildJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([appId, createdAt])
+}
+
+model Deployment {
+  id        String   @id @default(cuid())
+  appId     String
+  app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  version   Int
+  manifest  Json
+  /** gzip tarball of the static dist + functions. */
+  bundle    Bytes
+  bundleSha String
+  sizeBytes Int
+  commitSha String?
+  createdAt DateTime @default(now())
+
+  job       BuildJob?
+  files     DeployFile[]
+
+  @@unique([appId, version])
+}
+
+/** Extracted files for fast serving (path → bytes). */
+model DeployFile {
+  id           String     @id @default(cuid())
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  path         String
+  contentType  String
+  body         Bytes
+  size         Int
+
+  @@unique([deploymentId, path])
+}
+
+/* ─────────────────────────── Money ─────────────────────────── */
+
+enum FeeSource {
+  CREATOR_FEE   // PONS v2 creator fee, claimed from the fee escrow (curve + v4 hook sweeps)
+  FORK_ROYALTY
+  REVIVE_BUY    // direct budget top-up via revive buy
+  MANUAL        // ops credit
+}
+
+model FeeEvent {
+  id            String    @id @default(cuid())
+  appId         String
+  app           App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  source        FeeSource
+  wei           Decimal @db.Decimal(78, 0)    // ETH claimed
+  ethPriceUsd   Float
+  usdMicros     BigInt
+  buildMicros   BigInt
+  pyreMicros    BigInt
+  launcherMicros BigInt
+  upstreamMicros BigInt   @default(0) // fork royalty routed upstream
+  creditsMicros BigInt   @default(0) // build-cut slice routed to the model-credit funding wallet
+  txHash        String?   @unique // escrow.claim() tx
+  createdAt     DateTime  @default(now())
+
+  @@index([appId, createdAt])
+}
+
+enum RevenueSource {
+  CHECKOUT
+  SUBSCRIPTION
+  X402
+  AD
+  EXTERNAL_SDK
+}
+
+model RevenueEvent {
+  id          String        @id @default(cuid())
+  appId       String
+  app         App           @relation(fields: [appId], references: [id], onDelete: Cascade)
+  source      RevenueSource
+  usdMicros   BigInt
+  payer       String?       // 0x wallet or user id
+  reference   String?       // tx hash / function name / ad id
+  purchaseId  String?       @unique
+  buybackId   String?
+  buyback     Buyback?      @relation(fields: [buybackId], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+
+  @@index([appId, createdAt])
+  @@index([buybackId])
+}
+
+enum BuybackStatus {
+  PENDING
+  SWAPPING // swap CAS won; ETH->token buy in flight (prevents a retry double-swap)
+  SWAPPED
+  BURNED
+  FAILED
+}
+
+model Buyback {
+  id            String        @id @default(cuid())
+  appId         String
+  app           App           @relation(fields: [appId], references: [id], onDelete: Cascade)
+  status        BuybackStatus @default(PENDING)
+  revenueMicros BigInt        // revenue attested for this buyback
+  ethWei        Decimal @db.Decimal(78, 0)        // ETH spent on the buy
+  tokensBought  Decimal @db.Decimal(78, 0)        @default(0) // base units (18 decimals)
+  tokensBurned  Decimal @db.Decimal(78, 0)        @default(0) // base units burned via token.burn()
+  burnedUnits   Decimal? @db.Decimal(78, 0)       // totalSupply() delta observed after the burn (on-chain proof)
+  pyreMicros    BigInt        // routed to $PYRE
+  opsMicros     BigInt        // routed to ops
+  attestHash    String        // sha256 of revenue event ids, carried in attestTx calldata (0x5059524501 || hash)
+  swapTx        String?       // curve.buy() pre-grad or Universal Router v4 swap post-grad
+  burnTx        String?
+  attestTx      String?       // zero-value treasury self-tx whose calldata is the attestation
+  error         String?
+  createdAt     DateTime      @default(now())
+  completedAt   DateTime?
+
+  revenueEvents RevenueEvent[]
+
+  @@index([appId, createdAt])
+}
+
+enum CreditFundingStatus {
+  PENDING  // credits accrued, transfer not yet attempted
+  SWAPPED  // ETH swapped to USDG in the treasury
+  SENT     // USDG delivered to the credit-funding wallet
+  FAILED
+}
+
+/**
+ * One ETH→USDG→card deposit that drains a single coin's accrued model-credit funds
+ * (FeeEvent.creditsMicros for that app) into the credit-funding card that pays Anthropic. Scoped to
+ * one `appId` so every deposit is attributable to the coin whose fees paid for it — a coin can only
+ * ever fund, and therefore spend, its own credits. `usdMicros` is the credit obligation cleared;
+ * `usdgUnits` is what actually landed after swap slippage.
+ */
+model CreditFunding {
+  id          String              @id @default(cuid())
+  appId       String
+  app         App                 @relation(fields: [appId], references: [id], onDelete: Cascade)
+  usdMicros   BigInt              // credit obligation cleared by this deposit
+  ethWei      Decimal @db.Decimal(78, 0)              @default(0) // ETH swapped
+  usdgUnits   BigInt              @default(0) // USDG (6 decimals) delivered to the card
+  wallet      String              // destination deposit address (0x, rotates per deposit)
+  status      CreditFundingStatus @default(PENDING)
+  swapTx      String?
+  transferTx  String?
+  error       String?
+  createdAt   DateTime            @default(now())
+  completedAt DateTime?
+
+  @@index([appId, status])
+  @@index([status, createdAt])
+}
+
+model Purchase {
+  id          String   @id @default(cuid())
+  appId       String
+  app         App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  productId   String
+  kind        String   // ONE_TIME | SUBSCRIPTION_MONTHLY
+  usdMicros   BigInt
+  payerWallet String   // 0x
+  txHash      String?  @unique
+  status      String   @default("PENDING") // PENDING | PAID | EXPIRED | FAILED
+  expiresAt   DateTime? // subscription period end
+  createdAt   DateTime @default(now())
+  paidAt      DateTime?
+
+  @@index([appId, userId])
+  @@index([status])
+}
+
+/* ─────────────────────────── Governance ─────────────────────────── */
+
+enum QueueStatus {
+  OPEN
+  SCHEDULED
+  DONE
+  REJECTED
+}
+
+model PromptQueueItem {
+  id         String      @id @default(cuid())
+  appId      String
+  app        App         @relation(fields: [appId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User        @relation(fields: [authorId], references: [id])
+  text       String
+  status     QueueStatus @default(OPEN)
+  weight     Decimal @db.Decimal(78, 0)      @default(0) // cached sum of capped vote weights
+  jobId      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  votes      Vote[]
+
+  @@index([appId, status, weight])
+}
+
+model Vote {
+  id       String          @id @default(cuid())
+  itemId   String
+  item     PromptQueueItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User            @relation(fields: [userId], references: [id])
+  weight   Decimal @db.Decimal(78, 0)          // capped token weight at vote time
+  createdAt DateTime       @default(now())
+
+  @@unique([itemId, userId])
+}
+
+enum BountyStatus {
+  OPEN
+  CLAIMED
+  PAYING // payout CAS won; transfer in flight (prevents a retry/concurrent double-pay)
+  PAID
+  CANCELLED
+}
+
+model Bounty {
+  id          String       @id @default(cuid())
+  appId       String
+  app         App          @relation(fields: [appId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User         @relation("BountyAuthor", fields: [authorId], references: [id])
+  title       String
+  description String
+  wei         Decimal @db.Decimal(78, 0)       // ETH escrowed in the treasury for this bounty
+  escrowTx    String       @unique
+  status      BountyStatus @default(OPEN)
+  claimantId  String?
+  claimant    User?        @relation("BountyClaimant", fields: [claimantId], references: [id])
+  claimantWallet String?
+  prNumber    Int?
+  payoutTx    String?
+  createdAt   DateTime     @default(now())
+  claimedAt   DateTime?
+
+  @@index([appId, status])
+}
+
+enum PrStatus {
+  OPEN
+  REVIEWING
+  APPROVED
+  REJECTED
+  MERGED
+}
+
+model PullRequest {
+  id           String   @id @default(cuid())
+  appId        String
+  app          App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  number       Int
+  authorLogin  String
+  authorWallet String?
+  title        String
+  url          String
+  status       PrStatus @default(OPEN)
+  reviewSummary String?
+  mergeSha     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([appId, number])
+}
+
+model Contributor {
+  id         String   @id @default(cuid())
+  appId      String
+  app        App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  mergedPrs  Int      @default(0)
+  earnedMicros BigInt @default(0)
+  createdAt  DateTime @default(now())
+
+  @@unique([appId, userId])
+}
+
+model MaintainerVote {
+  id         String   @id @default(cuid())
+  appId      String
+  app        App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  candidateWallet String
+  weight     Decimal @db.Decimal(78, 0)
+  createdAt  DateTime @default(now())
+
+  @@unique([appId, userId])
+}
+
+/* ─────────────────────────── Holders ─────────────────────────── */
+
+model HolderBalance {
+  id        String   @id @default(cuid())
+  appId     String
+  app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  wallet    String
+  amount    Decimal @db.Decimal(78, 0)   // base units
+  updatedAt DateTime @updatedAt
+
+  @@unique([appId, wallet])
+  @@index([appId, amount])
+}
+
+/** One curve/pool fill, indexed from CurveBuy/CurveSell logs (phase 0) or v4 Swap logs (phase 2). */
+model Trade {
+  id         String   @id @default(cuid())
+  appId      String
+  app        App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  txHash     String
+  block      BigInt
+  ts         DateTime
+  side       String   // BUY | SELL
+  venue      String   @default("CURVE") // CURVE | POOL
+  wallet     String   // 0x
+  tokenUnits Decimal @db.Decimal(78, 0)   // base units (18 decimals)
+  quoteWei   Decimal @db.Decimal(78, 0)   // ETH leg
+  priceUsd   Float
+  createdAt  DateTime @default(now())
+
+  @@unique([appId, txHash, side, wallet, tokenUnits, quoteWei])
+  @@index([appId, ts])
+  @@index([appId, block])
+}
+
+/** OHLCV bucket (USD per token; `v` = USD volume). The runner stores every interval so reads are plain. */
+model Candle {
+  id       String @id @default(cuid())
+  appId    String
+  app      App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  interval String // 1m | 5m | 15m | 1h | 4h | 1d
+  t        Int    // bucket start, unix seconds
+  o        Float
+  h        Float
+  l        Float
+  c        Float
+  v        Float
+
+  @@unique([appId, interval, t])
+  @@index([appId, interval, t])
+}
+
+/* ─────────────────────────── App runtime ─────────────────────────── */
+
+model AppKv {
+  id        String   @id @default(cuid())
+  appId     String
+  app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  scope     String   // "app" | "user:<userId>"
+  key       String
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@unique([appId, scope, key])
+}
+
+model AppUserSession {
+  id        String   @id @default(cuid())
+  appId     String
+  app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  @@unique([appId, userId])
+}
+
+model AdImpression {
+  id         String   @id @default(cuid())
+  appId      String   // app showing the ad
+  app        App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  advertiserAppId String
+  usdMicros  BigInt
+  createdAt  DateTime @default(now())
+
+  @@index([appId, createdAt])
+}
+
+/* ─────────────────────────── Platform ─────────────────────────── */
+
+model AbuseFlag {
+  id        String   @id @default(cuid())
+  appId     String
+  app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  source    String   // CLASSIFIER | REVIEWER | REPORT | DMCA
+  category  String
+  reason    String
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([appId, resolved])
+}
+
+/* ─────────────────────────── $PYRE ─────────────────────────── */
+
+/** $PYRE staked to boost an app: compute priority + slice of that app's launcher-equivalent fee stream. */
+model PyreStake {
+  id        String   @id @default(cuid())
+  wallet    String   // 0x
+  appId     String
+  amount    Decimal @db.Decimal(78, 0)   // $PYRE base units (18 decimals) held in the stake vault
+  depositTx String   @unique
+  withdrawTx String?
+  earnedMicros BigInt @default(0)
+  createdAt DateTime @default(now())
+  withdrawnAt DateTime?
+
+  @@index([appId, withdrawnAt])
+  @@index([wallet])
+}
+
+/* ─────────────────────────── Ads ─────────────────────────── */
+
+enum AdStatus {
+  ACTIVE
+  PAUSED
+  EXHAUSTED
+}
+
+/** Internal ad network: Pyre apps advertise in other Pyre apps' ad slots, paid from the advertiser's budget. */
+model AdCampaign {
+  id              String   @id @default(cuid())
+  advertiserAppId String
+  headline        String
+  body            String
+  imageUrl        String?
+  targetUrl       String
+  cpmMicros       BigInt   // USD micros per 1000 impressions
+  budgetMicros    BigInt
+  spentMicros     BigInt   @default(0)
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  status          AdStatus @default(ACTIVE)
+  createdAt       DateTime @default(now())
+
+  @@index([status])
+}
+
+/* ─────────────────────────── Reports / takedowns ─────────────────────────── */
+
+model Report {
+  id        String   @id @default(cuid())
+  appId     String
+  reporter  String   // email or wallet
+  kind      String   // ABUSE | DMCA | IMPERSONATION | OTHER
+  details   String
+  status    String   @default("OPEN") // OPEN | ACTIONED | DISMISSED
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([status])
+}
+
+/** Platform-wide treasury ledger (USD micros). Every money movement writes one row. */
+model LedgerEntry {
+  id        String   @id @default(cuid())
+  account   String   // TREASURY | PYRE_TOKEN | OPS | CREDITS | LAUNCHER:<userId> | BUILD:<appId> | CONTRIB:<appId> | STAKERS:<appId>
+  deltaMicros BigInt
+  refType   String   // FeeEvent | RevenueEvent | Buyback | BuildJob | Payout | CreditFunding
+  refId     String
+  memo      String?
+  createdAt DateTime @default(now())
+
+  @@index([account, createdAt])
+}
+
+model DailyComputeSpend {
+  day       String   @id // YYYY-MM-DD
+  micros    BigInt   @default(0)
+}
+
+model PlatformSetting {
+  key   String @id
+  value Json
+}
+
+/** Job-scoped tokens the sandbox uses to reach the Anthropic proxy. Real key never enters a sandbox. */
+model JobToken {
+  token     String   @id
+  jobId     String   @unique
+  appId     String
+  budgetMicros BigInt
+  spentMicros  BigInt @default(0)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+}
+
+/* ─────────────────────────── Operations ─────────────────────────── */
+
+/** Every privileged or money-moving action, append-only. Answers "who killed this app". */
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String? // User.id, or null for system/worker actions
+  actor      String // "admin:<userId>" | "worker:<queue>" | "system"
+  action     String // KILL_APP | UNKILL_APP | RESOLVE_FLAG | CANCEL_JOB | SET_SETTING | REAP_JOB | RECONCILE | PAYOUT
+  targetType String // App | BuildJob | AbuseFlag | Report | PlatformSetting | Bounty
+  targetId   String
+  meta       Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+}
+
+/** Provider-webhook idempotency: a redelivered event must not double-apply. */
+model WebhookEvent {
+  id         String   @id // "<provider>:<provider event id or payload hash>"
+  provider   String // github
+  receivedAt DateTime @default(now())
+
+  @@index([provider, receivedAt])
+}
+
+/**
+ * Cross-checks the database against on-chain and provider truth. One row per run
+ * so drift is visible over time instead of discovered during an incident.
+ */
+model ReconcileRun {
+  id          String   @id @default(cuid())
+  kind        String // LEDGER | FEES | BUYBACKS | BURNS | SANDBOXES | JOBS
+  ok          Boolean
+  checked     Int      @default(0)
+  drifted     Int      @default(0)
+  repaired    Int      @default(0)
+  findings    Json     @default("[]")
+  durationMs  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([kind, createdAt])
+}
+
+/** Self-hosted image blob (coin art). Stored in Postgres and served by the API at /v1/uploads/:id, so
+ * a launcher can upload a file with zero external dependency (no IPFS/CDN key to configure). */
+model Upload {
+  id        String   @id @default(cuid())
+  mime      String
+  data      Bytes
+  size      Int
+  createdAt DateTime @default(now())
+}

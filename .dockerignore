@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.secrets
+.tmp
+.env
+.env.*
+!.env.example

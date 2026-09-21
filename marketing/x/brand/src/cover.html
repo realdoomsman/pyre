@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+html,body{margin:0;padding:0;}
+#s{width:1500px;height:600px;background:#08090b;position:relative;overflow:hidden;color:#f3f5f7;font-family:Inter,sans-serif;}
+#grid{position:absolute;inset:0;background-image:linear-gradient(#0f141a 1px,transparent 1px),linear-gradient(90deg,#0f141a 1px,transparent 1px);background-size:36px 36px;opacity:.55;-webkit-mask-image:radial-gradient(130% 100% at 15% 30%,#000 45%,transparent 82%);mask-image:radial-gradient(130% 100% at 15% 30%,#000 45%,transparent 82%);}
+#dither{position:absolute;right:0;top:0;width:560px;height:600px;background:repeating-linear-gradient(45deg,rgba(53,208,127,.10) 0 3px,transparent 3px 9px);-webkit-mask-image:linear-gradient(90deg,transparent,#000 85%);mask-image:linear-gradient(90deg,transparent,#000 85%);}
+#wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 110px;box-sizing:border-box;gap:20px;}
+#row{display:flex;align-items:center;gap:26px;}
+#mark{line-height:0;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.6));}
+#word{font-family:Silkscreen,monospace;font-size:120px;letter-spacing:3px;line-height:.8;}
+#tag{font-family:Silkscreen,monospace;font-size:24px;letter-spacing:6px;color:#9ba5b4;text-transform:uppercase;}
+#rule{width:760px;height:1px;background:#1e232c;margin-top:8px;}
+#loop{font-family:'JetBrains Mono',monospace;font-size:27px;line-height:1.7;color:#9ba5b4;margin-top:2px;}
+#loop b{color:#f3f5f7;font-weight:500;} #loop .g{color:#35d07f;} #loop .r{color:#f2564d;}
+#url{position:absolute;right:110px;bottom:48px;font-family:Silkscreen,monospace;font-size:30px;letter-spacing:2px;}
+#ar{color:#7c8798;}
+</style></head>
+<body>
+<div id="s"><div id="grid"></div><div id="dither"></div>
+<div id="wrap">
+<div id="row"><span id="mark"></span><span id="word">berth</span></div>
+<div id="tag">coins that build apps</div>
+<div id="rule"></div>
+<div id="loop">
+<div>one sentence <span id="ar">→</span> <b>a coin launches on pump.fun</b></div>
+<div><span class="g">fees</span> fund an AI agent that builds the app</div>
+<div>the app's <span class="g">revenue</span> buys back &amp; <span class="r">burns</span> the coin</div>
+</div>
+</div>
+<div id="url">berth.fun</div>
+</div>
+<script src="./mark.js"></script>
+<script>document.getElementById('mark').innerHTML=window.markSvg(120,'#35d07f');</script>
+</body></html>

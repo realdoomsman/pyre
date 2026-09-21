@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+  :root{ --bg:#08090b; --fg:#f3f5f7; --fg2:#9ba5b4; --fg3:#7c8798; --line:#1e232c; --line2:#2d3440; --g:#35d07f; --r:#f2564d; --info:#6ea8fe; }
+  html,body{margin:0;padding:0;}
+  #card{ width:1600px; height:900px; background:var(--bg); color:var(--fg); position:relative; overflow:hidden;
+    font-family:Inter,sans-serif; box-sizing:border-box; padding:78px 96px; }
+  #grid{ position:absolute; inset:0; background-image:linear-gradient(#0f141a 1px,transparent 1px),linear-gradient(90deg,#0f141a 1px,transparent 1px); background-size:40px 40px; opacity:.55;
+    -webkit-mask-image:radial-gradient(120% 90% at 12% 0%, #000 45%, transparent 85%); mask-image:radial-gradient(120% 90% at 12% 0%, #000 45%, transparent 85%); }
+  #dither{ position:absolute; right:0; top:0; width:520px; height:900px; background:repeating-linear-gradient(45deg, rgba(53,208,127,.07) 0 3px, transparent 3px 9px);
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 85%); mask-image:linear-gradient(90deg,transparent,#000 85%); }
+  #hd{ position:relative; display:flex; align-items:center; justify-content:space-between; z-index:2;}
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand .m{ line-height:0; }
+  .brand .w{ font-family:Silkscreen,monospace; font-size:30px; letter-spacing:1px; }
+  .kick{ font-family:Silkscreen,monospace; font-size:15px; letter-spacing:3px; text-transform:uppercase; color:var(--fg3); }
+  #body{ position:relative; z-index:2; margin-top:54px; }
+  h1{ font-weight:700; font-size:62px; line-height:1.04; letter-spacing:-.5px; margin:0; max-width:1250px; }
+  h1 .g{ color:var(--g); } h1 .r{ color:var(--r); }
+  ul{ list-style:none; margin:46px 0 0; padding:0; display:flex; flex-direction:column; gap:22px; max-width:1220px; }
+  li{ display:flex; align-items:flex-start; gap:20px; font-size:31px; line-height:1.28; color:#c7cfdb; }
+  li .b{ width:14px; height:14px; margin-top:12px; flex:0 0 auto; background:var(--g); box-shadow:2px 2px 0 rgba(0,0,0,.5); }
+  li.r .b{ background:var(--r); } li.i .b{ background:var(--info); } li.n .b{ background:var(--line2); }
+  li b{ color:var(--fg); font-weight:600; }
+  .num{ font-family:'JetBrains Mono',monospace; }
+  .stats{ display:flex; gap:70px; margin-top:52px; flex-wrap:wrap; }
+  .stat .v{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:96px; letter-spacing:-2px; line-height:1; }
+  .stat .v.g{color:var(--g);} .stat .v.r{color:var(--r);}
+  .stat .l{ font-family:Silkscreen,monospace; font-size:14px; letter-spacing:2px; text-transform:uppercase; color:var(--fg3); margin-top:16px; }
+  .lead{ font-size:33px; color:#c7cfdb; margin-top:40px; max-width:1200px; line-height:1.3; }
+  .lead b{color:var(--fg);} .lead .g{color:var(--g);} .lead .r{color:var(--r);}
+  #ft{ position:absolute; left:96px; right:96px; bottom:64px; display:flex; align-items:center; justify-content:space-between; z-index:2; }
+  #ft .tag{ font-size:22px; color:var(--fg3); }
+  #ft .tag .g{color:var(--g);}
+  #ft .url{ font-family:Silkscreen,monospace; font-size:22px; letter-spacing:2px; }
+  hr{ border:0; border-top:1px solid var(--line); margin:0 0 22px; }
+  /* loop diagram */
+  .flow{ margin-top:56px; display:flex; align-items:stretch; gap:0; }
+  .node{ flex:1; border:1px solid var(--line2); background:#0d0f13; box-shadow:4px 4px 0 rgba(0,0,0,.5); padding:26px 24px; min-height:150px; display:flex; flex-direction:column; justify-content:center; }
+  .node .t{ font-family:Silkscreen,monospace; font-size:13px; letter-spacing:2px; color:var(--fg3); text-transform:uppercase; }
+  .node .d{ font-size:26px; margin-top:12px; color:var(--fg); line-height:1.2; }
+  .node .d .g{color:var(--g);} .node .d .r{color:var(--r);}
+  .arrow{ display:flex; align-items:center; justify-content:center; width:56px; color:var(--fg3); font-family:'JetBrains Mono',monospace; font-size:40px; }
+  .split{ margin-top:34px; display:flex; gap:18px; }
+  .chip{ border:1px solid var(--line); padding:16px 22px; font-family:'JetBrains Mono',monospace; font-size:26px; color:#c7cfdb; background:#0d0f13; }
+  .chip b{ color:var(--fg); } .chip .g{color:var(--g);} .chip .r{color:var(--r);}
+</style>
+</head>
+<body>
+  <div id="card">
+    <div id="grid"></div><div id="dither"></div>
+    <div id="hd">
+      <div class="brand"><span class="m" id="mark"></span><span class="w">berth</span></div>
+      <div class="kick" id="kick"></div>
+    </div>
+    <div id="body"></div>
+    <div id="ft">
+      <div class="tag">fees fund the build. <span class="g">revenue funds the burn.</span></div>
+      <div class="url">berth.fun</div>
+    </div>
+  </div>
+  <script src="../../brand/src/mark.js"></script>
+  <script>
+    const g = s => s.replace(/\{g\}/g,'<span class="g">').replace(/\{r\}/g,'<span class="r">').replace(/\{\/\}/g,'</span>');
+    const li = (arr)=>'<ul>'+arr.map(x=>{const [t,tone]=Array.isArray(x)?x:[x,'g'];return `<li class="${tone}"><span class="b"></span><span>${g(t)}</span></li>`;}).join('')+'</ul>';
+    const stats = (arr)=>'<div class="stats">'+arr.map(s=>`<div class="stat"><div class="v ${s.tone||''}">${s.v}</div><div class="l">${s.l}</div></div>`).join('')+'</div>';
+
+    const CARDS = {
+      loop: { kick:'the loop', render:()=>`
+        <h1>one sentence in.<br>a real product out.</h1>
+        <div class="flow">
+          <div class="node"><div class="t">you</div><div class="d">write one sentence</div></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="t">pump.fun</div><div class="d">a coin launches</div></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="t">trading fees</div><div class="d"><span class="g">an AI builds</span> the app</div></div>
+          <div class="arrow">→</div>
+          <div class="node"><div class="t">users pay</div><div class="d">85% <span class="r">burns</span> the coin</div></div>
+        </div>
+        <div class="split">
+          <div class="chip">fees → <b>60%</b> build · <b>25%</b> $BERTH · <b>15%</b> you</div>
+          <div class="chip">revenue → <span class="r">85% buyback + burn</span> · 10% $BERTH · 5% ops</div>
+        </div>` },
+      safety: { kick:'safety by architecture', render:()=>`
+        <h1>an app you prompted<br>can't touch your wallet.</h1>`+li([
+          '{g}the agent never writes{/} auth, wallet or payment code',
+          'payments run only through <b>@berth/app-sdk</b> — platform-hosted',
+          'strict CSP: no raw fetch, no outbound network, no eval',
+          'server code runs in a QuickJS sandbox — <b>64MB, 5s</b>',
+          ['a reviewer agent gates every deploy · all code is <b>MIT</b>','i'],
+        ]) },
+      dormant: { kick:'dormancy', render:()=>`
+        <h1>out of budget<br>is not <span class="r">offline</span>.</h1>`+li([
+          'a coin at $0 budget goes <b>dormant</b>, not dead',
+          '{g}the live app keeps serving traffic and earning{/}',
+          ['only the build loop pauses','n'],
+          'any new trading fee or a top-up revives it',
+        ]) },
+      credits: { kick:'compute funding', render:()=>`
+        <h1>fees pay for the<br>compute, end to end.</h1>`+li([
+          'half of the build cut is a <b>per-coin</b> credits slice',
+          'swept SOL → USDC → the card that pays the model bill',
+          ['a coin that earned $0 gets $0 of compute','n'],
+          "one coin's balance can never be spent by another",
+        ]) },
+      opensource: { kick:'open source', render:()=>`
+        <h1>every app is<br>public and <span class="g">MIT</span>.</h1>`+li([
+          'read exactly what runs — no black box',
+          ['launchers assign no IP, get no equity, no supply','n'],
+          'fork any app; forks pay <b>10%</b> of fees upstream, forever',
+          'merged human PRs share a contributor fee pool',
+        ]) },
+      stake: { kick:'launch stake', render:()=>stats([{v:'0.05',l:'SOL to launch',tone:'g'}])+`
+        <div class="lead">refundable. it's spam control, not a fee.</div>`+li([
+          'returned to you at the <b>first build</b>',
+          'a failed launch refunds immediately',
+          ['it pays the coin-creation transaction','n'],
+        ]) },
+      buildgate: { kick:'the build gate', render:()=>stats([{v:'$50',l:'first build starts here',tone:'g'}])+`
+        <div class="lead">of accrued build budget triggers the first build.</div>`+li([
+          'iterations run from <b>$10</b> of budget',
+          'each job debited at its <b>actual metered cost</b>, not a flat fee',
+          ['no budget, no build — and no wasted spend','n'],
+        ]) },
+      reviewer: { kick:'the reviewer gate', render:()=>`
+        <h1>nothing ships past<br>the reviewer.</h1>`+li([
+          'reads the diff + manifest before <b>every</b> deploy',
+          ['blocks auth/wallet/payment code, raw network, eval','r'],
+          ['blocks spec drift and policy violations','r'],
+          'must pass build + Playwright + Lighthouse first',
+        ]) },
+      perimeter: { kick:'the perimeter', render:()=>`
+        <h1>the perimeter.</h1>`+li([
+          'strict CSP on every hosted app',
+          'no outbound network from generated code',
+          'QuickJS server functions: <b>64MB, 5s</b> deadline',
+          'per-job, <b>budget-capped</b> model tokens; 402 when spent',
+        ]) },
+      revenue: { kick:'real revenue', render:()=>`
+        <h1>real revenue,<br>verified on-chain.</h1>`+li([
+          'USDC hosted checkout',
+          'x402 per-request payments',
+          'an ad slot, or a holder-only tier',
+          'berth is <b>merchant of record</b> · every $ verified by sig + memo',
+        ]) },
+      receipts: { kick:'the receipts', render:()=>`
+        <h1>engineered like<br>infrastructure.</h1>`+stats([
+          {v:'211',l:'tests, no network'},
+          {v:'31/0',l:'security checks'},
+          {v:'0',l:'ledger drift',tone:'g'},
+          {v:'50/53',l:'feature matrix'},
+        ])+`<div class="lead">a real build pipeline runs in production, end to end.</div>` },
+      fork: { kick:'forks', render:()=>`<h1>fork any app.</h1>`+li([
+        'every app is public and <b>MIT</b>',
+        'spin up your own version in one click',
+        'forks pay <b>10%</b> of fees upstream, forever',
+        'improve it, and own the coin for it']) },
+      contrib: { kick:'contributors', render:()=>`<h1>humans can<br>ship too.</h1>`+li([
+        'open a PR on any public app repo',
+        'a reviewer gates it, a maintainer merges',
+        'merged contributors share a <b>fee pool</b>',
+        '<b>5%</b> of the fee stream, split by work']) },
+      spec: { kick:'the spec', render:()=>`<h1>you fund a spec,<br>not a vibe.</h1>`+li([
+        'your one sentence becomes a concrete spec',
+        'what it does, who pays, the MVP, the price',
+        'you approve it before anything launches',
+        ['it is pinned to the coin page for buyers','i']]) },
+      verify: { kick:'verify it', render:()=>`<h1>don't trust us.<br>check the chain.</h1>`+li([
+        'revenue verified by signature and memo',
+        'each burn memo is a <b>sha256</b> of the revenue ids',
+        'pull the swap and burn, hash the ids, they match',
+        'the public ledger reconciles every batch']) },
+      sinks: { kick:'$berth', render:()=>`<h1>$BERTH:<br>two one-way sinks.</h1>`+li([
+        '<b>25%</b> of every app fee flows in',
+        '<b>10%</b> of every app revenue flows in',
+        'buyback + {r}burn{/}, or stake to boost',
+        ['holders are never paid a distribution','n']]) },
+      gate: { kick:'the gate', render:()=>`<h1>nothing ships<br>unproven.</h1>`+li([
+        'npm build + a Playwright smoke test',
+        'screenshots + a Lighthouse audit',
+        ['a reviewer agent reads the diff','i'],
+        'budget debited at actual metered cost']) },
+      agents: { kick:'for agents', render:()=>`<h1>an app for<br>agents, too.</h1>`+li([
+        'x402 per-request payments, built in',
+        'pay-per-call APIs priced in USDC',
+        'verified on-chain before it counts',
+        'revenue burns the coin like any other']) },
+      ranked: { kick:'the board', render:()=>`<h1>a leaderboard<br>for revenue.</h1>`+li([
+        'sort by revenue, buybacks, users',
+        'or by building and dormant',
+        'the top row earned <b>real money</b>',
+        ['not volume, not market cap','n']]) },
+      ledger: { kick:'design', render:()=>`<h1>a ledger,<br>not a dashboard.</h1>`+li([
+        'ink-black page, one green accent \u2014 spent on money',
+        'every number is monospace and tabular',
+        'no glow, no gradients, nothing rounded',
+        ['it reads like a receipt, because it is','i']]) },
+      iterate: { kick:'iteration', render:()=>`<h1>it never<br>stops shipping.</h1>`+li([
+        'holders queue the next task by token-weighted vote',
+        'each build follows the approved roadmap',
+        'iterations run from <b>$10</b> of budget',
+        'the app gets better while the coin trades']) },
+      budget: { kick:'safety', render:()=>`<h1>the agent gets a<br>budget, not the keys.</h1>`+li([
+        'model tokens are metered per job',
+        'capped by the coin\u2019s own budget',
+        ['402 when the budget is spent','r'],
+        'a global daily ceiling caps platform spend']) },
+      volume: { kick:'the point', render:()=>`<h1>volume is a<br>vanity metric here.</h1>`+li([
+        'the board ranks by dollars the product earned',
+        ['a chart with no product ranks nowhere','n'],
+        'revenue is verified on-chain before it counts',
+        'build a product, not a pump']) },
+      honest: { kick:'no fake numbers', render:()=>`<h1>the mechanism,<br>not a mirage.</h1>`+li([
+        'revenue only counts when it is on-chain',
+        'every burn is attested by a <b>sha256</b> memo',
+        ['demo figures are labeled representative','i'],
+        'pre-revenue, and honest about it']) },
+    };
+    const params = new URLSearchParams(location.search);
+    const key = params.get('c') || 'loop';
+    document.getElementById('mark').innerHTML = window.markSvg(30, '#35d07f');
+    const card = CARDS[key];
+    document.getElementById('kick').textContent = card.kick;
+    document.getElementById('body').innerHTML = card.render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+  html, body { margin: 0; padding: 0; }
+  #stage {
+    width: 400px; height: 400px;
+    background: #08090b;
+    position: relative;
+    overflow: hidden;
+    font-family: Silkscreen, monospace;
+  }
+  /* very faint pixel grid, only inside the safe circle, for texture not noise */
+  #grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(#12161c 1px, transparent 1px),
+      linear-gradient(90deg, #12161c 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.5;
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 60%, transparent 72%);
+            mask-image: radial-gradient(circle at 50% 50%, #000 60%, transparent 72%);
+  }
+  #mark {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    line-height: 0;
+    filter: drop-shadow(0 0 22px rgba(53,208,127,0.18));
+  }
+  #word {
+    position: absolute; left: 0; right: 0; bottom: 60px;
+    text-align: center;
+    color: #f3f5f7;
+    font-size: 40px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="grid"></div>
+    <div id="mark"></div>
+  </div>
+  <script src="./mark.js"></script>
+  <script>
+    document.getElementById('mark').innerHTML = window.markSvg(230, '#35d07f');
+  </script>
+</body>
+</html>

@@ -1,0 +1,599 @@
+@import "tailwindcss";
+
+/* `light:` utilities apply inside an Ash Paper subtree. */
+@custom-variant light ([data-theme="light"] &);
+
+/*
+ * Pyre — "Obsidian Temper".
+ *
+ * Heat, not flame. The palette is the oxide scale of tempering steel: straw →
+ * bronze → violet → blue → white-hot. The accent lives at the violet/blue end;
+ * there is no orange and no lime anywhere in the product. Fire is shown by its
+ * consequence — supply shrinking, ledger rows cooling, a ticker that ignites
+ * white-hot and tempers down to the accent — never by a flame glyph.
+ *
+ * Three voices:
+ *   display  Instrument Serif   headlines, the one emphasised word in italic
+ *   sans     Geist              UI and prose, weights capped at 600
+ *   mono     Geist Mono         every number, address, hash, ledger row, label
+ *
+ * Every semantic token below is a plain custom property so a `[data-theme=light]`
+ * ancestor ("Ash Paper") can re-point the same names without touching markup.
+ */
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+}
+
+/* `static`: every token is emitted even before a utility uses it, because
+   charts, canvases and SVG read them at runtime via getComputedStyle. */
+@theme static {
+  /* ── surfaces ── */
+  --color-canvas: #0a0a0c;
+  --color-surface: #121215;
+  --color-raised: #18181d;
+  --color-mono-bg: #0e0e11;
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-2: rgba(255, 255, 255, 0.12);
+  --color-line-3: rgba(255, 255, 255, 0.18);
+  --color-fill: rgba(255, 255, 255, 0.05);
+  --color-fill-2: rgba(255, 255, 255, 0.08);
+  --color-scrim: rgba(4, 4, 6, 0.72);
+
+  /* ── ink ── */
+  --color-ink: #f3f2ee;
+  --color-ink-2: #9b9891;
+  --color-ink-3: #62605b;
+
+  /* ── accent (tempered violet) ── */
+  --color-accent: #9d8cff;
+  --color-accent-strong: #7a66f5;
+  --color-accent-ink: #0a0a0c;
+  --color-accent-wash: rgba(157, 140, 255, 0.12);
+
+  /* ── roles ── */
+  --color-build: #3e8bff;
+  --color-earn: #4fd1a6;
+  --color-burn: #ff4d6d;
+  --color-warn: #e5c15c;
+  --color-danger: #ff4d6d;
+  --color-white-hot: #e9f1ff;
+
+  /* ── temper scale (heat ramp source colours) ── */
+  --color-temper-straw: #e5c15c;
+  --color-temper-bronze: #c48a5a;
+  --color-temper-violet: #8b6cf0;
+  --color-temper-blue: #3e8bff;
+
+  /* ── heat ramp: cold → white-hot. Used as a *time* axis for burn/ignite
+        animations and as a *value* axis for gauges. ── */
+  --color-heat-0: var(--heat-0);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
+  --color-heat-5: var(--heat-5);
+
+  /* ── agent tool colours (build console rows) ── */
+  --color-tool-read: #9fbbe0;
+  --color-tool-edit: #c0a8dd;
+  --color-tool-search: #9fc9a2;
+  --color-tool-think: #dfa88f;
+
+  /* ── type ── */
+  --font-display: "Instrument Serif", "Iowan Old Style", "Times New Roman", serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Type ramp 12/13/14/15/18/22/28/36/48/64/88. Display tracking tightens with
+     size (-0.02em → -0.045em); labels open up (+0.04em, see `eyebrow`). */
+  --text-12: 12px;
+  --text-12--line-height: 16px;
+  --text-12--letter-spacing: 0;
+  --text-13: 13px;
+  --text-13--line-height: 18px;
+  --text-13--letter-spacing: 0;
+  --text-14: 14px;
+  --text-14--line-height: 20px;
+  --text-14--letter-spacing: -0.004em;
+  --text-15: 15px;
+  --text-15--line-height: 24px;
+  --text-15--letter-spacing: -0.006em;
+  --text-18: 18px;
+  --text-18--line-height: 26px;
+  --text-18--letter-spacing: -0.012em;
+  --text-22: 22px;
+  --text-22--line-height: 28px;
+  --text-22--letter-spacing: -0.016em;
+  --text-28: 28px;
+  --text-28--line-height: 32px;
+  --text-28--letter-spacing: -0.02em;
+  --text-36: 36px;
+  --text-36--line-height: 40px;
+  --text-36--letter-spacing: -0.025em;
+  --text-48: 48px;
+  --text-48--line-height: 1;
+  --text-48--letter-spacing: -0.03em;
+  --text-64: 64px;
+  --text-64--line-height: 1;
+  --text-64--letter-spacing: -0.04em;
+  --text-88: 88px;
+  --text-88--line-height: 0.96;
+  --text-88--letter-spacing: -0.045em;
+
+  /* ── radii: controls 8, cards 12, pills 9999 ── */
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-pill: 9999px;
+
+  /* ── motion ── */
+  --ease-ui: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-reveal: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-scene: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-heat: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-ui: 140ms;
+  --duration-reveal: 400ms;
+  --duration-scene: 900ms;
+  --duration-heat: 1200ms;
+  --duration-tick: 600ms;
+  --animate-progress-slide: progress-slide 1.4s var(--ease-ui) infinite;
+
+  @keyframes progress-slide {
+    from {
+      left: -33%;
+    }
+    to {
+      left: 100%;
+    }
+  }
+  /* Light mode only: dark surfaces carry no drop shadows. */
+  --shadow-paper: 0 1px 2px rgba(20, 19, 17, 0.06), 0 0 0 1px rgba(20, 19, 17, 0.04);
+
+  --animate-fade-in: fade-in var(--duration-ui) var(--ease-ui) both;
+  --animate-rise: rise var(--duration-reveal) var(--ease-reveal) both;
+  --animate-pulse-dot: pulse-dot 1.8s var(--ease-ui) infinite;
+  --animate-blink: blink 1.06s steps(1, end) infinite;
+  --animate-ticker: ticker 34s linear infinite;
+  --animate-flow: flow 1.1s linear infinite;
+  --animate-breathe: breathe 2.4s var(--ease-ui) infinite;
+  --animate-tick-up: tick-up var(--duration-tick) var(--ease-ui) both;
+  --animate-tick-down: tick-down var(--duration-tick) var(--ease-ui) both;
+  --animate-proof-flash: proof-flash var(--duration-tick) var(--ease-ui) both;
+  --animate-cool: cool var(--duration-heat) var(--ease-heat) both;
+  --animate-cool-text: cool-text var(--duration-heat) var(--ease-heat) both;
+  --animate-collapse: collapse var(--duration-reveal) var(--ease-reveal) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in oklab, currentcolor 45%, transparent);
+    }
+    60% {
+      box-shadow: 0 0 0 5px color-mix(in oklab, currentcolor 0%, transparent);
+    }
+  }
+  @keyframes blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    50.01%,
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes ticker {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes flow {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -12;
+    }
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  /* TickFlash: background flashes in the role colour and fades. */
+  @keyframes tick-up {
+    0% {
+      background-color: color-mix(in oklab, var(--color-earn) 28%, transparent);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  @keyframes tick-down {
+    0% {
+      background-color: color-mix(in oklab, var(--color-burn) 28%, transparent);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  /* Proof Strip: a 1px accent rule under a counter that just changed. */
+  @keyframes proof-flash {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  /* Heat cooling: white-hot → blue → violet → accent, for strokes/backgrounds. */
+  @keyframes cool {
+    0% {
+      color: var(--heat-5);
+      filter: drop-shadow(0 0 12px color-mix(in oklab, var(--heat-5) 55%, transparent));
+    }
+    35% {
+      color: var(--heat-4);
+    }
+    70% {
+      color: var(--heat-3);
+    }
+    100% {
+      color: var(--color-accent);
+      filter: drop-shadow(0 0 0 transparent);
+    }
+  }
+  /* Same cooling, for text (Ignition). */
+  @keyframes cool-text {
+    0% {
+      color: var(--heat-5);
+      text-shadow: 0 0 24px color-mix(in oklab, var(--heat-5) 40%, transparent);
+    }
+    35% {
+      color: var(--heat-4);
+      text-shadow: 0 0 18px color-mix(in oklab, var(--heat-4) 35%, transparent);
+    }
+    70% {
+      color: var(--heat-3);
+    }
+    100% {
+      color: var(--color-accent);
+      text-shadow: none;
+    }
+  }
+  /* Supply Kiln: a layer's fill drains as it is hollowed. */
+  @keyframes collapse {
+    from {
+      fill-opacity: 1;
+    }
+    to {
+      fill-opacity: 0;
+    }
+  }
+}
+
+/* Heat ramp lives outside @theme so the light theme can override it and the
+   `--color-heat-*` utilities follow. */
+:root {
+  --heat-0: #1c1b2e;
+  --heat-1: #3b2f7a;
+  --heat-2: #7a66f5;
+  --heat-3: #3e8bff;
+  --heat-4: #9cd2ff;
+  --heat-5: #e9f1ff;
+  color-scheme: dark;
+}
+
+/*
+ * "Ash Paper" — the light theme for the app store and docs. A full theme, not
+ * a tint flip: warm paper, one cobalt, carmine burns. The hottest end of the
+ * heat ramp is charred ink here, because white-hot cannot show on paper.
+ */
+[data-theme="light"] {
+  --color-canvas: #f4f1ea;
+  --color-surface: #fbfaf7;
+  --color-raised: #ffffff;
+  --color-mono-bg: #ece8e0;
+  --color-line: #e3ded4;
+  --color-line-2: #d4cec2;
+  --color-line-3: #bfb8aa;
+  --color-fill: rgba(20, 19, 17, 0.04);
+  --color-fill-2: rgba(20, 19, 17, 0.07);
+  --color-scrim: rgba(42, 38, 34, 0.45);
+  --color-ink: #141311;
+  --color-ink-2: #5c5852;
+  --color-ink-3: #8f8a82;
+  --color-accent: #1f3de8;
+  --color-accent-strong: #1731b8;
+  --color-accent-ink: #ffffff;
+  --color-accent-wash: #e4e8fb;
+  --color-build: #5b4bff;
+  --color-earn: #2f7d4a;
+  --color-burn: #c8102e;
+  --color-warn: #b8860b;
+  --color-danger: #a11226;
+  --color-white-hot: #141311;
+  --color-temper-straw: #b8860b;
+  --color-temper-bronze: #9a6a3e;
+  --color-temper-violet: #5b4bff;
+  --color-temper-blue: #1f3de8;
+  --color-tool-read: #3f6ea8;
+  --color-tool-edit: #7a5ab0;
+  --color-tool-search: #3f7f4a;
+  --color-tool-think: #a8613a;
+  --heat-0: #e9e4d8;
+  --heat-1: #c9c4f2;
+  --heat-2: #8b6cf0;
+  --heat-3: #1f3de8;
+  --heat-4: #0f2aa8;
+  --heat-5: #141311;
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    font-optical-sizing: auto;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+    /* Height of the mobile bottom bar (plus safe area) so sticky page chrome can sit above it. */
+    --nav-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    @media (width >= 48rem) {
+      --nav-bottom: 0px;
+    }
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-canvas);
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 32%, transparent);
+    color: var(--color-ink);
+  }
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  /* Focus is part of the design: a 2px accent ring offset from the control,
+     never the UA blue. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-2);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: var(--radius-pill);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-line-3);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-2) transparent;
+  }
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ───────────────────────── type voices ───────────────────────── */
+
+/* Serif display voice. Size-free so `text-48` … `text-88` compose. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-wrap: balance;
+  & em,
+  & i {
+    font-style: italic;
+  }
+}
+
+@utility h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-36);
+  line-height: var(--text-36--line-height);
+  letter-spacing: var(--text-36--letter-spacing);
+  font-weight: 400;
+  text-wrap: balance;
+  @media (width >= 40rem) {
+    font-size: var(--text-48);
+    line-height: var(--text-48--line-height);
+    letter-spacing: var(--text-48--letter-spacing);
+  }
+}
+
+@utility h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-28);
+  line-height: var(--text-28--line-height);
+  letter-spacing: var(--text-28--letter-spacing);
+  font-weight: 400;
+  text-wrap: balance;
+}
+
+@utility h3 {
+  font-size: var(--text-18);
+  line-height: var(--text-18--line-height);
+  letter-spacing: var(--text-18--letter-spacing);
+  font-weight: 600;
+}
+
+@utility body {
+  font-size: var(--text-15);
+  line-height: var(--text-15--line-height);
+  letter-spacing: var(--text-15--letter-spacing);
+  font-weight: 400;
+}
+
+@utility small {
+  font-size: var(--text-13);
+  line-height: var(--text-13--line-height);
+  font-weight: 400;
+}
+
+@utility micro {
+  font-size: var(--text-12);
+  line-height: var(--text-12--line-height);
+  font-weight: 500;
+}
+
+/* Every number: mono, tabular, slashed zero. */
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.01em;
+}
+
+/* Mono micro-label: +0.04em uppercase. Table headers, eyebrows, ledger legends. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-12);
+  line-height: var(--text-12--line-height);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* Display figure: a number allowed to anchor a layout. */
+@utility figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+@utility figure-md {
+  font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.25rem);
+}
+@utility figure-lg {
+  font-size: clamp(1.35rem, 1.05rem + 1.1vw, 1.8rem);
+  letter-spacing: -0.032em;
+}
+@utility figure-xl {
+  font-size: clamp(1.8rem, 1.25rem + 2.2vw, 2.6rem);
+  letter-spacing: -0.036em;
+}
+@utility figure-hero {
+  font-size: clamp(2.5rem, 1.5rem + 4.4vw, 4.25rem);
+  letter-spacing: -0.042em;
+}
+
+/* ───────────────────────── hairlines & surfaces ───────────────────────── */
+
+@utility hairline {
+  border-bottom: 1px solid var(--color-line);
+}
+@utility hairline-t {
+  border-top: 1px solid var(--color-line);
+}
+@utility hairline-x {
+  border-inline: 1px solid var(--color-line);
+}
+@utility hairline-y {
+  border-block: 1px solid var(--color-line);
+}
+@utility hairline-all {
+  border: 1px solid var(--color-line);
+}
+
+/* Sticky nav / tray headers: canvas at 80% + blur. */
+@utility glass {
+  background: color-mix(in oklab, var(--color-canvas) 80%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Ash: a dormant thing. Desaturated, quiet, waiting to be relit. */
+@utility ash {
+  filter: grayscale(1);
+  opacity: 0.72;
+}

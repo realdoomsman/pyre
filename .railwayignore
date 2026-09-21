@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.secrets
+.tmp
+.tmp-*
+.tmp-chrome*
+coverage
+*.log
+.shots
+marketing
+**/_chromeprofile
+apps/web/.audit
+apps/web/dist-og
+packages/db/generated

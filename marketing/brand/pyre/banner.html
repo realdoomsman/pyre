@@ -1,0 +1,107 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500&display=swap');
+  :root{--canvas:#0A0A0C;--ink:#F3F2EE;--ink2:#9B9891;--ink3:#62605B}
+  html,body{margin:0;background:#000}
+  #b{width:1500px;height:500px;background:var(--canvas);position:relative;overflow:hidden;color:var(--ink)}
+  #heat{position:absolute;left:0;right:0;bottom:0;height:260px;
+    background:radial-gradient(60% 100% at 78% 100%, rgba(62,139,255,.16), rgba(122,102,245,.07) 45%, transparent 75%);}
+  #lockup{position:absolute;left:80px;top:92px;height:118px}
+  #tag{position:absolute;left:600px;top:174px;font:400 66px/1.06 'Instrument Serif',serif;letter-spacing:-0.02em;color:var(--ink);white-space:nowrap}
+  #tag em{font-style:italic;color:#9D8CFF}
+  #ft{position:absolute;right:80px;bottom:42px;font:400 18px/1 'Geist Mono',monospace;letter-spacing:.04em;color:var(--ink2);white-space:nowrap}
+  #ft b{font-weight:500;color:var(--ink)}
+  #ft i{font-style:normal;color:var(--ink3);margin:0 14px}
+  #stack{position:absolute;left:1076px;top:24px;width:360px;height:452px;overflow:visible}
+</style>
+<div id="b">
+  <div id="heat"></div>
+  <img id="lockup" src="lockup.svg">
+  <div id="tag">coins that build apps.<br>revenue <em>burns</em> them.</div>
+  <svg id="stack" viewBox="0 0 360 452"></svg>
+  <div id="ft"><b>pyre.fun</b><i>·</i>Robinhood Chain<i>·</i><b>$PYRE</b></div>
+</div>
+<script>
+// Isometric stack of supply blocks. Solid blocks are what remains; ash blocks (dashed, hollow) were burned.
+// Bottom layer glows through the heat ramp.
+(() => {
+  const svg = document.getElementById('stack');
+  const NS = 'http://www.w3.org/2000/svg';
+  const s = 42;                       // cube edge
+  const cos = Math.cos(Math.PI / 6), sin = 0.5;
+  const G = 3, LAYERS = 6;            // 3×3 footprint, 6 layers
+  const ox = 180, oy = 452 - 66;      // origin: front corner of the bottom layer
+  const P = (x, y, z) => [ox + (x - y) * s * cos, oy - (x + y) * s * sin - z * s];
+  const pts = a => a.map(p => p.join(',')).join(' ');
+
+  // which blocks survive per layer (layer 0 = bottom). true = solid, false = ash.
+  const alive = (x, y, z) => {
+    if (z <= 2) return true;
+    if (z === 3) return !(x === 2 && y === 2) && !(x === 0 && y === 2) && !(x === 2 && y === 0);
+    if (z === 4) return (x + y) <= 1;
+    return x === 0 && y === 0;
+  };
+
+  const defs = document.createElementNS(NS, 'defs');
+  defs.innerHTML = `
+    <linearGradient id="hl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1C1B2E"/><stop offset=".35" stop-color="#3B2F7A"/>
+      <stop offset=".7" stop-color="#7A66F5"/><stop offset=".9" stop-color="#3E8BFF"/><stop offset="1" stop-color="#9CD2FF"/>
+    </linearGradient>
+    <linearGradient id="hr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16152A"/><stop offset=".4" stop-color="#2E2560"/>
+      <stop offset=".75" stop-color="#5F4FD0"/><stop offset="1" stop-color="#3E8BFF"/>
+    </linearGradient>
+    <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9F1FF" stop-opacity="0"/><stop offset="1" stop-color="#E9F1FF"/>
+    </linearGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="18"/></filter>`;
+  svg.appendChild(defs);
+
+  // floor glow under the stack
+  const glow = document.createElementNS(NS, 'ellipse');
+  const [gx, gy] = P(1.5, 1.5, 0);
+  glow.setAttribute('cx', gx); glow.setAttribute('cy', gy + 6);
+  glow.setAttribute('rx', 150); glow.setAttribute('ry', 34);
+  glow.setAttribute('fill', '#3E8BFF'); glow.setAttribute('opacity', '.45'); glow.setAttribute('filter', 'url(#blur)');
+  svg.appendChild(glow);
+
+  const cubes = [];
+  for (let z = 0; z < LAYERS; z++) for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) cubes.push({ x, y, z, solid: alive(x, y, z) });
+  cubes.sort((a, b) => (b.x + b.y - b.z) - (a.x + a.y - a.z) || a.z - b.z); // camera sits at (-1,-1,+1): far = large x+y, low z
+
+  const poly = (points, attrs) => {
+    const el = document.createElementNS(NS, 'polygon');
+    el.setAttribute('points', pts(points));
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  };
+
+  for (const c of cubes) {
+    const { x, y, z, solid } = c;
+    const top = [P(x, y, z + 1), P(x + 1, y, z + 1), P(x + 1, y + 1, z + 1), P(x, y + 1, z + 1)];
+    const left = [P(x, y, z), P(x, y, z + 1), P(x, y + 1, z + 1), P(x, y + 1, z)];      // faces -x side (viewer left)
+    const right = [P(x, y, z), P(x + 1, y, z), P(x + 1, y, z + 1), P(x, y, z + 1)];     // faces -y side (viewer right)
+    if (solid) {
+      const hot = z === 0;
+      const stroke = { stroke: '#F3F2EE', 'stroke-width': 1.5, 'stroke-linejoin': 'round' };
+      svg.appendChild(poly(top, { fill: hot ? '#1C1B2E' : '#0A0A0C', ...stroke }));
+      svg.appendChild(poly(left, { fill: hot ? 'url(#hl)' : '#0A0A0C', ...stroke }));
+      svg.appendChild(poly(right, { fill: hot ? 'url(#hr)' : '#0A0A0C', ...stroke }));
+      if (hot) {
+        // white-hot lip along the bottom edges
+        const lipL = [P(x, y, 0.16), P(x, y + 1, 0.16), P(x, y + 1, 0), P(x, y, 0)];
+        const lipR = [P(x, y, 0.16), P(x + 1, y, 0.16), P(x + 1, y, 0), P(x, y, 0)];
+        svg.appendChild(poly(lipL, { fill: 'url(#lip)', opacity: .9 }));
+        svg.appendChild(poly(lipR, { fill: 'url(#lip)', opacity: .9 }));
+      }
+    } else {
+      const ash = { fill: 'none', stroke: '#4A4844', 'stroke-width': 1, 'stroke-dasharray': '2 6', 'stroke-linecap': 'round' };
+      svg.appendChild(poly(top, ash));
+      svg.appendChild(poly(left, ash));
+      svg.appendChild(poly(right, ash));
+    }
+  }
+})();
+</script>

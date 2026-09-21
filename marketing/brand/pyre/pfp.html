@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;background:#0A0A0C}
+  #a{width:1024px;height:1024px;background:#0A0A0C;position:relative;overflow:hidden}
+  /* light spilling from the hot edge onto the obsidian floor */
+  #spill{position:absolute;left:50%;top:50%;width:1400px;height:1400px;transform:translate(-50%,-31%);
+    background:
+      radial-gradient(closest-side at 50% 50%, rgba(62,139,255,.22), rgba(122,102,245,.10) 35%, rgba(59,47,122,.04) 60%, transparent 80%);}
+  #floor{position:absolute;left:0;right:0;bottom:0;height:420px;
+    background:linear-gradient(180deg, transparent, rgba(28,27,46,.55) 70%, rgba(59,47,122,.35));}
+  #mark{position:absolute;left:50%;top:50%;width:600px;height:600px;transform:translate(-50%,-52%);
+    filter:drop-shadow(0 26px 60px rgba(122,102,245,.28));}
+</style>
+<div id="a">
+  <div id="floor"></div>
+  <div id="spill"></div>
+  <img id="mark" src="mark.svg">
+</div>

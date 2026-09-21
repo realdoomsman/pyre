@@ -1,0 +1,38 @@
+{
+  "name": "pyre",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pyre — coins that build apps. Robinhood Chain.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @pyre/shared -w @pyre/db -w @pyre/chain -w @pyre/app-sdk -w @pyre/api -w @pyre/runner -w @pyre/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "typecheck:tests": "tsc -p apps/api/test/tsconfig.json && tsc -p apps/runner/test/tsconfig.json",
+    "db:generate": "npm run generate -w @pyre/db",
+    "db:push": "npm run push -w @pyre/db",
+    "db:migrate": "npm run migrate -w @pyre/db",
+    "dev:api": "npm run dev -w @pyre/api",
+    "dev:runner": "npm run dev -w @pyre/runner",
+    "dev:web": "npm run dev -w @pyre/web"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true
+  },
+  "dependencies": {
+    "e2b": "^2.50.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}

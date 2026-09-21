@@ -1,0 +1,39 @@
+{
+  "name": "@pyre/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview",
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@number-flow/react": "^0.6.2",
+    "@pyre/chain": "*",
+    "@pyre/shared": "*",
+    "@react-oauth/google": "^0.12.1",
+    "@tanstack/react-query": "^5.62.0",
+    "lightweight-charts": "^4.2.1",
+    "motion": "^13.4.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1",
+    "sirv": "^3.0.0",
+    "sonner": "^2.0.8",
+    "viem": "^2.56.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
+  }
+}

@@ -1,0 +1,537 @@
+import {
+  big,
+  type Decimalish,
+  type App,
+  type JobStatus,
+  type Bounty,
+  type BuildEvent,
+  type BuildJob,
+  type Buyback,
+  type Candle,
+  type FeeEvent,
+  type Notification,
+  type PromptQueueItem,
+  type Proposal,
+  type PullRequest,
+  type PyreStake,
+  type Trade,
+  type User,
+} from "@pyre/db";
+import {
+  AppSpec,
+  BuildEventPayload,
+  LaunchPhase,
+  explorerTokenUrl,
+  ponsUrl,
+  type AgentState,
+  type AppSummaryDto,
+  type BountyDto,
+  type BuildEventDto,
+  type BuildJobDto,
+  type BuybackDto,
+  type CandleDto,
+  type FeeEventDto,
+  type HolderDto,
+  type LaunchDraftDto,
+  type NotificationDto,
+  type ProposalDto,
+  type PullRequestDto,
+  type PyreStakeDto,
+  type QueueItemDto,
+  type TradeDto,
+  type UserRefDto,
+} from "@pyre/shared";
+import type { Address } from "viem";
+import { DEAD_ADDRESS, ponsAddresses } from "@pyre/chain";
+import { env } from "../env.js";
+import { db } from "./metrics.js";
+import { TREASURY_WALLET } from "./treasury.js";
+import { PLATFORM_PROPOSAL_QUORUM, SUPPLY_BASE_UNITS } from "./votes.js";
+
+export const usd = (micros: bigint): number => Number(micros) / 1e6;
+/** Display tokens (18 decimals) for a base-unit amount. */
+export const tokens = (units: bigint): number => Number(units) / 1e18;
+/** Percent of the PONS launch supply, 0..100 with four decimals. */
+export const pctOfSupply = (units: bigint): number => Number((units * 1_000_000n) / SUPPLY_BASE_UNITS) / 10_000;
+
+export const liveUrl = (slug: string): string =>
+  env.APP_DOMAIN ? `https://${slug}.${env.APP_DOMAIN}` : `${env.API_ORIGIN}/a/${slug}`;
+
+/** Statuses that expose a live URL. */
+const SERVABLE: Record<string, true> = { LIVE: true, DORMANT: true };
+
+const iso = (d: Date | null | undefined): string | null => d?.toISOString() ?? null;
+
+const address = (a: string | null): Address | null => a as Address | null;
+
+/* ─────────────────────────── Aggregates shared by list routes ─────────────────────────── */
+
+export interface AppExtras {
+  revenue24hMicros: bigint;
+  fees24hWei: bigint;
+}
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Per-app 24h revenue and swept fees for a page of apps: two grouped aggregates regardless of
+ * page size. These feed the heat index and the trending sort.
+ */
+export const appExtrasByApp = async (appIds: string[]): Promise<Record<string, AppExtras>> => {
+  const out: Record<string, AppExtras> = {};
+  if (appIds.length === 0) return out;
+  const since = new Date(Date.now() - DAY_MS);
+  const [rev, fees] = await Promise.all([
+    db.revenueEvent.groupBy({ by: ["appId"], where: { appId: { in: appIds }, createdAt: { gte: since } }, _sum: { usdMicros: true } }),
+    db.feeEvent.groupBy({ by: ["appId"], where: { appId: { in: appIds }, createdAt: { gte: since } }, _sum: { wei: true } }),
+  ]);
+  for (const id of appIds) out[id] = { revenue24hMicros: 0n, fees24hWei: 0n };
+  for (const r of rev) out[r.appId]!.revenue24hMicros = r._sum.usdMicros ?? 0n;
+  for (const f of fees) out[f.appId]!.fees24hWei = big(f._sum.wei);
+  return out;
+};
+
+/* ─────────────────────────── Heat + agent state ─────────────────────────── */
+
+export interface HeatInputs {
+  revenue24hMicros: bigint;
+  fees24hWei: bigint;
+  /** Revenue waiting for the next buyback: what the burn engine is about to spend. */
+  pendingRevenueMicros: bigint;
+  ethPriceUsd: number;
+}
+
+/**
+ * Heat index in [0, 1): how much of the loop is turning right now. Three signals, each scaled to
+ * a "warm" daily figure so a $50/day app sits around 0.5 and nothing saturates early, combined
+ * 50/30/20 and squashed with 1 − e^(−x) so a runaway coin still stays below 1:
+ *   - revenue in the last 24h   (weight .5, warm at $50)
+ *   - creator fees swept in 24h (weight .3, warm at $50 of ETH)
+ *   - buyback pressure          (weight .2, warm at $25 pending revenue)
+ */
+export const heatIndex = (h: HeatInputs): number => {
+  const revenue = usd(h.revenue24hMicros) / 50;
+  const fees = (tokens(h.fees24hWei) * h.ethPriceUsd) / 50;
+  const pressure = usd(h.pendingRevenueMicros) / 25;
+  const x = 0.5 * revenue + 0.3 * fees + 0.2 * pressure;
+  const heat = 1 - Math.exp(-x);
+  return Number.isFinite(heat) ? Math.min(0.999, Math.max(0, heat)) : 0;
+};
+
+export type JobSummaryRow = Pick<BuildJob, "id" | "stage" | "status" | "model" | "budgetMicros" | "costMicros" | "summary" | "error" | "startedAt" | "finishedAt" | "createdAt">;
+
+/** What the agent is doing, from the newest active job (RUNNING or QUEUED) and the app status. */
+export const agentState = (status: App["status"], activeJob: Pick<BuildJob, "stage"> | null | undefined): AgentState => {
+  if (activeJob) {
+    if (activeJob.stage === "PR_REVIEW") return "reviewing";
+    if (activeJob.stage === "DEPLOY" || activeJob.stage === "VERIFY") return "deploying";
+    return "building";
+  }
+  return status === "DORMANT" ? "dormant" : "idle";
+};
+
+/* ─────────────────────────── Users / events / jobs ─────────────────────────── */
+
+/** Columns `userRef` reads; a full `User` row satisfies it. */
+export type UserRefRow = Pick<User, "id" | "displayName" | "avatarUrl" | "wallet" | "xHandle">;
+
+/** Prisma select matching `UserRefRow`. */
+export const USER_REF_SELECT = { id: true, displayName: true, avatarUrl: true, wallet: true, xHandle: true } as const;
+
+export const userRef = (u: UserRefRow): UserRefDto => ({
+  id: u.id,
+  displayName: u.displayName,
+  avatarUrl: u.avatarUrl,
+  wallet: address(u.wallet),
+  xHandle: u.xHandle,
+});
+
+export const eventDto = (e: BuildEvent): BuildEventDto => ({
+  id: e.id,
+  appId: e.appId,
+  jobId: e.jobId,
+  type: e.type,
+  payload: e.payload as BuildEventPayload,
+  createdAt: e.createdAt.toISOString(),
+});
+
+export const jobDto = (j: JobSummaryRow): BuildJobDto => ({
+  id: j.id,
+  stage: j.stage,
+  status: j.status,
+  model: j.model,
+  budgetMicros: j.budgetMicros.toString(),
+  costMicros: j.costMicros.toString(),
+  summary: j.summary,
+  error: j.error,
+  startedAt: iso(j.startedAt),
+  finishedAt: iso(j.finishedAt),
+  createdAt: j.createdAt.toISOString(),
+});
+
+/* ─────────────────────────── App summary ─────────────────────────── */
+
+/** Jobs that mean "the agent is on it" for `agentState`. */
+const ACTIVE_JOB_STATUSES: JobStatus[] = ["RUNNING", "QUEUED"];
+
+const JOB_SUMMARY_SELECT = {
+  id: true,
+  stage: true,
+  status: true,
+  model: true,
+  budgetMicros: true,
+  costMicros: true,
+  summary: true,
+  error: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+} as const;
+
+/**
+ * Prisma select used by every endpoint that returns an AppSummaryDto: exactly the columns
+ * `appSummary` reads plus the newest active job. Routes needing more spread this and add
+ * their own columns — never a `Bytes` column.
+ */
+export const APP_SUMMARY_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  ticker: true,
+  imageUrl: true,
+  status: true,
+  template: true,
+  spec: true,
+  tokenAddress: true,
+  curveAddress: true,
+  poolId: true,
+  launchPhase: true,
+  progress: true,
+  priceUsd: true,
+  marketCapUsd: true,
+  change24hPct: true,
+  volume24hUsd: true,
+  holdersCount: true,
+  revenueMicros: true,
+  pendingRevenueMicros: true,
+  budgetMicros: true,
+  feesWei: true,
+  buybackWei: true,
+  burnedTokens: true,
+  liveVersion: true,
+  createdAt: true,
+  launchedAt: true,
+  graduatedAt: true,
+  launcher: { select: USER_REF_SELECT },
+  jobs: { where: { status: { in: ACTIVE_JOB_STATUSES } }, take: 1, orderBy: { createdAt: "desc" }, select: JOB_SUMMARY_SELECT },
+} as const;
+
+/** Columns `appSummary` reads. Structural so list queries select exactly these; a full `App` row + relations satisfies it. */
+export type AppSummaryRow = Pick<
+  App,
+  | "id"
+  | "slug"
+  | "name"
+  | "ticker"
+  | "imageUrl"
+  | "status"
+  | "template"
+  | "spec"
+  | "tokenAddress"
+  | "curveAddress"
+  | "poolId"
+  | "launchPhase"
+  | "progress"
+  | "priceUsd"
+  | "marketCapUsd"
+  | "change24hPct"
+  | "volume24hUsd"
+  | "holdersCount"
+  | "revenueMicros"
+  | "pendingRevenueMicros"
+  | "budgetMicros"
+  | "feesWei"
+  | "buybackWei"
+  | "burnedTokens"
+  | "liveVersion"
+  | "createdAt"
+  | "launchedAt"
+  | "graduatedAt"
+> & { launcher: UserRefRow; jobs: JobSummaryRow[] };
+
+export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: number): AppSummaryDto => {
+  const spec = AppSpec.safeParse(a.spec);
+  const phase = LaunchPhase.safeParse(a.launchPhase);
+  return {
+    id: a.id,
+    slug: a.slug,
+    name: a.name,
+    ticker: a.ticker,
+    imageUrl: a.imageUrl,
+    oneLiner: spec.success ? spec.data.oneLiner : "",
+    status: a.status,
+    template: a.template,
+    monetization: spec.success ? spec.data.monetization.model : null,
+    tokenAddress: address(a.tokenAddress),
+    curveAddress: address(a.curveAddress),
+    poolId: a.poolId,
+    phase: phase.success ? phase.data : 0,
+    progress: a.launchPhase >= 2 ? 1 : Math.min(1, Math.max(0, a.progress)),
+    priceUsd: a.priceUsd,
+    mcapUsd: a.marketCapUsd,
+    change24hPct: a.tokenAddress ? a.change24hPct : null,
+    volume24hUsd: a.volume24hUsd,
+    holders: a.holdersCount,
+    revenueMicros: a.revenueMicros.toString(),
+    revenue24hMicros: extras.revenue24hMicros.toString(),
+    budgetMicros: a.budgetMicros.toString(),
+    feesWei: big(a.feesWei).toString(),
+    buybackWei: big(a.buybackWei).toString(),
+    burnedUnits: big(a.burnedTokens).toString(),
+    burnedPct: pctOfSupply(big(a.burnedTokens)),
+    heat: heatIndex({ ...extras, pendingRevenueMicros: a.pendingRevenueMicros, ethPriceUsd }),
+    agentState: agentState(a.status, a.jobs[0]),
+    liveVersion: a.liveVersion,
+    liveUrl: SERVABLE[a.status] && a.liveVersion > 0 ? liveUrl(a.slug) : null,
+    launcher: userRef(a.launcher),
+    createdAt: a.createdAt.toISOString(),
+    launchedAt: iso(a.launchedAt),
+    graduatedAt: iso(a.graduatedAt),
+    ponsUrl: a.tokenAddress ? ponsUrl(a.tokenAddress) : null,
+    explorerUrl: a.tokenAddress ? explorerTokenUrl(a.tokenAddress, env.BLOCKSCOUT_URL) : null,
+  };
+};
+
+/* ─────────────────────────── Money rows ─────────────────────────── */
+
+export const feeEventDto = (f: FeeEvent): FeeEventDto => ({
+  id: f.id,
+  source: f.source,
+  wei: big(f.wei).toString(),
+  ethPriceUsd: f.ethPriceUsd,
+  usdMicros: f.usdMicros.toString(),
+  buildMicros: f.buildMicros.toString(),
+  pyreMicros: f.pyreMicros.toString(),
+  launcherMicros: f.launcherMicros.toString(),
+  upstreamMicros: f.upstreamMicros.toString(),
+  creditsMicros: f.creditsMicros.toString(),
+  txHash: f.txHash as FeeEventDto["txHash"],
+  createdAt: f.createdAt.toISOString(),
+});
+
+export type BuybackRow = Buyback & { app: Pick<App, "slug" | "ticker">; _count: { revenueEvents: number } };
+
+export const BUYBACK_INCLUDE = { app: { select: { slug: true, ticker: true } }, _count: { select: { revenueEvents: true } } } as const;
+
+export const buybackDto = (b: BuybackRow): BuybackDto => {
+  const burned = big(b.burnedUnits ?? b.tokensBurned);
+  return {
+    id: b.id,
+    appId: b.appId,
+    slug: b.app.slug,
+    ticker: b.app.ticker,
+    status: b.status,
+    revenueMicros: b.revenueMicros.toString(),
+    ethWei: big(b.ethWei).toString(),
+    tokensBoughtUnits: big(b.tokensBought).toString(),
+    tokensBurnedUnits: burned.toString(),
+    burnedPctOfSupply: pctOfSupply(burned),
+    swapTx: b.swapTx as BuybackDto["swapTx"],
+    burnTx: b.burnTx as BuybackDto["burnTx"],
+    attestTx: b.attestTx as BuybackDto["attestTx"],
+    attestHash: b.attestHash,
+    revenueEventIds: b._count.revenueEvents,
+    createdAt: b.createdAt.toISOString(),
+    completedAt: iso(b.completedAt),
+  };
+};
+
+export const tradeDto = (t: Trade): TradeDto => ({
+  id: t.id,
+  appId: t.appId,
+  side: t.side === "SELL" ? "SELL" : "BUY",
+  venue: t.venue === "POOL" ? "POOL" : "CURVE",
+  wallet: t.wallet as Address,
+  tokenUnits: big(t.tokenUnits).toString(),
+  quoteWei: big(t.quoteWei).toString(),
+  priceUsd: t.priceUsd,
+  txHash: t.txHash as TradeDto["txHash"],
+  block: Number(t.block),
+  isBuyback: t.wallet === TREASURY_WALLET,
+  ts: t.ts.toISOString(),
+});
+
+export const candleDto = (c: Candle): CandleDto => ({ t: c.t, o: c.o, h: c.h, l: c.l, c: c.c, v: c.v });
+
+export interface HolderRowInput {
+  wallet: string;
+  amount: Decimalish;
+}
+
+/** Lower-cased protocol addresses → tag, computed once (env overrides are read at boot). */
+const systemTags = (): Record<string, HolderDto["tag"]> => {
+  const pons = ponsAddresses();
+  return {
+    [DEAD_ADDRESS.toLowerCase()]: "dead",
+    [pons.poolManager.toLowerCase()]: "pool",
+    [pons.locker.toLowerCase()]: "locker",
+    [pons.buybackVault.toLowerCase()]: "vault",
+    [TREASURY_WALLET.toLowerCase()]: "treasury",
+  };
+};
+let SYSTEM_TAGS: Record<string, HolderDto["tag"]> | undefined;
+
+export const holderDto = (h: HolderRowInput, ctx: { curveAddress: string | null; launcherWallet: string | null }): HolderDto => {
+  SYSTEM_TAGS ??= systemTags();
+  const w = h.wallet.toLowerCase();
+  const tag: HolderDto["tag"] =
+    SYSTEM_TAGS[w] ?? (ctx.curveAddress && w === ctx.curveAddress.toLowerCase() ? "curve" : ctx.launcherWallet && w === ctx.launcherWallet.toLowerCase() ? "launcher" : null);
+  const amount = big(h.amount);
+  return { address: h.wallet as Address, units: amount.toString(), pct: pctOfSupply(amount), tag };
+};
+
+/* ─────────────────────────── Governance / community ─────────────────────────── */
+
+export const queueItemDto = (
+  q: PromptQueueItem & { author: UserRefRow; _count: { votes: number } },
+  votedByMe: boolean,
+): QueueItemDto => ({
+  id: q.id,
+  text: q.text,
+  status: q.status,
+  weightUnits: big(q.weight).toString(),
+  weightPctOfSupply: pctOfSupply(big(q.weight)),
+  votes: q._count.votes,
+  votedByMe,
+  author: userRef(q.author),
+  jobId: q.jobId,
+  createdAt: q.createdAt.toISOString(),
+});
+
+export const bountyDto = (b: Bounty & { author: UserRefRow; claimant?: UserRefRow | null }): BountyDto => ({
+  id: b.id,
+  appId: b.appId,
+  title: b.title,
+  description: b.description,
+  wei: big(b.wei).toString(),
+  status: b.status,
+  author: userRef(b.author),
+  claimant: b.claimant ? userRef(b.claimant) : null,
+  prNumber: b.prNumber,
+  escrowTx: b.escrowTx as BountyDto["escrowTx"],
+  payoutTx: b.payoutTx as BountyDto["payoutTx"],
+  createdAt: b.createdAt.toISOString(),
+  claimedAt: iso(b.claimedAt),
+});
+
+export const prDto = (p: PullRequest): PullRequestDto => ({
+  id: p.id,
+  number: p.number,
+  title: p.title,
+  url: p.url,
+  authorLogin: p.authorLogin,
+  status: p.status,
+  reviewSummary: p.reviewSummary,
+  mergeSha: p.mergeSha,
+  createdAt: p.createdAt.toISOString(),
+  updatedAt: p.updatedAt.toISOString(),
+});
+
+export const proposalDto = (
+  p: Proposal & { author: UserRefRow },
+  tally: { weight: bigint; votes: number; comments: number },
+  votedByMe: boolean,
+): ProposalDto => ({
+  id: p.id,
+  title: p.title,
+  body: p.body,
+  status: p.status,
+  ownerNote: p.ownerNote,
+  author: userRef(p.author),
+  weightUnits: tally.weight.toString(),
+  weightPctOfSupply: pctOfSupply(tally.weight),
+  backed: tally.weight >= PLATFORM_PROPOSAL_QUORUM,
+  votes: tally.votes,
+  comments: tally.comments,
+  votedByMe,
+  createdAt: p.createdAt.toISOString(),
+  updatedAt: p.updatedAt.toISOString(),
+});
+
+export const notificationDto = (n: Notification): NotificationDto => ({
+  id: n.id,
+  type: n.type,
+  title: n.title,
+  body: n.body,
+  href: n.href,
+  readAt: iso(n.readAt),
+  createdAt: n.createdAt.toISOString(),
+});
+
+export const stakeDto = (s: PyreStake, app: Pick<App, "slug" | "name" | "ticker"> | null | undefined): PyreStakeDto => ({
+  id: s.id,
+  appId: s.appId,
+  appSlug: app?.slug ?? "",
+  appName: app?.name ?? "",
+  appTicker: app?.ticker ?? "",
+  wallet: s.wallet as Address,
+  units: big(s.amount).toString(),
+  earnedMicros: s.earnedMicros.toString(),
+  depositTx: s.depositTx as PyreStakeDto["depositTx"],
+  withdrawTx: s.withdrawTx as PyreStakeDto["withdrawTx"],
+  createdAt: s.createdAt.toISOString(),
+  withdrawnAt: iso(s.withdrawnAt),
+});
+
+/* ─────────────────────────── Launch wizard ─────────────────────────── */
+
+export const launchDto = (a: App): LaunchDraftDto => ({
+  id: a.id,
+  slug: a.slug,
+  name: a.name,
+  ticker: a.ticker,
+  imageUrl: a.imageUrl,
+  prompt: a.prompt,
+  status: a.status,
+  killedReason: a.killedReason,
+  spec: AppSpec.safeParse(a.spec).success ? (a.spec as LaunchDraftDto["spec"]) : null,
+  specApprovedAt: iso(a.specApprovedAt),
+  template: a.template,
+  walletAddress: address(a.walletAddress),
+  tokenAddress: address(a.tokenAddress),
+  curveAddress: address(a.curveAddress),
+  launchTx: a.launchTx as LaunchDraftDto["launchTx"],
+  stakeWei: big(a.stakeWei).toString(),
+  stakeTx: a.stakeTx as LaunchDraftDto["stakeTx"],
+  stakeRefundTx: a.stakeRefundTx as LaunchDraftDto["stakeRefundTx"],
+  stakeRefundedAt: iso(a.stakeRefundedAt),
+  requiredStakeWei: env.LAUNCH_STAKE_WEI.toString(),
+  stakeTo: TREASURY_WALLET,
+  budgetMicros: a.budgetMicros.toString(),
+  feesWei: big(a.feesWei).toString(),
+  revenueMicros: a.revenueMicros.toString(),
+  liveVersion: a.liveVersion,
+  liveUrl: SERVABLE[a.status] && a.liveVersion > 0 ? liveUrl(a.slug) : null,
+  twitterUrl: a.twitterUrl,
+  websiteUrl: a.websiteUrl,
+  forkOfId: a.forkOfId,
+  createdAt: a.createdAt.toISOString(),
+  updatedAt: a.updatedAt.toISOString(),
+});
+
+export const adminJobDto = (j: BuildJob & { app: Pick<App, "slug" | "ticker"> }) => ({
+  id: j.id,
+  appId: j.appId,
+  appSlug: j.app.slug,
+  appTicker: j.app.ticker,
+  stage: j.stage,
+  status: j.status,
+  model: j.model,
+  budgetMicros: j.budgetMicros.toString(),
+  costMicros: j.costMicros.toString(),
+  sandboxId: j.sandboxId,
+  error: j.error,
+  startedAt: iso(j.startedAt),
+  finishedAt: iso(j.finishedAt),
+  createdAt: j.createdAt.toISOString(),
+});

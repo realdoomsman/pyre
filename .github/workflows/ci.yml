@@ -1,0 +1,99 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A run is only useful if it reproduces what the deploy does, so this installs
+# the real lockfile, generates the Prisma client, and builds every package in
+# dependency order — the same sequence the Dockerfiles use.
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Prisma needs a real database to diff migrations against the schema.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shadow
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Node 22's cjs-module-lexer cannot see anchor's `BN` export, which
+          # breaks @pump-fun/pump-sdk at import time. The images are pinned to
+          # 24 for the same reason; CI must match or it tests a different app.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Build packages
+        run: npm run build -w @pyre/shared -w @pyre/db -w @pyre/chain -w @pyre/app-sdk
+
+      - name: Typecheck every package
+        run: |
+          npx tsc -p packages/shared/tsconfig.json --noEmit
+          npx tsc -p packages/chain/tsconfig.json --noEmit
+          npx tsc -p packages/db/tsconfig.json --noEmit
+          npx tsc -p packages/app-sdk/tsconfig.json --noEmit
+          npx tsc -p apps/api/tsconfig.json --noEmit
+          npx tsc -p apps/runner/tsconfig.json --noEmit
+          npx tsc -p apps/web/tsconfig.json --noEmit
+
+      - name: Typecheck tests
+        run: npm run typecheck:tests
+
+      - name: Tests
+        run: npm test
+
+      # Builds the API and runner, and the web bundle — whose own
+      # `ship:bundle-budget` plugin fails the build if the wallet stack ever
+      # re-enters the initial graph, which is what keeps the landing page at
+      # ~155 kB instead of 1 MB.
+      - name: Build apps
+        run: npm run build -w @pyre/api -w @pyre/runner -w @pyre/web
+
+      - name: Verify migrations are in sync with the schema
+        # Catches "schema.prisma edited without adding a migration", which would
+        # otherwise only surface when `migrate deploy` runs at container start
+        # and the API crash-loops. --exit-code makes a non-empty diff a failure.
+        run: |
+          npx prisma migrate diff \
+            --from-migrations packages/db/prisma/migrations \
+            --to-schema-datamodel packages/db/prisma/schema.prisma \
+            --shadow-database-url "$DATABASE_URL" \
+            --exit-code
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shadow
+
+  # The perf/accessibility gate needs a browser, so it runs as its own job and
+  # is allowed to take longer than the type/test pass.
+  web-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run db:generate
+      - run: npm run build -w @pyre/shared
+      - name: Perf and accessibility audit
+        # Fails on a bundle-budget regression, an accessibility violation, a
+        # console error, or a CLS/perf regression on any audited route.
+        run: node apps/web/scripts/audit.mjs
+        env:
+          VITE_API_ORIGIN: https://api-production-17ab9.up.railway.app

@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    // Node 22 has Promise.withResolvers; the app itself still targets the ES2022 lib.
+    "lib": ["ES2024"],
+    "types": ["node"]
+  },
+  // `../src` is included so the express Request augmentation declared there applies here too.
+  "include": [".", "../src"]
+}

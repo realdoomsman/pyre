@@ -1,0 +1,193 @@
+import { useRef, useState, type FormEvent } from "react";
+import { CreateLaunchBody, slugify } from "@pyre/shared";
+import type { CreateLaunchBody as Body } from "@pyre/shared";
+import { isHttpError, uploadCoinImage } from "../../api/client.js";
+import { Avatar, Button, Field, Input, Textarea, toast } from "../../ui/index.js";
+import { ImageCrop } from "./ImageCrop.js";
+import type { CoinDraft } from "./preview.js";
+
+interface Props {
+  draft: CoinDraft;
+  onChange: (draft: CoinDraft) => void;
+  onSubmit: (body: Body) => void;
+  busy: boolean;
+  /** Intake moderation refused the previous attempt — shown above the form, form stays editable. */
+  rejection: string | null;
+  forking: string | null;
+}
+
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
+export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }: Props) => {
+  const [pending, setPending] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof CoinDraft, string>>>({});
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const patch = (p: Partial<CoinDraft>) => onChange({ ...draft, ...p });
+
+  const pick = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("That file is not an image.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Images must be under 8 MB.");
+      return;
+    }
+    setPending(file);
+  };
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      const url = await uploadCoinImage(file);
+      patch({ imageUrl: url });
+      setPending(null);
+      setErrors((e) => ({ ...e, imageUrl: undefined }));
+    } catch (err) {
+      toast.error(isHttpError(err) ? err.message : "Upload failed. Try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const candidate = {
+      name: draft.name.trim(),
+      ticker: draft.ticker.trim().toUpperCase(),
+      imageUrl: draft.imageUrl,
+      prompt: draft.prompt.trim(),
+      twitter: draft.twitter.trim() || undefined,
+      website: draft.website.trim() || undefined,
+    };
+    const parsed = CreateLaunchBody.safeParse(candidate);
+    if (!parsed.success) {
+      const next: Partial<Record<keyof CoinDraft, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as keyof CoinDraft;
+        next[key] ??= MESSAGES[key] ?? issue.message;
+      }
+      setErrors(next);
+      return;
+    }
+    setErrors({});
+    onSubmit(parsed.data);
+  };
+
+  const slug = slugify(draft.name);
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
+      {rejection && (
+        <div role="alert" className="rounded-card border border-[color-mix(in_oklab,var(--color-danger)_40%,transparent)] bg-[color-mix(in_oklab,var(--color-danger)_8%,transparent)] px-4 py-3 text-14">
+          <div className="eyebrow mb-1 text-danger">Launch refused</div>
+          <p className="text-ink">{rejection}</p>
+          <p className="small mt-1 text-ink-2">Nothing was created and nothing was charged. Change the idea and try again.</p>
+        </div>
+      )}
+      {forking && (
+        <p className="small rounded-card border border-line bg-fill px-4 py-3 text-ink-2">
+          Forking <span className="num text-ink">${forking}</span>: the parent's spec is the starting prompt and 10% of this coin's creator fees flow upstream, forever.
+        </p>
+      )}
+
+      <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <Field label="Name" required error={errors.name} hint={slug && draft.name ? <>Lives at <span className="num">{slug}.pyre.fun</span></> : "2–32 characters"}>
+          <Input value={draft.name} onChange={(e) => patch({ name: e.target.value })} maxLength={32} placeholder="Deadline Radar" autoComplete="off" invalid={!!errors.name} />
+        </Field>
+        <Field label="Ticker" required error={errors.ticker} hint="2–10 letters or digits">
+          <Input
+            mono
+            prefix="$"
+            value={draft.ticker}
+            onChange={(e) => patch({ ticker: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) })}
+            maxLength={10}
+            placeholder="RADAR"
+            autoComplete="off"
+            invalid={!!errors.ticker}
+          />
+        </Field>
+      </div>
+
+      <Field label="Image" required error={errors.imageUrl} hint="Square, written to the chain at launch. PNG, JPG or GIF up to 8 MB.">
+        {pending ? (
+          <ImageCrop file={pending} busy={uploading} onCrop={upload} onCancel={() => setPending(null)} />
+        ) : (
+          <div className="flex items-center gap-4">
+            <Avatar src={draft.imageUrl || null} name={draft.ticker || draft.name || "?"} size={72} shape="square" />
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                className="sr-only"
+                onChange={(e) => {
+                  pick(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+              <Button type="button" variant="secondary" size="sm" onClick={() => fileInput.current?.click()}>
+                {draft.imageUrl ? "Replace image" : "Choose image"}
+              </Button>
+              {draft.imageUrl && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => patch({ imageUrl: "" })}>
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </Field>
+
+      <Field
+        label="What should the agent build?"
+        required
+        error={errors.prompt}
+        hint="One or two sentences. The intake agent turns this into a full brief you can edit in the next step."
+        meta={<span className={draft.prompt.length > 4000 ? "text-danger" : undefined}>{draft.prompt.length}/4000</span>}
+      >
+        <Textarea
+          value={draft.prompt}
+          onChange={(e) => patch({ prompt: e.target.value })}
+          rows={4}
+          maxLength={4000}
+          placeholder="A tool that watches public GitHub repos and texts me the day before a release deadline slips."
+          invalid={!!errors.prompt}
+        />
+      </Field>
+
+      <details className="group">
+        <summary className="small cursor-pointer select-none text-ink-2 hover:text-ink">
+          Socials <span className="text-ink-3">(optional)</span>
+        </summary>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <Field label="X profile" error={errors.twitter}>
+            <Input value={draft.twitter} onChange={(e) => patch({ twitter: e.target.value })} placeholder="https://x.com/yourcoin" inputMode="url" invalid={!!errors.twitter} />
+          </Field>
+          <Field label="Website" error={errors.website}>
+            <Input value={draft.website} onChange={(e) => patch({ website: e.target.value })} placeholder="https://" inputMode="url" invalid={!!errors.website} />
+          </Field>
+        </div>
+      </details>
+
+      <div className="flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="small text-ink-3">Name, ticker and image are written to the chain and cannot be changed after launch.</p>
+        <Button type="submit" size="lg" loading={busy} disabled={uploading}>
+          Draft the agent brief
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+const MESSAGES: Partial<Record<keyof CoinDraft, string>> = {
+  name: "Give the coin a name between 2 and 32 characters.",
+  ticker: "A ticker is 2–10 uppercase letters or digits.",
+  imageUrl: "Add a square image.",
+  prompt: "Say what the agent should build — at least 20 characters.",
+  twitter: "That is not a valid URL.",
+  website: "That is not a valid URL.",
+};
