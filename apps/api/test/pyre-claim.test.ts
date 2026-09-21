@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * The staker-rewards claim: a $PYRE staker converts their accrued `earnedMicros` (summed across
  * active, non-withdrawn stakes) into an ETH payout from the treasury, without unstaking. The
  * read-and-clear-then-pay guard is the load-bearing part — earnings are zeroed inside a transaction
- * so a concurrent claim cannot double-pay, and restored if the on-chain transfer fails. Everything
- * below the HTTP layer is faked, so this is pure decision-logic with no I/O.
+ * so a concurrent claim cannot double-pay, restored by INCREMENT if the transfer provably failed
+ * (a sweep may have credited more in between), and left cleared when the broadcast's receipt could
+ * not be read (it may still mine; reconcile settles it). Everything below the HTTP layer is faked.
  */
 
 interface StakeRow {
@@ -25,20 +26,29 @@ interface LedgerData {
 
 const fx = vi.hoisted(() => {
   const stakes: { rows: StakeRow[] } = { rows: [] };
-  const state = { ethPriceUsd: 2000, transferOk: true };
+  const state: { ethPriceUsd: number; transfer: "ok" | "failed" | "unconfirmed" } = { ethPriceUsd: 2000, transfer: "ok" };
   const captured: { ledger: LedgerData[] } = { ledger: [] };
+  const HASH = "0x" + "c3".repeat(32);
+  class TransactionUnconfirmedError extends Error {
+    constructor(readonly hash: string) {
+      super(`transaction ${hash} broadcast but unconfirmed`);
+    }
+  }
   return {
     stakes,
     state,
     captured,
+    HASH,
+    TransactionUnconfirmedError,
     getEthPriceUsd: vi.fn(async () => state.ethPriceUsd),
     transferEth: vi.fn(async (_from: unknown, _to: string, _wei: bigint) => {
-      if (!state.transferOk) throw new Error("rpc down");
-      return "0x" + "c3".repeat(32);
+      if (state.transfer === "failed") throw new Error("rpc down");
+      if (state.transfer === "unconfirmed") throw new TransactionUnconfirmedError(HASH);
+      return HASH;
     }),
     findMany: vi.fn(async () => stakes.rows.map((s) => ({ ...s }))),
     updateMany: vi.fn(async () => ({ count: stakes.rows.length })),
-    stakeUpdate: vi.fn(async (_p?: { where: { id: string }; data: { earnedMicros: bigint } }) => ({})),
+    stakeUpdate: vi.fn(async (_p?: { where: { id: string }; data: { earnedMicros: { increment: bigint } } }) => ({})),
     createMany: vi.fn(async (p?: { data: LedgerData[] }) => {
       captured.ledger = p?.data ?? [];
       return { count: captured.ledger.length };
@@ -59,6 +69,7 @@ vi.mock("@pyre/chain", () => ({
   getEthPriceUsd: fx.getEthPriceUsd,
   transferEth: fx.transferEth,
   transferErc20: vi.fn(),
+  TransactionUnconfirmedError: fx.TransactionUnconfirmedError,
   explorerTxUrl: (h: string) => `https://explorer.test/tx/${h}`,
   treasury: () => ({ address: "0x0000000000000000000000000000000000000001", account: { address: "0x0000000000000000000000000000000000000001" } }),
 }));
@@ -72,7 +83,7 @@ vi.mock("../src/lib/dto.js", () => ({
 vi.mock("../src/lib/metrics.js", () => ({ db: {} }));
 vi.mock("../src/lib/cache.js", () => ({ APPS_TAG: "apps", cached: <T,>(_k: unknown, _ttl: unknown, fn: () => Promise<T>) => fn() }));
 vi.mock("../src/lib/http.js", () => ({ sendCached: () => undefined }));
-vi.mock("../src/lib/pyre.js", () => ({ pyreTokenSnapshot: async () => null }));
+vi.mock("../src/lib/market.js", () => ({ marketSnapshot: async () => null }));
 vi.mock("../src/lib/votes.js", () => ({ PLATFORM_PROPOSAL_MIN_HOLD: 0n, pyreBalance: async () => 0n }));
 vi.mock("../src/lib/custodial.js", () => ({
   custodialAccount: vi.fn(),
@@ -104,7 +115,7 @@ beforeEach(() => {
   fx.stakes.rows = [];
   fx.captured.ledger = [];
   fx.state.ethPriceUsd = 2000;
-  fx.state.transferOk = true;
+  fx.state.transfer = "ok";
   for (const f of [fx.getEthPriceUsd, fx.transferEth, fx.findMany, fx.updateMany, fx.stakeUpdate, fx.createMany, fx.writeAudit]) f.mockClear();
 });
 
@@ -137,19 +148,34 @@ describe("claimStakerRewards", () => {
     expect(c.body).toMatchObject({ usdMicros: "5000000", wei: "2500000000000000", txHash: "0x" + "c3".repeat(32) });
   });
 
-  it("restores each stake's earnings and writes no ledger when the payout transfer fails", async () => {
+  it("restores each stake's earnings by increment and writes no ledger when the payout provably failed", async () => {
     fx.stakes.rows = [
       { id: "s1", appId: "app1", earnedMicros: 3_000_000n },
       { id: "s2", appId: "app2", earnedMicros: 2_000_000n },
     ];
-    fx.state.transferOk = false;
+    fx.state.transfer = "failed";
     const { r } = res();
     await expect(claimStakerRewardsHandler(req(), r)).rejects.toMatchObject({ status: 502, message: "claim_payout_failed" });
 
+    // Increment, not set: a fee sweep landing between the clear and the restore must not be overwritten.
     expect(fx.stakeUpdate).toHaveBeenCalledTimes(2);
-    expect((fx.stakeUpdate.mock.calls[0] as unknown[])?.[0]).toMatchObject({ where: { id: "s1" }, data: { earnedMicros: 3_000_000n } });
-    expect((fx.stakeUpdate.mock.calls[1] as unknown[])?.[0]).toMatchObject({ where: { id: "s2" }, data: { earnedMicros: 2_000_000n } });
+    expect((fx.stakeUpdate.mock.calls[0] as unknown[])?.[0]).toMatchObject({ where: { id: "s1" }, data: { earnedMicros: { increment: 3_000_000n } } });
+    expect((fx.stakeUpdate.mock.calls[1] as unknown[])?.[0]).toMatchObject({ where: { id: "s2" }, data: { earnedMicros: { increment: 2_000_000n } } });
     expect(fx.createMany).not.toHaveBeenCalled();
+  });
+
+  it("leaves the earnings cleared and records the hash for reconcile when the payout was broadcast but unconfirmed", async () => {
+    fx.stakes.rows = [{ id: "s1", appId: "app1", earnedMicros: 3_000_000n }];
+    fx.state.transfer = "unconfirmed";
+    const { r } = res();
+    await expect(claimStakerRewardsHandler(req(), r)).rejects.toMatchObject({ status: 502, message: "claim_unconfirmed", extra: { txHash: fx.HASH } });
+
+    // Restoring here would let the staker claim again while the first payout may still mine.
+    expect(fx.stakeUpdate).not.toHaveBeenCalled();
+    expect(fx.createMany).not.toHaveBeenCalled();
+    expect(fx.writeAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "PAYOUT_UNCONFIRMED", targetType: "User", targetId: "u1", meta: expect.objectContaining({ kind: "PYRE_CLAIM", txHash: fx.HASH }) }),
+    );
   });
 
   it("rejects a claim below the $1 floor, restoring earnings and paying nothing", async () => {
@@ -159,7 +185,7 @@ describe("claimStakerRewards", () => {
 
     expect(fx.transferEth).not.toHaveBeenCalled();
     expect(fx.stakeUpdate).toHaveBeenCalledTimes(1);
-    expect((fx.stakeUpdate.mock.calls[0] as unknown[])?.[0]).toMatchObject({ where: { id: "s1" }, data: { earnedMicros: 500_000n } });
+    expect((fx.stakeUpdate.mock.calls[0] as unknown[])?.[0]).toMatchObject({ where: { id: "s1" }, data: { earnedMicros: { increment: 500_000n } } });
   });
 
   it("requires a wallet on the account", async () => {

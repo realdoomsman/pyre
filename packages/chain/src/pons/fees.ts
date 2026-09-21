@@ -1,5 +1,5 @@
 import { BaseError, ContractFunctionRevertedError, type Hash, type LocalAccount } from "viem";
-import { publicClient, waitForSuccess, walletClient, type PyrePublicClient } from "../chain.js";
+import { publicClient, sendTx, type PyrePublicClient } from "../chain.js";
 import { curveAbi, escrowAbi, hookAbi } from "./abi.js";
 import { ponsAddresses } from "./addresses.js";
 import type { LaunchRecord } from "./read.js";
@@ -46,9 +46,8 @@ async function sweepCurve(account: LocalAccount, launch: LaunchRecord, client: P
   } catch (err) {
     return { swept: false, reason: tolerate(err) };
   }
-  const hash = await walletClient(account).writeContract({ ...curve, functionName: "sweepFees", args: [0n] });
-  await waitForSuccess(hash, client);
-  return { swept: true, hash };
+  const receipt = await sendTx(account, (wallet) => wallet.writeContract({ ...curve, functionName: "sweepFees", args: [0n] }), client);
+  return { swept: true, hash: receipt.transactionHash };
 }
 
 async function sweepPool(account: LocalAccount, launch: LaunchRecord, client: PyrePublicClient): Promise<SweepResult> {
@@ -63,9 +62,8 @@ async function sweepPool(account: LocalAccount, launch: LaunchRecord, client: Py
   } catch (err) {
     return { swept: false, reason: tolerate(err) };
   }
-  const hash = await walletClient(account).writeContract({ ...hook, functionName: "sweepPoolFees", args: [launch.poolId, 0n, 0n] });
-  await waitForSuccess(hash, client);
-  return { swept: true, hash };
+  const receipt = await sendTx(account, (wallet) => wallet.writeContract({ ...hook, functionName: "sweepPoolFees", args: [launch.poolId, 0n, 0n] }), client);
+  return { swept: true, hash: receipt.transactionHash };
 }
 
 /**
@@ -87,7 +85,6 @@ export async function claimEscrow(account: LocalAccount): Promise<ClaimResult> {
   const { feeEscrow } = ponsAddresses();
   const wei = await client.readContract({ address: feeEscrow, abi: escrowAbi, functionName: "balanceOf", args: [account.address] });
   if (wei === 0n) return { wei: 0n };
-  const hash = await walletClient(account).writeContract({ address: feeEscrow, abi: escrowAbi, functionName: "claim" });
-  await waitForSuccess(hash, client);
-  return { hash, wei };
+  const receipt = await sendTx(account, (wallet) => wallet.writeContract({ address: feeEscrow, abi: escrowAbi, functionName: "claim" }), client);
+  return { hash: receipt.transactionHash, wei };
 }

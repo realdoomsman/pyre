@@ -148,7 +148,7 @@ vi.mock("../src/lib/votes.js", () => ({
   PLATFORM_PROPOSAL_MIN_HOLD: 0n,
   SUPPLY_BASE_UNITS: 10n ** 27n,
 }));
-vi.mock("../src/lib/pyre.js", () => ({ pyreTokenSnapshot: async () => null }));
+vi.mock("../src/lib/market.js", () => ({ marketSnapshot: async () => null }));
 vi.mock("../src/lib/audit.js", () => ({ writeAudit: fx.writeAudit }));
 vi.mock("../src/lib/events.js", () => ({
   publishEvent: fx.publishEvent,

@@ -2,7 +2,10 @@ export {
   pyreChain,
   publicClient,
   walletClient,
+  sendTx,
   waitForSuccess,
+  TransactionRevertedError,
+  TransactionUnconfirmedError,
   explorerTxUrl,
   explorerAddressUrl,
   ROBINHOOD_CHAIN_ID,
@@ -11,6 +14,7 @@ export {
   type PyrePublicClient,
   type PyreWalletClient,
 } from "./chain.js";
+export { configureSendLock, redisSendLockStore, withSendLock, sendLockKey, SendLockTimeoutError, SEND_LOCK_TTL_MS, type SendLockStore, type RedisLike } from "./sendLock.js";
 export { deriveWallet, deriveAppWallet, treasury, USER_BRANCH, APP_BRANCH, type DerivedWallet } from "./keys.js";
 export { getEthPriceUsd } from "./price.js";
 export {
@@ -35,7 +39,7 @@ export {
 } from "./transfer.js";
 export { burnTokens, attestBurn, attestationHash, encodeAttestation, parseAttestation, ATTESTATION_PREFIX } from "./burn.js";
 export { getHolders, blockscoutGet, blockscoutApiBase, BlockscoutNotFoundError, type BlockscoutEndpoint, type Holder, type HolderSystemTag } from "./holders.js";
-export { getCandles, getTrades, buildCandlesFromTrades, INTERVAL_SECONDS, LOG_CHUNK_BLOCKS, type Candle, type CandleInterval, type Trade } from "./candles.js";
+export { getTrades, buildCandlesFromTrades, INTERVAL_SECONDS, LOG_CHUNK_BLOCKS, type Candle, type CandleInterval, type Trade } from "./candles.js";
 
 // PONS v2
 export { ponsAddresses, DEAD_ADDRESS, type PonsAddresses, type PonsAddressKey } from "./pons/addresses.js";

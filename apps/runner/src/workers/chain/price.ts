@@ -1,9 +1,12 @@
 import { Worker } from "bullmq";
 import { dec, prisma } from "@pyre/db";
-import { getPrice, readLaunch } from "@pyre/chain";
+import { getEthPriceUsd, getPrice, getTokenInfo, readLaunch } from "@pyre/chain";
+import { MARKET_SNAPSHOT_KEY, type MarketSnapshot } from "@pyre/shared";
+import type { Logger } from "pino";
 import type { Address } from "viem";
 import { withLock } from "../../lib/lock.js";
 import { CHAIN_QUEUES, type ChainWorkerContext } from "./context.js";
+import { chainWorkerEnv } from "./env.js";
 import { syncLaunchPhase } from "./launchState.js";
 
 /** Exceeds a normal pass (a few reads per app) without outliving the 60s schedule by much. */
@@ -24,9 +27,49 @@ export async function change24hPct(appId: string, priceUsd: number, now = Math.f
   return ((priceUsd - ref) / ref) * 100;
 }
 
+/**
+ * Writes `MarketSnapshot` (ETH/USD plus $PYRE's on-chain state) to `PlatformSetting` so the API's
+ * public reads are served from the database. Runs every price pass (60 s); the API caches the row
+ * for 30 s, so a figure is at most ~90 s old and a request never waits on the RPC or a price feed.
+ * A pass that cannot read the chain keeps the previous snapshot rather than writing a hole.
+ */
+export async function persistMarketSnapshot(log: Logger): Promise<void> {
+  const ethPriceUsd = await getEthPriceUsd();
+  let pyreToken: MarketSnapshot["pyreToken"] = null;
+  const token = chainWorkerEnv().PYRE_TOKEN;
+  if (token) {
+    const launch = await readLaunch(token);
+    if (launch.exists) {
+      const [price, info] = await Promise.all([getPrice(launch), getTokenInfo(token)]);
+      pyreToken = {
+        address: launch.token,
+        name: info.name,
+        symbol: info.symbol,
+        phase: launch.phase,
+        curveAddress: launch.curve,
+        poolId: launch.poolId,
+        progress: price.progress,
+        priceUsd: price.priceUsd,
+        priceEth: price.priceEth,
+        mcapUsd: price.mcapUsd,
+        totalSupplyUnits: price.totalSupply.toString(),
+        burnedUnits: price.burnedUnits.toString(),
+      };
+    }
+  }
+  const value: MarketSnapshot = { ethPriceUsd, pyreToken, updatedAt: new Date().toISOString() };
+  await prisma.platformSetting.upsert({ where: { key: MARKET_SNAPSHOT_KEY }, create: { key: MARKET_SNAPSHOT_KEY, value }, update: { value } });
+  log.info({ ethPriceUsd, pyre: pyreToken !== null }, "market snapshot persisted");
+}
+
 export async function runPriceRefresh(ctx: ChainWorkerContext): Promise<void> {
   const log = ctx.log.child({ worker: "price" });
   const pass = await withLock(ctx.redis, "lock:price:pass", PASS_LOCK_TTL_SECONDS, async () => {
+    try {
+      await persistMarketSnapshot(log);
+    } catch (err) {
+      log.warn({ err }, "market snapshot refresh failed; API keeps serving the previous one");
+    }
     const apps = await prisma.app.findMany({
       where: { tokenAddress: { not: null }, status: { in: ["LIVE", "DORMANT"] } },
       select: { id: true, tokenAddress: true, launchPhase: true, poolId: true, graduatedAt: true },

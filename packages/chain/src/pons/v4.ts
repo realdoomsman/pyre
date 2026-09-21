@@ -1,6 +1,6 @@
 import { getAddress, maxUint160, maxUint256, parseEventLogs, type Address, type Hash, type Hex, type LocalAccount } from "viem";
 import { encodeV4ExactInSingle as encodeWith, swapDirection, type LaunchRecord, type SwapInput } from "../browser.js";
-import { publicClient, waitForSuccess, walletClient, type PyrePublicClient } from "../chain.js";
+import { publicClient, sendTx, type PyrePublicClient } from "../chain.js";
 import { erc20Abi, hookAbi, permit2Abi, poolManagerAbi, universalRouterAbi, v4QuoterAbi } from "./abi.js";
 import { ponsAddresses } from "./addresses.js";
 
@@ -40,22 +40,19 @@ export function encodeV4ExactInSingle(launch: LaunchRecord, input: SwapInput, mi
 
 async function ensurePermit2(account: LocalAccount, token: Address, amount: bigint, client: PyrePublicClient): Promise<void> {
   const { permit2, universalRouter } = ponsAddresses();
-  const wallet = walletClient(account);
   const erc20Allowance = await client.readContract({ address: token, abi: erc20Abi, functionName: "allowance", args: [account.address, permit2] });
   if (erc20Allowance < amount) {
-    const hash = await wallet.writeContract({ address: token, abi: erc20Abi, functionName: "approve", args: [permit2, maxUint256] });
-    await waitForSuccess(hash, client);
+    await sendTx(account, (wallet) => wallet.writeContract({ address: token, abi: erc20Abi, functionName: "approve", args: [permit2, maxUint256] }), client);
   }
   const [allowed, expiration] = await client.readContract({ address: permit2, abi: permit2Abi, functionName: "allowance", args: [account.address, token, universalRouter] });
   const now = Math.floor(Date.now() / 1000);
   if (allowed < amount || expiration <= now + 60) {
-    const hash = await wallet.writeContract({
-      address: permit2,
-      abi: permit2Abi,
-      functionName: "approve",
-      args: [token, universalRouter, maxUint160, now + PERMIT2_EXPIRY_SECONDS],
-    });
-    await waitForSuccess(hash, client);
+    await sendTx(
+      account,
+      (wallet) =>
+        wallet.writeContract({ address: permit2, abi: permit2Abi, functionName: "approve", args: [token, universalRouter, maxUint160, now + PERMIT2_EXPIRY_SECONDS] }),
+      client,
+    );
   }
 }
 
@@ -71,14 +68,12 @@ export async function v4SwapExactIn(account: LocalAccount, launch: LaunchRecord,
   if (input.tokensIn !== undefined) await ensurePermit2(account, launch.token, amountIn, client);
   const { commands, inputs } = encodeV4ExactInSingle(launch, input, minOut, account.address, recipient);
   const deadline = BigInt(Math.floor(Date.now() / 1000)) + DEADLINE_SECONDS;
-  const hash = await walletClient(account).writeContract({
-    address: universalRouter,
-    abi: universalRouterAbi,
-    functionName: "execute",
-    args: [commands, inputs, deadline],
-    value: input.ethIn ?? 0n,
-  });
-  const receipt = await waitForSuccess(hash, client);
+  const receipt = await sendTx(
+    account,
+    (wallet) => wallet.writeContract({ address: universalRouter, abi: universalRouterAbi, functionName: "execute", args: [commands, inputs, deadline], value: input.ethIn ?? 0n }),
+    client,
+  );
+  const hash = receipt.transactionHash;
 
   if (input.ethIn !== undefined) {
     const transfers = parseEventLogs({ abi: erc20Abi, eventName: "Transfer", logs: receipt.logs, args: { to: getAddress(recipient) } }).filter(

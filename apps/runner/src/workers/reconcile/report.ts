@@ -3,7 +3,7 @@ import { audit, jsonSafe } from "../../lib/audit.js";
 import type { WorkerContext } from "../../lib/queues.js";
 
 /** `ReconcileRun.kind`: one row per check per pass. */
-export type ReconcileKind = "JOBS" | "SANDBOXES" | "JOBTOKENS" | "LEDGER" | "FEES" | "BURNS";
+export type ReconcileKind = "JOBS" | "SANDBOXES" | "JOBTOKENS" | "PAYOUTS" | "LEDGER" | "FEES" | "BURNS";
 
 /** One machine-readable observation. `code` is stable; the rest is context for an operator. */
 export interface Finding {

@@ -24,20 +24,35 @@ interface LedgerRow {
 const fx = vi.hoisted(() => {
   const ledger: LedgerRow[] = [];
   const treasuryEntries: LedgerRow[] = [];
-  const state = { ethPriceUsd: 2000, transferOk: true, ethBalance: 0n, usdgBalance: 0n, dailyUsed: 0n };
+  const state: { ethPriceUsd: number; transfer: "ok" | "failed" | "unconfirmed"; ethBalance: bigint; usdgBalance: bigint; dailyUsed: bigint } = {
+    ethPriceUsd: 2000,
+    transfer: "ok",
+    ethBalance: 0n,
+    usdgBalance: 0n,
+    dailyUsed: 0n,
+  };
+  const HASH = "0x" + "a1".repeat(32);
+  class TransactionUnconfirmedError extends Error {
+    constructor(readonly hash: string) {
+      super(`transaction ${hash} broadcast but unconfirmed`);
+    }
+  }
   let seq = 0;
   return {
     ledger,
     treasuryEntries,
     state,
+    HASH,
+    TransactionUnconfirmedError,
     getEthPriceUsd: vi.fn(async () => state.ethPriceUsd),
     transferEth: vi.fn(async (_from: unknown, _to: string, _wei: bigint) => {
-      if (!state.transferOk) throw new Error("rpc down");
-      return "0x" + "a1".repeat(32);
+      if (state.transfer === "failed") throw new Error("rpc down");
+      if (state.transfer === "unconfirmed") throw new TransactionUnconfirmedError(HASH);
+      return HASH;
     }),
     signUsdgAuthorization: vi.fn(async (_account: unknown, opts: { to: string; units: bigint }) => ({ from: "0xcustodial", to: opts.to, value: opts.units })),
     relayUsdgAuthorization: vi.fn(async () => {
-      if (!state.transferOk) throw new Error("rpc down");
+      if (state.transfer === "failed") throw new Error("rpc down");
       return "0x" + "b2".repeat(32);
     }),
     custodialEthBalance: vi.fn(async () => state.ethBalance),
@@ -87,6 +102,7 @@ vi.mock("@pyre/db", () => ({
 vi.mock("@pyre/chain", () => ({
   getEthPriceUsd: fx.getEthPriceUsd,
   transferEth: fx.transferEth,
+  TransactionUnconfirmedError: fx.TransactionUnconfirmedError,
   signUsdgAuthorization: fx.signUsdgAuthorization,
   relayUsdgAuthorization: fx.relayUsdgAuthorization,
   getErc20Balance: async () => 0n,
@@ -148,7 +164,7 @@ beforeEach(() => {
   fx.ledger.length = 0;
   fx.treasuryEntries.length = 0;
   fx.state.ethPriceUsd = 2000;
-  fx.state.transferOk = true;
+  fx.state.transfer = "ok";
   fx.state.ethBalance = 0n;
   fx.state.usdgBalance = 0n;
   fx.state.dailyUsed = 0n;
@@ -170,13 +186,25 @@ describe("claim (fee payout)", () => {
     expect(c.body).toMatchObject({ usdMicros: "5000000", wei: "2500000000000000", txHash: "0x" + "a1".repeat(32) });
   });
 
-  it("rolls the clearing entry back and pays nothing when the payout transfer fails", async () => {
+  it("rolls the clearing entry back and pays nothing when the payout provably failed", async () => {
     fx.ledger.push({ id: "seed", account: "LAUNCHER:u1", deltaMicros: 5_000_000n });
-    fx.state.transferOk = false;
+    fx.state.transfer = "failed";
     const { r } = res();
-    await expect(claimHandler(req(), r)).rejects.toMatchObject({ status: 502 });
+    await expect(claimHandler(req(), r)).rejects.toMatchObject({ status: 502, message: "claim_payout_failed" });
     expect(balance()).toBe(5_000_000n);
     expect(fx.treasuryEntries).toHaveLength(0);
+  });
+
+  it("keeps the clearing entry (balance stays zero) and hands the hash to reconcile when the payout was broadcast but unconfirmed", async () => {
+    fx.ledger.push({ id: "seed", account: "LAUNCHER:u1", deltaMicros: 5_000_000n });
+    fx.state.transfer = "unconfirmed";
+    const { r } = res();
+    await expect(claimHandler(req(), r)).rejects.toMatchObject({ status: 502, message: "claim_unconfirmed", extra: { txHash: fx.HASH } });
+    // Releasing the balance here would let the launcher claim the same funds twice if the first payout mines.
+    expect(balance()).toBe(0n);
+    expect(fx.ledgerUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { memo: `fees claim unconfirmed ${fx.HASH}` } }));
+    expect(fx.treasuryEntries).toHaveLength(0); // the treasury debit is written by reconcile once the receipt confirms
+    expect(fx.writeAudit).toHaveBeenCalledWith(expect.objectContaining({ action: "PAYOUT_UNCONFIRMED", targetType: "LedgerEntry", meta: expect.objectContaining({ kind: "FEES_CLAIM", txHash: fx.HASH }) }));
   });
 
   it("rejects a claim below the $1 floor without touching the ledger or treasury", async () => {
@@ -261,7 +289,7 @@ describe("withdraw (custodial payout)", () => {
 
   it("releases the daily reservation when the on-chain transfer fails, so a retry isn't blocked", async () => {
     fx.state.ethBalance = 200_000_000_000_000_000n;
-    fx.state.transferOk = false;
+    fx.state.transfer = "failed";
     const { r } = res();
     await expect(withdrawHandler(req({ asset: "ETH", to: DEST, amount: 0.1 }), r)).rejects.toMatchObject({ status: 502 });
     expect(fx.state.dailyUsed).toBe(0n); // reserved then released — nothing consumed

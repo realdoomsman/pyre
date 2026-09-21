@@ -38,9 +38,6 @@ export const CREDITS_FUNDING_BPS = 5000;
 /** Minimum accrued, unfunded credits (USD) before an ETH→USDG→card deposit is worth its fees. */
 export const MIN_CREDITS_FUNDING_USD = 15;
 
-/** Merged human contributors earn this share of an app's launcher-equivalent fee stream, split among them. */
-export const CONTRIBUTOR_POOL_BPS = 500;
-
 /** Minimum accrued build budget before the first build starts. */
 export const MIN_BUILD_BUDGET_USD = 50;
 

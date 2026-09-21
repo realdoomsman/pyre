@@ -306,6 +306,7 @@ CREATE TABLE "Buyback" (
     "status" "BuybackStatus" NOT NULL DEFAULT 'PENDING',
     "revenueMicros" BIGINT NOT NULL,
     "ethWei" DECIMAL(78,0) NOT NULL,
+    "refundWei" DECIMAL(78,0) NOT NULL DEFAULT 0,
     "tokensBought" DECIMAL(78,0) NOT NULL DEFAULT 0,
     "tokensBurned" DECIMAL(78,0) NOT NULL DEFAULT 0,
     "burnedUnits" DECIMAL(78,0),
@@ -320,6 +321,26 @@ CREATE TABLE "Buyback" (
     "completedAt" TIMESTAMP(3),
 
     CONSTRAINT "Buyback_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PyreBurn" (
+    "id" TEXT NOT NULL,
+    "status" "BuybackStatus" NOT NULL DEFAULT 'PENDING',
+    "usdMicros" BIGINT NOT NULL,
+    "ethWei" DECIMAL(78,0) NOT NULL,
+    "tokensBought" DECIMAL(78,0) NOT NULL DEFAULT 0,
+    "tokensBurned" DECIMAL(78,0) NOT NULL DEFAULT 0,
+    "burnedUnits" DECIMAL(78,0),
+    "attestHash" TEXT NOT NULL,
+    "swapTx" TEXT,
+    "burnTx" TEXT,
+    "attestTx" TEXT,
+    "error" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "PyreBurn_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -771,6 +792,9 @@ CREATE INDEX "RevenueEvent_buybackId_idx" ON "RevenueEvent"("buybackId");
 
 -- CreateIndex
 CREATE INDEX "Buyback_appId_createdAt_idx" ON "Buyback"("appId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "PyreBurn_status_createdAt_idx" ON "PyreBurn"("status", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "CreditFunding_appId_status_idx" ON "CreditFunding"("appId", "status");

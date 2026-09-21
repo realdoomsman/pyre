@@ -46,6 +46,7 @@ import { HttpError, parse, wrap } from "../lib/errors.js";
 import { GLOBAL_FEED_CHANNEL, publishEvent, publishGlobal } from "../lib/events.js";
 import { pageQuery, sendCached, sizeQuery } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
+import { marketSnapshot } from "../lib/market.js";
 import { db, sseConnections } from "../lib/metrics.js";
 import { subscribeChannel } from "../lib/redis.js";
 import { SUPPLY_BASE_UNITS } from "../lib/votes.js";
@@ -113,8 +114,10 @@ const burned24hByApp = async (appIds: string[]): Promise<Record<string, bigint>>
   return out;
 };
 
+/** Rows → summaries. The ETH price comes from the runner's snapshot row (cached, DB-only): this sits on every list and detail read. */
 const summarize = async (rows: AppSummaryRow[]): Promise<{ items: AppSummaryDto[]; extras: Record<string, AppExtras>; ethPriceUsd: number }> => {
-  const [extras, ethPriceUsd] = await Promise.all([appExtrasByApp(rows.map((a) => a.id)), getEthPriceUsd()]);
+  const [extras, market] = await Promise.all([appExtrasByApp(rows.map((a) => a.id)), marketSnapshot()]);
+  const ethPriceUsd = market?.ethPriceUsd ?? 0;
   return { items: rows.map((a) => appSummary(a, extras[a.id]!, ethPriceUsd)), extras, ethPriceUsd };
 };
 

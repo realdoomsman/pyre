@@ -9,7 +9,7 @@ import { BUYBACK_INCLUDE, buybackDto, pctOfSupply } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
 import { pageQuery, sendCached } from "../lib/http.js";
 import { db } from "../lib/metrics.js";
-import { pyreTokenSnapshot } from "../lib/pyre.js";
+import { marketSnapshot } from "../lib/market.js";
 import { queues } from "../lib/queues.js";
 import { redis } from "../lib/redis.js";
 import { listCounts } from "./apps.js";
@@ -18,6 +18,11 @@ export const publicRoutes = Router();
 
 const DAY_MS = 86_400_000;
 
+/**
+ * Platform aggregates. Everything here is Postgres (one batched transaction) plus the runner's
+ * market snapshot row; nothing in this path touches the RPC or a price feed, so a cold request
+ * costs a few indexed queries. Cached 30 s (`STATS_TTL_MS`) and served with `s-maxage=30, swr=120`.
+ */
 const loadStats = async (): Promise<StatsDto> => {
   const now = Date.now();
   const since24h = new Date(now - DAY_MS);
@@ -39,7 +44,8 @@ const loadStats = async (): Promise<StatsDto> => {
       select: { startedAt: true, finishedAt: true },
     }),
   ]);
-  const [ethPriceUsd, pyre, counts] = await Promise.all([getEthPriceUsd(), pyreTokenSnapshot(), listCounts()]);
+  const [market, counts] = await Promise.all([marketSnapshot(), listCounts()]);
+  const pyre = market?.pyreToken ?? null;
   let agentMs = 0;
   for (const j of jobsToday) {
     if (!j.startedAt) continue;
@@ -59,24 +65,27 @@ const loadStats = async (): Promise<StatsDto> => {
     counts,
     buybacksCount: burnsAll,
     agentHoursToday: Math.round((agentMs / 3_600_000) * 100) / 100,
-    ethPriceUsd,
+    ethPriceUsd: market?.ethPriceUsd ?? 0,
     pyreToken: pyre
       ? {
-          address: pyre.launch.token,
-          priceUsd: pyre.price.priceUsd,
-          mcapUsd: pyre.price.mcapUsd,
-          burnedUnits: pyre.price.burnedUnits.toString(),
-          burnedPct: pctOfSupply(pyre.price.burnedUnits),
+          address: pyre.address,
+          priceUsd: pyre.priceUsd,
+          mcapUsd: pyre.mcapUsd,
+          burnedUnits: pyre.burnedUnits,
+          burnedPct: pctOfSupply(BigInt(pyre.burnedUnits)),
         }
       : null,
     updatedAt: new Date(now).toISOString(),
   };
 };
 
+/** `/stats` is identical for every viewer: one shared cache entry, refreshed at most every 30 s. */
+export const STATS_TTL_MS = 30_000;
+
 publicRoutes.get(
   "/stats",
   wrap(async (_req, res) => {
-    sendCached(res, await cached("stats", 30_000, loadStats, [APPS_TAG]), { maxAge: 30, swr: 120 });
+    sendCached(res, await cached("stats", STATS_TTL_MS, loadStats, [APPS_TAG]), { maxAge: 30, swr: 120 });
   }),
 );
 

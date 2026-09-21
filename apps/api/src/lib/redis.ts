@@ -1,3 +1,4 @@
+import { configureSendLock, redisSendLockStore } from "@pyre/chain";
 import { Redis } from "ioredis";
 import { env } from "../env.js";
 import { logger } from "./logger.js";
@@ -5,6 +6,8 @@ import { logger } from "./logger.js";
 /** Shared command connection (BullMQ requires maxRetriesPerRequest null). */
 export const redis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null, enableReadyCheck: false });
 redis.on("error", (err) => logger.error({ err }, "redis error"));
+// The treasury and app wallets are also signed by the runner: every send takes `lock:send:<address>` here.
+configureSendLock(redisSendLockStore(redis));
 
 /** Dedicated subscriber; one channel subscription per app, fanned out to SSE clients. */
 const subscriber = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null, enableReadyCheck: false });

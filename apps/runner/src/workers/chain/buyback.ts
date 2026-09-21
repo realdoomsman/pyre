@@ -1,6 +1,6 @@
 import { Worker, type Job } from "bullmq";
 import type { Logger } from "pino";
-import { big, dec, prisma, type Buyback, type Prisma } from "@pyre/db";
+import { big, dec, prisma, type Buyback, type Prisma, type PyreBurn } from "@pyre/db";
 import { LAUNCH_PHASE, MIN_BUYBACK_USD, PONS_TOTAL_SUPPLY, REVENUE_SPLIT_BPS, bps, explorerTxUrl, weiFromUsdMicros } from "@pyre/shared";
 import {
   attestBurn,
@@ -19,7 +19,7 @@ import {
   v4SwapExactIn,
   type LaunchRecord,
 } from "@pyre/chain";
-import type { Address, Hash, Hex } from "viem";
+import type { Address, Hash, Hex, PrivateKeyAccount } from "viem";
 import { z } from "zod";
 import { audit } from "../../lib/audit.js";
 import { withLock } from "../../lib/lock.js";
@@ -58,6 +58,18 @@ export interface BuyResult {
 
 /** Percent of the launch supply. */
 export const burnedPctOfSupply = (units: bigint): number => (Number(units) / Number(PONS_TOTAL_SUPPLY)) * 100;
+
+/**
+ * USD the treasury actually parted with for a settled buy. `ethWei` is what the chain consumed and
+ * `refundWei` what a clamped final curve buy handed back, so the revenue's buyback share is scaled
+ * by consumed ÷ quoted; the refund never left the treasury and must not be debited.
+ */
+export const treasurySpentMicros = (row: Pick<Buyback, "revenueMicros" | "ethWei" | "refundWei">): bigint => {
+  const quotedMicros = bps(row.revenueMicros, REVENUE_SPLIT_BPS.BUYBACK_BURN);
+  const spent = big(row.ethWei);
+  const quoted = spent + big(row.refundWei);
+  return quoted > 0n ? (quotedMicros * spent) / quoted : quotedMicros;
+};
 
 /**
  * Buys `wei` worth of the launch token to the treasury on whichever venue the launch is trading
@@ -148,7 +160,7 @@ async function swapStage(launch: LaunchRecord, buyback: Buyback, log: Logger): P
   try {
     await prisma.buyback.updateMany({
       where: { id: buyback.id, status: "SWAPPING" },
-      data: { status: "SWAPPED", swapTx: buy.hash, tokensBought: dec(buy.tokensOut), ethWei: dec(buy.spentWei), error: null },
+      data: { status: "SWAPPED", swapTx: buy.hash, tokensBought: dec(buy.tokensOut), ethWei: dec(buy.spentWei), refundWei: dec(ethWei - buy.spentWei), error: null },
     });
     return await prisma.buyback.findUniqueOrThrow({ where: { id: buyback.id } });
   } catch (err) {
@@ -183,7 +195,7 @@ async function burnStage(ctx: ChainWorkerContext, app: AppRow, launch: LaunchRec
   }
   const burnedUnits = big(row.burnedUnits ?? row.tokensBurned);
   const ethWei = big(row.ethWei);
-  const buybackMicros = bps(row.revenueMicros, REVENUE_SPLIT_BPS.BUYBACK_BURN);
+  const spentMicros = treasurySpentMicros(row);
   await prisma.$transaction(async (tx) => {
     await tx.buyback.update({ where: { id: row.id }, data: { status: "BURNED", completedAt: new Date(), error: null } });
     const current = await tx.app.findUniqueOrThrow({ where: { id: app.id }, select: { pendingRevenueMicros: true } });
@@ -194,7 +206,7 @@ async function burnStage(ctx: ChainWorkerContext, app: AppRow, launch: LaunchRec
     });
     await tx.ledgerEntry.createMany({
       data: [
-        { account: "TREASURY", deltaMicros: -buybackMicros, refType: "Buyback", refId: row.id, memo: `buyback swap ${row.swapTx ?? ""} burn ${row.burnTx ?? ""} attest ${row.attestTx ?? ""}` },
+        { account: "TREASURY", deltaMicros: -spentMicros, refType: "Buyback", refId: row.id, memo: `buyback swap ${row.swapTx ?? ""} burn ${row.burnTx ?? ""} attest ${row.attestTx ?? ""}` },
         { account: "PYRE_TOKEN", deltaMicros: row.pyreMicros, refType: "Buyback", refId: row.id, memo: "$PYRE share of revenue" },
         { account: "OPS", deltaMicros: row.opsMicros, refType: "Buyback", refId: row.id, memo: "ops share of revenue" },
       ],
@@ -224,11 +236,13 @@ async function burnStage(ctx: ChainWorkerContext, app: AppRow, launch: LaunchRec
       attestTx: row.attestTx,
       attestHash: row.attestHash,
       ethWei,
+      refundWei: big(row.refundWei),
       tokensBought: big(row.tokensBought),
       tokensBurned: big(row.tokensBurned),
       burnedUnits,
       revenueMicros: row.revenueMicros,
-      buybackMicros,
+      buybackMicros: bps(row.revenueMicros, REVENUE_SPLIT_BPS.BUYBACK_BURN),
+      spentMicros,
       pyreMicros: row.pyreMicros,
       opsMicros: row.opsMicros,
       venue: launch.phase === LAUNCH_PHASE.POOL ? "POOL" : "CURVE",
@@ -303,62 +317,146 @@ async function runBuyback(ctx: ChainWorkerContext, appId: string, log: Logger): 
 /**
  * $PYRE's own buy-and-burn. The `PYRE_TOKEN` ledger account accrues 25% of every creator fee and
  * 10% of every app's revenue; once it clears the buyback minimum the treasury buys $PYRE on its
- * curve/pool and burns it. The ledger is debited BEFORE the buy (a crash after the debit
- * under-burns and leaves the ETH in the treasury; the reverse would over-spend), the debit is
- * reversed if the buy never broadcast, and the attestation hashes the ledger rows it consumed.
+ * curve/pool and burns it. Same shape as the app buyback: one `PyreBurn` row walks PENDING →
+ * SWAPPING → SWAPPED → BURNED with every irreversible step persisted before the next, so a crash
+ * between the buy and the burn resumes at the burn instead of stranding bought $PYRE in the
+ * treasury (where it is indistinguishable from staked custody). The ledger debit is written with
+ * the PENDING row (a crash after the debit under-burns; the reverse would over-spend) and the
+ * attestation hashes the credit rows it consumed.
  */
 export async function runPyreBuyback(log: Logger): Promise<void> {
   const token = chainWorkerEnv().PYRE_TOKEN;
   if (!token) return;
-  const balance = await prisma.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN" }, _sum: { deltaMicros: true } });
-  const pending = balance._sum.deltaMicros ?? 0n;
-  if (pending < MIN_BUYBACK_MICROS) return;
+  // A row stuck in SWAPPING is ambiguous: the buy may or may not have landed. Never re-buy it.
+  const swapping = await prisma.pyreBurn.findFirst({ where: { status: "SWAPPING" }, orderBy: { createdAt: "asc" } });
+  if (swapping) {
+    log.warn({ pyreBurnId: swapping.id }, "$PYRE burn stuck in SWAPPING; buy outcome unknown, needs manual reconcile, skipping");
+    if (!swapping.error) await prisma.pyreBurn.update({ where: { id: swapping.id }, data: { error: "interrupted mid-buy; on-chain outcome unknown, manual reconcile required" } });
+    return;
+  }
+  const t = treasury();
+  // Resume: bought but not yet burned/attested/settled.
+  const swapped = await prisma.pyreBurn.findFirst({ where: { status: "SWAPPED" }, orderBy: { createdAt: "asc" } });
+  if (swapped) {
+    try {
+      await pyreBurnStage(t.account, token, swapped, log);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      log.error({ err, pyreBurnId: swapped.id }, "$PYRE burn stage failed; will retry next cycle");
+      await prisma.pyreBurn.update({ where: { id: swapped.id }, data: { error: message.slice(0, 500) } });
+      return;
+    }
+  }
   const launch = await readLaunch(token);
   if (!launch.exists || !tradable(launch)) {
     log.warn({ token, phase: launch.phase }, "$PYRE has no market in this phase; buyback deferred");
     return;
   }
-  const t = treasury();
-  const ethWei = weiFromUsdMicros(pending, await getEthPriceUsd());
+  const row = (await prisma.pyreBurn.findFirst({ where: { status: "PENDING" }, orderBy: { createdAt: "asc" } })) ?? (await openPyreBurn(log));
+  if (!row) return;
+  const ethWei = big(row.ethWei);
   const treasuryWei = await getEthBalance(t.address);
   if (treasuryWei - ethWei < TREASURY_FLOOR_WEI) {
-    log.warn({ treasuryWei: treasuryWei.toString(), ethWei: ethWei.toString() }, "treasury ETH too low for the $PYRE buyback");
+    log.warn({ pyreBurnId: row.id, treasuryWei: treasuryWei.toString(), ethWei: ethWei.toString() }, "treasury ETH too low for the $PYRE buyback; left PENDING");
     return;
   }
-  const lastBurn = await prisma.ledgerEntry.findFirst({ where: { account: "PYRE_TOKEN", refType: "PyreBurn" }, orderBy: { createdAt: "desc" }, select: { createdAt: true } });
-  const consumed = await prisma.ledgerEntry.findMany({
-    where: { account: "PYRE_TOKEN", deltaMicros: { gt: 0n }, ...(lastBurn ? { createdAt: { gt: lastBurn.createdAt } } : {}) },
-    select: { id: true },
-  });
-  const attestHash = attestationHash(consumed.map((e) => e.id));
-  const claim = await prisma.ledgerEntry.create({
-    data: { account: "PYRE_TOKEN", deltaMicros: -pending, refType: "PyreBurn", refId: attestHash, memo: "$PYRE buyback in flight" },
-  });
+  // CAS PENDING → SWAPPING claims the buy; past this point the buy may have broadcast.
+  const claimed = await prisma.pyreBurn.updateMany({ where: { id: row.id, status: "PENDING" }, data: { status: "SWAPPING" } });
+  if (claimed.count !== 1) return;
   let buy: BuyResult;
   try {
     buy = await buyTokens(launch, ethWei);
   } catch (err) {
-    // Nothing broadcast for sure only when the failure came before signing; the buy helpers quote
-    // first and throw before sending on a zero quote. Any other failure is ambiguous: keep the debit
-    // and let an operator settle it from the audit trail rather than risk re-buying.
     const message = err instanceof Error ? err.message : String(err);
-    log.error({ err, ledgerEntryId: claim.id }, "$PYRE buy failed; ledger debit kept for manual reconcile");
-    await prisma.ledgerEntry.update({ where: { id: claim.id }, data: { memo: `$PYRE buyback failed: ${message.slice(0, 300)}` } });
+    log.error({ err, pyreBurnId: row.id }, "$PYRE buy failed after claim; it may have broadcast, leaving SWAPPING for manual reconcile");
+    await prisma.pyreBurn.update({ where: { id: row.id }, data: { error: message.slice(0, 500) } }).catch((e) => log.error({ err: e, pyreBurnId: row.id }, "failed to persist $PYRE buy error"));
     return;
   }
-  const before = await totalSupply(token);
-  const burnTx = await burnTokens(t.account, token, buy.tokensOut);
-  const after = await totalSupply(token);
-  const attestTx = await attestBurn(t.account, attestHash);
-  await prisma.ledgerEntry.update({ where: { id: claim.id }, data: { memo: `$PYRE buyback swap ${buy.hash} burn ${burnTx} attest ${attestTx}` } });
+  log.info({ pyreBurnId: row.id, swapTx: buy.hash, tokensBought: buy.tokensOut.toString(), spentWei: buy.spentWei.toString() }, "$PYRE bought");
+  let swappedRow: PyreBurn;
+  try {
+    swappedRow = await prisma.pyreBurn.update({
+      where: { id: row.id },
+      data: { status: "SWAPPED", swapTx: buy.hash, tokensBought: dec(buy.tokensOut), ethWei: dec(buy.spentWei), error: null },
+    });
+  } catch (err) {
+    log.error({ err, pyreBurnId: row.id, swapTx: buy.hash }, "$PYRE buy landed but recording SWAPPED failed; left SWAPPING for manual reconcile");
+    return;
+  }
+  try {
+    await pyreBurnStage(t.account, token, swappedRow, log);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    log.error({ err, pyreBurnId: row.id }, "$PYRE burn stage failed; will retry next cycle");
+    await prisma.pyreBurn.update({ where: { id: row.id }, data: { error: message.slice(0, 500) } });
+  }
+}
+
+/**
+ * Opens the PENDING $PYRE burn for the whole `PYRE_TOKEN` balance and debits the ledger in the
+ * same transaction. Null below the buyback minimum.
+ */
+async function openPyreBurn(log: Logger): Promise<PyreBurn | null> {
+  const balance = await prisma.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN" }, _sum: { deltaMicros: true } });
+  const pending = balance._sum.deltaMicros ?? 0n;
+  if (pending < MIN_BUYBACK_MICROS) return null;
+  const lastDebit = await prisma.ledgerEntry.findFirst({ where: { account: "PYRE_TOKEN", refType: "PyreBurn" }, orderBy: { createdAt: "desc" }, select: { createdAt: true } });
+  const consumed = await prisma.ledgerEntry.findMany({
+    where: { account: "PYRE_TOKEN", deltaMicros: { gt: 0n }, ...(lastDebit ? { createdAt: { gt: lastDebit.createdAt } } : {}) },
+    select: { id: true },
+  });
+  const ethWei = weiFromUsdMicros(pending, await getEthPriceUsd());
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await tx.pyreBurn.create({ data: { status: "PENDING", usdMicros: pending, ethWei: dec(ethWei), attestHash: attestationHash(consumed.map((e) => e.id)) } });
+    await tx.ledgerEntry.create({ data: { account: "PYRE_TOKEN", deltaMicros: -pending, refType: "PyreBurn", refId: created.id, memo: "$PYRE buyback" } });
+    return created;
+  });
+  log.info({ pyreBurnId: row.id, usdMicros: pending.toString(), ethWei: ethWei.toString(), consumed: consumed.length }, "$PYRE burn opened");
+  return row;
+}
+
+/**
+ * SWAPPED → BURNED: burn exactly what was bought (the treasury also custodies staked $PYRE, so the
+ * app path's "burn whatever is held" clamp would be theft here), attest, settle. Each step is
+ * persisted before the next so a retry never repeats an irreversible transaction.
+ */
+async function pyreBurnStage(account: PrivateKeyAccount, token: Address, burn: PyreBurn, log: Logger): Promise<void> {
+  let row = burn;
+  if (!row.burnTx) {
+    const amount = big(row.tokensBought);
+    if (amount <= 0n) throw new Error("no $PYRE recorded as bought; nothing to burn");
+    const held = await getErc20Balance(token, account.address);
+    if (held < amount) throw new Error(`treasury holds ${held} $PYRE units, fewer than the ${amount} bought; refusing to burn staked custody`);
+    const before = await totalSupply(token);
+    const burnTx = await burnTokens(account, token, amount);
+    const after = await totalSupply(token);
+    row = await prisma.pyreBurn.update({ where: { id: row.id }, data: { burnTx, tokensBurned: dec(amount), burnedUnits: dec(before - after), error: null } });
+    log.info({ pyreBurnId: row.id, burnTx, amount: amount.toString(), burnedUnits: (before - after).toString() }, "$PYRE burned");
+  }
+  if (!row.attestTx) {
+    const attestTx = await attestBurn(account, row.attestHash as Hex);
+    row = await prisma.pyreBurn.update({ where: { id: row.id }, data: { attestTx } });
+    log.info({ pyreBurnId: row.id, attestTx }, "$PYRE burn attested");
+  }
+  row = await prisma.pyreBurn.update({ where: { id: row.id }, data: { status: "BURNED", completedAt: new Date(), error: null } });
   await audit({
     actor: "worker:buyback",
     action: "PYRE_BURN",
-    targetType: "LedgerEntry",
-    targetId: claim.id,
-    meta: { token, usdMicros: pending, ethWei: buy.spentWei, tokensBought: buy.tokensOut, burnedUnits: before - after, swapTx: buy.hash, burnTx, attestTx, attestHash, consumed: consumed.length },
+    targetType: "PyreBurn",
+    targetId: row.id,
+    meta: {
+      token,
+      usdMicros: row.usdMicros,
+      ethWei: big(row.ethWei),
+      tokensBought: big(row.tokensBought),
+      burnedUnits: big(row.burnedUnits),
+      swapTx: row.swapTx,
+      burnTx: row.burnTx,
+      attestTx: row.attestTx,
+      attestHash: row.attestHash,
+    },
   });
-  log.info({ usdMicros: pending.toString(), ethWei: buy.spentWei.toString(), burnedUnits: (before - after).toString(), swapTx: buy.hash, burnTx, attestTx }, "$PYRE bought and burned");
+  log.info({ pyreBurnId: row.id, usdMicros: row.usdMicros.toString(), ethWei: big(row.ethWei).toString(), burnedUnits: big(row.burnedUnits).toString(), swapTx: row.swapTx, burnTx: row.burnTx, attestTx: row.attestTx }, "$PYRE bought and burned");
 }
 
 export async function runBuybackJob(ctx: ChainWorkerContext, job: Job): Promise<void> {

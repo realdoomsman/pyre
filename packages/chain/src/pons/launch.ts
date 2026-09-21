@@ -1,5 +1,5 @@
 import { getAddress, parseEther, parseEventLogs, toHex, zeroAddress, type Address, type Hash, type Hex, type LocalAccount } from "viem";
-import { publicClient, waitForSuccess, walletClient } from "../chain.js";
+import { publicClient, sendTx } from "../chain.js";
 import { factoryAbi } from "./abi.js";
 import { ponsAddresses } from "./addresses.js";
 import type { TokenSocials } from "./read.js";
@@ -110,13 +110,8 @@ export async function launchPonsToken(account: LocalAccount, params: LaunchParam
   if (!allowed) throw new LaunchGatedError(account.address);
   const salt = params.salt ?? randomSalt();
   const tokenParams = buildTokenParams(params, expectedEconomics, salt);
-  const hash = await walletClient(account).writeContract({
-    ...f,
-    functionName: "launchToken",
-    args: [tokenParams, LAUNCH_CONFIG_ID, zeroAddress],
-    value: launchFee,
-  });
-  const receipt = await waitForSuccess(hash, client);
+  const receipt = await sendTx(account, (wallet) => wallet.writeContract({ ...f, functionName: "launchToken", args: [tokenParams, LAUNCH_CONFIG_ID, zeroAddress], value: launchFee }), client);
+  const hash = receipt.transactionHash;
   const launched = parseEventLogs({ abi: factoryAbi, eventName: "TokenLaunched", logs: receipt.logs })[0];
   if (!launched) throw new Error(`launch ${hash}: no TokenLaunched event`);
   return { hash, token: getAddress(launched.args.token), curve: getAddress(launched.args.curve), salt };

@@ -9,6 +9,8 @@ import { chainWorkerEnv } from "./env.js";
 import { publishGlobal } from "./publish.js";
 
 const INSERT_BATCH = 1000;
+/** A 300k-block backfill can touch thousands of wallets; Prisma's 5 s default transaction budget would wedge the cursor forever. */
+const HOLDER_TX = { timeout: 120_000, maxWait: 10_000 } as const;
 /** A full holder snapshot per app is the slowest chain pass; the schedule is 10 minutes. */
 const PASS_LOCK_TTL_SECONDS = 900;
 /** Blockscout rows fetched per app. */
@@ -55,7 +57,9 @@ const cursorKey = (appId: string) => `holdersCursor:${appId}`;
 /**
  * Self-indexed path: fold the token's `Transfer` logs since the last cursor (or the launch block)
  * into the stored balances. Bounded per pass; the cursor and the balance deltas commit together
- * so a crash mid-pass replays nothing and skips nothing.
+ * so a crash mid-pass replays nothing and skips nothing. Changed wallets are rewritten in bulk
+ * (delete + createMany batches) rather than one upsert round trip each, so a first backfill with
+ * real trading fits the transaction budget instead of timing out on every pass.
  */
 async function refreshFromLogs(ctx: ChainWorkerContext, app: HolderApp, log: Logger): Promise<void> {
   if (app.launchBlock === null) {
@@ -101,19 +105,22 @@ async function refreshFromLogs(ctx: ChainWorkerContext, app: HolderApp, log: Log
   let holdersCount = 0;
   for (const [wallet, amount] of balances) if (amount > 0n && !system[wallet.toLowerCase()]) holdersCount++;
 
+  const changedWallets = [...changed];
+  const holders: Prisma.HolderBalanceCreateManyInput[] = [];
+  for (const wallet of changedWallets) {
+    const amount = balances.get(wallet) ?? 0n;
+    if (amount > 0n) holders.push({ appId: app.id, wallet, amount: dec(amount) });
+  }
   await prisma.$transaction(async (tx) => {
-    for (const wallet of changed) {
-      const amount = balances.get(wallet) ?? 0n;
-      if (amount > 0n) {
-        const value = dec(amount);
-        await tx.holderBalance.upsert({ where: { appId_wallet: { appId: app.id, wallet } }, create: { appId: app.id, wallet, amount: value }, update: { amount: value } });
-      } else {
-        await tx.holderBalance.deleteMany({ where: { appId: app.id, wallet } });
-      }
+    for (let i = 0; i < changedWallets.length; i += INSERT_BATCH) {
+      await tx.holderBalance.deleteMany({ where: { appId: app.id, wallet: { in: changedWallets.slice(i, i + INSERT_BATCH) } } });
+    }
+    for (let i = 0; i < holders.length; i += INSERT_BATCH) {
+      await tx.holderBalance.createMany({ data: holders.slice(i, i + INSERT_BATCH) });
     }
     await tx.app.update({ where: { id: app.id }, data: { holdersCount } });
     await tx.platformSetting.upsert({ where: { key: cursorKey(app.id) }, create: { key: cursorKey(app.id), value: to.toString() }, update: { value: to.toString() } });
-  });
+  }, HOLDER_TX);
   if (holdersCount !== app.holdersCount) await publishGlobal(ctx.redis, app.id);
   log.info({ appId: app.id, from: from.toString(), to: to.toString(), changed: changed.size, holders: holdersCount, caughtUp: to === latest }, "holders indexed from transfer logs");
 }

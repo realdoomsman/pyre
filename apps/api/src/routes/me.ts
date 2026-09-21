@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Address } from "viem";
 import { big, prisma } from "@pyre/db";
-import { getErc20Balance, getEthPriceUsd, relayUsdgAuthorization, signUsdgAuthorization, transferEth, explorerTxUrl } from "@pyre/chain";
+import { TransactionUnconfirmedError, getErc20Balance, getEthPriceUsd, relayUsdgAuthorization, signUsdgAuthorization, transferEth, explorerTxUrl } from "@pyre/chain";
 import {
   LAUNCH_RATE_LIMIT_PER_DAY,
   TradeBody,
@@ -165,8 +165,10 @@ const MIN_CLAIM_MICROS = 1_000_000n;
 
 /**
  * Pays a launcher their unclaimed fee share (`LAUNCHER:<userId>` ledger balance) in ETH from the
- * treasury. Guards against a double-claim by writing the clearing ledger entry first and rolling it
- * back if the transfer fails, exactly like the unstake path.
+ * treasury. Guards against a double-claim by writing the clearing ledger entry first. The marker is
+ * rolled back only when the payout provably did not move funds (never broadcast, or mined and
+ * reverted); a broadcast whose receipt could not be read may still mine, so the marker stays with
+ * an `unconfirmed` memo and the runner's PAYOUTS reconcile settles it from the receipt.
  */
 export const claimHandler = async (req: Request, res: Response): Promise<void> => {
   const u = req.user!;
@@ -195,6 +197,19 @@ export const claimHandler = async (req: Request, res: Response): Promise<void> =
   try {
     txHash = await transferEth(TREASURY_ACCOUNT, u.wallet as Address, wei);
   } catch (err) {
+    if (err instanceof TransactionUnconfirmedError) {
+      logger.error({ err, userId: u.id, txHash: err.hash }, "fees claim payout unconfirmed; marker kept for reconcile");
+      await prisma.ledgerEntry.update({ where: { id: marker.id }, data: { memo: `fees claim unconfirmed ${err.hash}` } });
+      await writeAudit({
+        actorId: u.id,
+        actor: `user:${u.id}`,
+        action: "PAYOUT_UNCONFIRMED",
+        targetType: "LedgerEntry",
+        targetId: marker.id,
+        meta: { kind: "FEES_CLAIM", txHash: err.hash, userId: u.id, usdMicros: claimable.toString(), wei: wei.toString(), wallet: u.wallet },
+      }).catch((e: unknown) => logger.error({ err: e, userId: u.id }, "fees claim unconfirmed audit write failed"));
+      throw new HttpError(502, "claim_unconfirmed", { txHash: err.hash });
+    }
     await prisma.ledgerEntry.delete({ where: { id: marker.id } });
     logger.error({ err, userId: u.id }, "fees claim payout failed");
     throw new HttpError(502, "claim_payout_failed");

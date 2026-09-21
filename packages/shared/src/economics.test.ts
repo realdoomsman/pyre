@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  CONTRIBUTOR_POOL_BPS,
   FEE_SPLIT_BPS,
   FORK_ROYALTY_BPS,
   GLOBAL_DAILY_COMPUTE_CEILING_USD,
@@ -65,9 +64,8 @@ describe("split tables", () => {
   });
 
   it("derived-cut tables stay inside the pool they are carved out of", () => {
-    // Fork royalty is taken out of the build budget, the contributor pool out of the launcher cut.
+    // Fork royalty is taken out of the build budget.
     expect(FORK_ROYALTY_BPS).toBeLessThan(FEE_SPLIT_BPS.BUILD_BUDGET);
-    expect(CONTRIBUTOR_POOL_BPS).toBeLessThan(FEE_SPLIT_BPS.LAUNCHER);
     // A wallet cap above the submission floor is what makes governance meaningful.
     expect(PROMPT_QUEUE_MIN_HOLD_BPS).toBeLessThan(VOTE_WALLET_CAP_BPS);
   });

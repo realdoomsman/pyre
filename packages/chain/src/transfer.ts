@@ -1,6 +1,6 @@
 import { getAddress, parseEventLogs, parseSignature, toHex, type Address, type Hash, type Hex, type LocalAccount, type TypedDataDomain } from "viem";
 import { USDG_EIP712_TYPES, usdgDomain as usdgDomainFor, type UsdgAuthorizationMessage, type UsdgAuthorizationTypedData } from "./browser.js";
-import { publicClient, waitForSuccess, walletClient, type PyrePublicClient } from "./chain.js";
+import { publicClient, sendTx, type PyrePublicClient } from "./chain.js";
 import { envOr } from "./env.js";
 import { treasury } from "./keys.js";
 import { erc20Abi, usdgAbi } from "./pons/abi.js";
@@ -20,17 +20,15 @@ export async function getErc20Balance(token: Address, address: Address, client: 
 /** Sends `wei` from a custodial account. Resolves once mined and successful. */
 export async function transferEth(from: LocalAccount, to: Address, wei: bigint): Promise<Hash> {
   if (wei <= 0n) throw new Error("transferEth: wei must be positive");
-  const hash = await walletClient(from).sendTransaction({ to: getAddress(to), value: wei });
-  await waitForSuccess(hash);
-  return hash;
+  const receipt = await sendTx(from, (wallet) => wallet.sendTransaction({ to: getAddress(to), value: wei }));
+  return receipt.transactionHash;
 }
 
 /** ERC-20 `transfer(to, units)` from a custodial account. Resolves once mined and successful. */
 export async function transferErc20(from: LocalAccount, token: Address, to: Address, units: bigint): Promise<Hash> {
   if (units <= 0n) throw new Error("transferErc20: units must be positive");
-  const hash = await walletClient(from).writeContract({ address: getAddress(token), abi: erc20Abi, functionName: "transfer", args: [getAddress(to), units] });
-  await waitForSuccess(hash);
-  return hash;
+  const receipt = await sendTx(from, (wallet) => wallet.writeContract({ address: getAddress(token), abi: erc20Abi, functionName: "transfer", args: [getAddress(to), units] }));
+  return receipt.transactionHash;
 }
 
 export interface EthTransferCheck {
@@ -149,12 +147,13 @@ export async function signUsdgAuthorization(
 
 /** Treasury submits `transferWithAuthorization(...)` and pays the gas. Resolves once mined and successful. */
 export async function relayUsdgAuthorization(auth: Eip3009Auth): Promise<Hash> {
-  const hash = await walletClient(treasury().account).writeContract({
-    address: usdgAddress(),
-    abi: usdgAbi,
-    functionName: "transferWithAuthorization",
-    args: [auth.from, auth.to, auth.value, auth.validAfter, auth.validBefore, auth.nonce, auth.v, auth.r, auth.s],
-  });
-  await waitForSuccess(hash);
-  return hash;
+  const receipt = await sendTx(treasury().account, (wallet) =>
+    wallet.writeContract({
+      address: usdgAddress(),
+      abi: usdgAbi,
+      functionName: "transferWithAuthorization",
+      args: [auth.from, auth.to, auth.value, auth.validAfter, auth.validBefore, auth.nonce, auth.v, auth.r, auth.s],
+    }),
+  );
+  return receipt.transactionHash;
 }

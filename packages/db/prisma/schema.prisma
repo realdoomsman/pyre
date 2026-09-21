@@ -428,7 +428,8 @@ model Buyback {
   app           App           @relation(fields: [appId], references: [id], onDelete: Cascade)
   status        BuybackStatus @default(PENDING)
   revenueMicros BigInt        // revenue attested for this buyback
-  ethWei        Decimal @db.Decimal(78, 0)        // ETH spent on the buy
+  ethWei        Decimal @db.Decimal(78, 0)        // ETH quoted for the buy, then what the buy actually consumed once SWAPPED
+  refundWei     Decimal @db.Decimal(78, 0)        @default(0) // wei a clamped final curve buy handed back (quoted − consumed)
   tokensBought  Decimal @db.Decimal(78, 0)        @default(0) // base units (18 decimals)
   tokensBurned  Decimal @db.Decimal(78, 0)        @default(0) // base units burned via token.burn()
   burnedUnits   Decimal? @db.Decimal(78, 0)       // totalSupply() delta observed after the burn (on-chain proof)
@@ -445,6 +446,32 @@ model Buyback {
   revenueEvents RevenueEvent[]
 
   @@index([appId, createdAt])
+}
+
+/**
+ * $PYRE's own buy-and-burn: the `PYRE_TOKEN` ledger balance is debited (`LedgerEntry.refType =
+ * "PyreBurn"`, `refId` = this id) when the row opens, then the treasury buys and burns in the same
+ * PENDING → SWAPPING → SWAPPED → BURNED steps as `Buyback`, each persisted so an interrupted burn
+ * resumes instead of leaving bought-but-unburned $PYRE in treasury custody. SWAPPING with `error`
+ * means the buy outcome is unknown and needs an operator.
+ */
+model PyreBurn {
+  id           String        @id @default(cuid())
+  status       BuybackStatus @default(PENDING)
+  usdMicros    BigInt        // PYRE_TOKEN ledger balance consumed
+  ethWei       Decimal @db.Decimal(78, 0)        // quoted, then actually consumed once SWAPPED
+  tokensBought Decimal @db.Decimal(78, 0)        @default(0)
+  tokensBurned Decimal @db.Decimal(78, 0)        @default(0)
+  burnedUnits  Decimal? @db.Decimal(78, 0)       // totalSupply() delta observed after the burn
+  attestHash   String        // sha256 of the PYRE_TOKEN credit ids consumed, carried in attestTx calldata
+  swapTx       String?
+  burnTx       String?
+  attestTx     String?
+  error        String?
+  createdAt    DateTime      @default(now())
+  completedAt  DateTime?
+
+  @@index([status, createdAt])
 }
 
 enum CreditFundingStatus {
@@ -788,9 +815,9 @@ model Report {
 /** Platform-wide treasury ledger (USD micros). Every money movement writes one row. */
 model LedgerEntry {
   id        String   @id @default(cuid())
-  account   String   // TREASURY | PYRE_TOKEN | OPS | CREDITS | LAUNCHER:<userId> | BUILD:<appId> | CONTRIB:<appId> | STAKERS:<appId>
+  account   String   // TREASURY | PYRE_TOKEN | OPS | CREDITS:<appId> | LAUNCHER:<userId> | BUILD:<appId> | STAKERS:<appId>
   deltaMicros BigInt
-  refType   String   // FeeEvent | RevenueEvent | Buyback | BuildJob | Payout | CreditFunding
+  refType   String   // FeeEvent | RevenueEvent | Buyback | PyreBurn | BuildJob | Payout | CreditFunding
   refId     String
   memo      String?
   createdAt DateTime @default(now())

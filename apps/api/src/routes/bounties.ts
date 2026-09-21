@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import type { Address } from "viem";
 import { big, dec, prisma } from "@pyre/db";
-import { getEthPriceUsd, transferEth } from "@pyre/chain";
+import { TransactionUnconfirmedError, getEthPriceUsd, transferEth } from "@pyre/chain";
 import { BountyBody, ethToWei, usdMicrosFromWei } from "@pyre/shared";
 import { requireAuth } from "../lib/auth.js";
 import { writeAudit } from "../lib/audit.js";
@@ -104,8 +104,23 @@ bounties.post(
     try {
       payoutTx = await transferEth(TREASURY_ACCOUNT, user.wallet as Address, big(bounty.wei));
     } catch (err) {
+      if (err instanceof TransactionUnconfirmedError) {
+        // Broadcast, receipt unreadable: it may still mine. Keep CLAIMED with the tx so it cannot be
+        // claimed again; the runner's PAYOUTS reconcile settles PAID or reopens from the receipt.
+        logger.error({ err, bountyId: bounty.id, txHash: err.hash }, "bounty payout unconfirmed; left CLAIMED for reconcile");
+        await prisma.bounty.updateMany({ where: { id: bounty.id, status: "CLAIMED" }, data: { payoutTx: err.hash } });
+        await writeAudit({
+          actorId: user.id,
+          actor: `user:${user.id}`,
+          action: "PAYOUT_UNCONFIRMED",
+          targetType: "Bounty",
+          targetId: bounty.id,
+          meta: { kind: "BOUNTY_PAYOUT", txHash: err.hash, appId: bounty.appId, wei: big(bounty.wei).toString(), claimantWallet: user.wallet },
+        }).catch((e: unknown) => logger.error({ err: e, bountyId: bounty.id }, "bounty payout unconfirmed audit write failed"));
+        throw new HttpError(502, "payout_unconfirmed", { bountyId: bounty.id, txHash: err.hash });
+      }
       logger.error({ err, bountyId: bounty.id }, "bounty payout failed");
-      // The payout tx never landed; release the bounty so it can be claimed again instead of bricking it in CLAIMED.
+      // The payout provably never moved funds (not broadcast, or mined and reverted): release the bounty instead of bricking it in CLAIMED.
       await prisma.bounty.updateMany({
         where: { id: bounty.id, status: "CLAIMED" },
         data: { status: "OPEN", claimantId: null, claimantWallet: null, prNumber: null, claimedAt: null },

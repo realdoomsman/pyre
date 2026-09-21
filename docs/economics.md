@@ -22,7 +22,7 @@ The whole supply (`PONS_TOTAL_SUPPLY`, 1 000 000 000 tokens) is minted to a per-
 | | 10% | `PYRE_TOKEN` — $PYRE buyback + burn |
 | | 5% | `OPS` — platform operations |
 
-Forks send `FORK_ROYALTY_BPS` (10%) of their creator fees upstream to the original app, forever, before the split above. Merged human contributors share `CONTRIBUTOR_POOL_BPS` (5%) of the app's launcher-equivalent fee stream (`CONTRIB:<appId>`).
+Forks send `FORK_ROYALTY_BPS` (10%) of their creator fees upstream to the original app, forever, before the split above. Human contributors are paid through bounties (`Bounty`, ETH escrowed in the treasury and released on a merged PR), not through a fee-stream carve-out.
 
 The 60% build cut is split by `CREDITS_FUNDING_BPS` (5000 = 50%) into the coin's spendable build budget (`BUILD:<appId>`) and a credits-funding slice (`CREDITS:<appId>`). Both are **per-coin**: a coin can only ever fund, and therefore spend, credits its own fees earned — a coin that earned $0 gets $0 of compute, and one coin's balance can never be spent by another.
 
@@ -96,4 +96,4 @@ Custodial users deposit ETH to their Pyre address (bridged from Arbitrum or Ethe
 
 ## Ledger
 
-Every movement is one `LedgerEntry { account, deltaMicros, refType, refId, memo }`. Accounts: `TREASURY`, `PYRE_TOKEN`, `OPS`, `CREDITS:<appId>`, `LAUNCHER:<userId>`, `BUILD:<appId>`, `CONTRIB:<appId>`, `STAKERS:<appId>`. The public ledger for an app is `GET /v1/apps/:slug/buybacks`; the global burn ledger is `GET /v1/burns`; platform totals are `GET /v1/stats` and `GET /v1/pyre`.
+Every movement is one `LedgerEntry { account, deltaMicros, refType, refId, memo }`. Accounts: `TREASURY`, `PYRE_TOKEN`, `OPS`, `CREDITS:<appId>`, `LAUNCHER:<userId>`, `BUILD:<appId>`, `STAKERS:<appId>`. `refType` is one of `FeeEvent`, `RevenueEvent`, `Buyback`, `PyreBurn`, `BuildJob`, `Payout`, `CreditFunding`. The public ledger for an app is `GET /v1/apps/:slug/buybacks`; the global burn ledger is `GET /v1/burns`; platform totals are `GET /v1/stats` and `GET /v1/pyre`.

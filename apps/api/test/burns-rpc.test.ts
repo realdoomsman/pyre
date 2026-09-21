@@ -62,7 +62,7 @@ vi.mock("../src/lib/metrics.js", () => ({ db: { buyback: { findMany: fx.findMany
 vi.mock("../src/lib/cache.js", () => ({ APPS_TAG: "apps", cacheKey: (...p: unknown[]) => p.join(":"), cached: <T,>(_k: unknown, _t: unknown, fn: () => Promise<T>) => fn() }));
 vi.mock("../src/lib/redis.js", () => ({ redis: {} }));
 vi.mock("../src/lib/queues.js", () => ({ queues: {} }));
-vi.mock("../src/lib/pyre.js", () => ({ pyreTokenSnapshot: async () => null }));
+vi.mock("../src/lib/market.js", () => ({ marketSnapshot: async () => null }));
 vi.mock("../src/routes/apps.js", () => ({ listCounts: async () => ({}) }));
 vi.mock("@pyre/chain", () => ({
   getEthPriceUsd: async () => 2000,

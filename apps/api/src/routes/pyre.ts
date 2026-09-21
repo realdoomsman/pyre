@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import type { Address } from "viem";
 import { big, dec, prisma, type App } from "@pyre/db";
-import { getEthPriceUsd, transferErc20, transferEth, explorerTxUrl } from "@pyre/chain";
+import { TransactionUnconfirmedError, getEthPriceUsd, transferErc20, transferEth, explorerTxUrl } from "@pyre/chain";
 import { FEE_SPLIT_BPS, PyreStakeBody, REVENUE_SPLIT_BPS, TOKEN_DECIMALS, decimalToUnits, explorerTokenUrl, ponsUrl, weiFromUsdMicros, type PyrePageDto } from "@pyre/shared";
 import { optionalAuth, requireAuth } from "../lib/auth.js";
 import { writeAudit } from "../lib/audit.js";
@@ -14,7 +14,7 @@ import { HttpError, parse, wrap } from "../lib/errors.js";
 import { sendCached } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
 import { db } from "../lib/metrics.js";
-import { pyreTokenSnapshot } from "../lib/pyre.js";
+import { marketSnapshot } from "../lib/market.js";
 import { TREASURY_ACCOUNT, TREASURY_WALLET } from "../lib/treasury.js";
 import { PLATFORM_PROPOSAL_MIN_HOLD, pyreBalance } from "../lib/votes.js";
 import { env } from "../env.js";
@@ -24,66 +24,55 @@ export const pyre = Router();
 type AppRef = Pick<App, "id" | "slug" | "name" | "ticker">;
 const APP_REF = { id: true, slug: true, name: true, ticker: true } as const;
 
-const HexOrNull = z.string().regex(/^0x[0-9a-fA-F]{64}$/).nullable().catch(null);
-const Units = z.union([z.string(), z.number(), z.bigint()]).transform((v) => BigInt(v)).catch(0n);
-
-/** `AuditLog.meta` written by the runner's $PYRE burn worker (action PYRE_BURN). Tolerant: a missing field renders as 0/null, never a 500. */
-const PyreBurnMeta = z.object({
-  usdMicros: Units,
-  ethWei: Units,
-  tokensBought: Units,
-  burnedUnits: Units,
-  swapTx: HexOrNull,
-  burnTx: HexOrNull,
-  attestTx: HexOrNull,
-  attestHash: z.string().nullable().catch(null),
-});
-
 /** Platform-wide $PYRE aggregates: identical for every viewer, so cached and shared. */
 const loadOverview = async (): Promise<Omit<PyrePageDto, "viewer">> => {
-  const [fees, revenue, burnedLedger, staked, stakers, top, burns, proposalsOpen, proposalsShipped] = await db.$transaction([
+  const [fees, revenue, balance, burned, staked, stakers, top, burns, proposalsOpen, proposalsShipped] = await db.$transaction([
     db.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN", refType: "FeeEvent" }, _sum: { deltaMicros: true } }),
     db.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN", refType: { in: ["RevenueEvent", "Buyback"] }, deltaMicros: { gt: 0n } }, _sum: { deltaMicros: true } }),
-    db.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN", deltaMicros: { lt: 0n } }, _sum: { deltaMicros: true } }),
+    // What is still to be bought: the running PYRE_TOKEN balance, net of every debit already claimed by a burn.
+    db.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN" }, _sum: { deltaMicros: true } }),
+    // Only settled burns count as burned: a failed or in-flight PyreBurn has debited the ledger but burned nothing yet.
+    db.pyreBurn.aggregate({ where: { status: "BURNED" }, _sum: { usdMicros: true } }),
     db.pyreStake.aggregate({ where: { withdrawnAt: null }, _sum: { amount: true, earnedMicros: true } }),
     // COUNT(DISTINCT) in the database instead of materializing every staker wallet.
     db.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT(DISTINCT "wallet")::bigint AS count FROM "PyreStake" WHERE "withdrawnAt" IS NULL`,
     db.pyreStake.groupBy({ by: ["appId"], where: { withdrawnAt: null }, _sum: { amount: true }, _count: { _all: true }, orderBy: { _sum: { amount: "desc" } }, take: 10 }),
-    // $PYRE's own buy-and-burns are treasury actions with no app row; the burn worker audits each one.
-    db.auditLog.findMany({ where: { action: "PYRE_BURN" }, orderBy: { createdAt: "desc" }, take: 20 }),
+    db.pyreBurn.findMany({ where: { status: "BURNED" }, orderBy: { completedAt: "desc" }, take: 20 }),
     db.proposal.count({ where: { status: "OPEN" } }),
     db.proposal.count({ where: { status: "SHIPPED" } }),
   ]);
-  const [snapshot, topApps] = await Promise.all([
-    pyreTokenSnapshot(),
+  const [market, topApps] = await Promise.all([
+    marketSnapshot(),
     top.length > 0 ? db.app.findMany({ where: { id: { in: top.map((t) => t.appId) } }, select: APP_REF }) : Promise.resolve([]),
   ]);
+  const snapshot = market?.pyreToken ?? null;
   const appById: Record<string, AppRef> = {};
   for (const a of topApps) appById[a.id] = a;
   const accrued = (fees._sum.deltaMicros ?? 0n) + (revenue._sum.deltaMicros ?? 0n);
-  const burnedMicros = -(burnedLedger._sum.deltaMicros ?? 0n);
+  const burnedMicros = burned._sum.usdMicros ?? 0n;
+  const burnedUnits = snapshot ? BigInt(snapshot.burnedUnits) : 0n;
   return {
     launched: snapshot !== null,
     token: snapshot
       ? {
-          address: snapshot.launch.token,
-          name: snapshot.info.name,
-          symbol: snapshot.info.symbol,
-          phase: snapshot.launch.phase,
-          curveAddress: snapshot.launch.curve,
-          poolId: snapshot.launch.phase >= 2 ? snapshot.launch.poolId : null,
-          progress: snapshot.price.progress,
-          priceUsd: snapshot.price.priceUsd,
-          priceEth: snapshot.price.priceEth,
-          mcapUsd: snapshot.price.mcapUsd,
-          totalSupplyUnits: snapshot.price.totalSupply.toString(),
-          burnedUnits: snapshot.price.burnedUnits.toString(),
-          burnedPct: pctOfSupply(snapshot.price.burnedUnits),
-          ponsUrl: ponsUrl(snapshot.launch.token),
-          explorerUrl: explorerTokenUrl(snapshot.launch.token, env.BLOCKSCOUT_URL),
+          address: snapshot.address,
+          name: snapshot.name,
+          symbol: snapshot.symbol,
+          phase: snapshot.phase,
+          curveAddress: snapshot.curveAddress,
+          poolId: snapshot.phase >= 2 ? snapshot.poolId : null,
+          progress: snapshot.progress,
+          priceUsd: snapshot.priceUsd,
+          priceEth: snapshot.priceEth,
+          mcapUsd: snapshot.mcapUsd,
+          totalSupplyUnits: snapshot.totalSupplyUnits,
+          burnedUnits: snapshot.burnedUnits,
+          burnedPct: pctOfSupply(burnedUnits),
+          ponsUrl: ponsUrl(snapshot.address),
+          explorerUrl: explorerTokenUrl(snapshot.address, env.BLOCKSCOUT_URL),
         }
       : null,
-    ledger: { accruedMicros: accrued.toString(), burnedMicros: burnedMicros.toString(), pendingMicros: (accrued - burnedMicros).toString() },
+    ledger: { accruedMicros: accrued.toString(), burnedMicros: burnedMicros.toString(), pendingMicros: (balance._sum.deltaMicros ?? 0n).toString() },
     feeShareBps: FEE_SPLIT_BPS.PYRE_TOKEN,
     revenueShareBps: REVENUE_SPLIT_BPS.PYRE_TOKEN,
     stakes: {
@@ -92,19 +81,19 @@ const loadOverview = async (): Promise<Omit<PyrePageDto, "viewer">> => {
       earnedMicros: (staked._sum.earnedMicros ?? 0n).toString(),
     },
     burns: burns.map((b) => {
-      const meta = PyreBurnMeta.parse(b.meta ?? {});
+      const units = big(b.burnedUnits ?? b.tokensBurned);
       return {
         id: b.id,
-        usdMicros: meta.usdMicros.toString(),
-        ethWei: meta.ethWei.toString(),
-        tokensBoughtUnits: meta.tokensBought.toString(),
-        burnedUnits: meta.burnedUnits.toString(),
-        burnedPctOfSupply: pctOfSupply(meta.burnedUnits),
-        swapTx: meta.swapTx as PyrePageDto["burns"][number]["swapTx"],
-        burnTx: meta.burnTx as PyrePageDto["burns"][number]["burnTx"],
-        attestTx: meta.attestTx as PyrePageDto["burns"][number]["attestTx"],
-        attestHash: meta.attestHash,
-        createdAt: b.createdAt.toISOString(),
+        usdMicros: b.usdMicros.toString(),
+        ethWei: big(b.ethWei).toString(),
+        tokensBoughtUnits: big(b.tokensBought).toString(),
+        burnedUnits: units.toString(),
+        burnedPctOfSupply: pctOfSupply(units),
+        swapTx: b.swapTx as PyrePageDto["burns"][number]["swapTx"],
+        burnTx: b.burnTx as PyrePageDto["burns"][number]["burnTx"],
+        attestTx: b.attestTx as PyrePageDto["burns"][number]["attestTx"],
+        attestHash: b.attestHash,
+        createdAt: (b.completedAt ?? b.createdAt).toISOString(),
       };
     }),
     proposals: { open: proposalsOpen, shipped: proposalsShipped },
@@ -197,13 +186,28 @@ pyre.post(
     if (!stake) throw new HttpError(404, "stake_not_found");
     if (stake.wallet !== user.wallet) throw new HttpError(403, "forbidden");
     if (stake.withdrawnAt) throw new HttpError(409, "already_withdrawn");
-    // Mark first so a double-submit cannot trigger two payouts; roll back on transfer failure.
+    // Mark first so a double-submit cannot trigger two payouts. Rolled back only when the transfer
+    // provably moved nothing; a broadcast with an unreadable receipt may still mine, so the stake
+    // stays withdrawn with its tx and the runner's PAYOUTS reconcile settles it from the receipt.
     const marked = await prisma.pyreStake.updateMany({ where: { id: stake.id, withdrawnAt: null }, data: { withdrawnAt: new Date() } });
     if (marked.count === 0) throw new HttpError(409, "already_withdrawn");
     let withdrawTx: string;
     try {
       withdrawTx = await transferErc20(TREASURY_ACCOUNT, env.PYRE_TOKEN, stake.wallet as Address, big(stake.amount));
     } catch (err) {
+      if (err instanceof TransactionUnconfirmedError) {
+        logger.error({ err, stakeId: stake.id, txHash: err.hash }, "unstake transfer unconfirmed; stake kept withdrawn for reconcile");
+        await prisma.pyreStake.update({ where: { id: stake.id }, data: { withdrawTx: err.hash } });
+        await writeAudit({
+          actorId: user.id,
+          actor: `user:${user.id}`,
+          action: "PAYOUT_UNCONFIRMED",
+          targetType: "PyreStake",
+          targetId: stake.id,
+          meta: { kind: "PYRE_UNSTAKE", txHash: err.hash, wallet: stake.wallet, amount: big(stake.amount).toString() },
+        }).catch((e: unknown) => logger.error({ err: e, stakeId: stake.id }, "unstake unconfirmed audit write failed"));
+        throw new HttpError(502, "withdraw_unconfirmed", { txHash: err.hash });
+      }
       logger.error({ err, stakeId: stake.id }, "unstake transfer failed");
       await prisma.pyreStake.update({ where: { id: stake.id }, data: { withdrawnAt: null } });
       throw new HttpError(502, "withdraw_failed");
@@ -248,8 +252,10 @@ export const claimStakerRewardsHandler = async (req: Request, res: Response): Pr
   });
 
   const total = stakes.reduce((acc, s) => acc + s.earnedMicros, 0n);
+  // Increment, never set: a fee sweep may have credited `earnedMicros` since the clear above, and
+  // an absolute restore would overwrite that share.
   const restore = async (): Promise<void> => {
-    for (const s of stakes) await prisma.pyreStake.update({ where: { id: s.id }, data: { earnedMicros: s.earnedMicros } });
+    for (const s of stakes) await prisma.pyreStake.update({ where: { id: s.id }, data: { earnedMicros: { increment: s.earnedMicros } } });
   };
   if (total < MIN_STAKER_CLAIM_MICROS) {
     await restore();
@@ -263,18 +269,40 @@ export const claimStakerRewardsHandler = async (req: Request, res: Response): Pr
     throw new HttpError(400, "nothing_to_claim", { claimableMicros: total.toString() });
   }
 
+  // Ledger rows per app + the treasury debit, written once the payout is known to have landed.
+  const byApp: Record<string, bigint> = {};
+  for (const s of stakes) byApp[s.appId] = (byApp[s.appId] ?? 0n) + s.earnedMicros;
+
   let txHash: string;
   try {
     txHash = await transferEth(TREASURY_ACCOUNT, u.wallet as Address, wei);
   } catch (err) {
+    if (err instanceof TransactionUnconfirmedError) {
+      // The rewards stay cleared; the reconcile pass writes the ledger rows on success or restores
+      // the stakes on revert.
+      logger.error({ err, userId: u.id, txHash: err.hash }, "staker rewards payout unconfirmed; left cleared for reconcile");
+      await writeAudit({
+        actorId: u.id,
+        actor: `user:${u.id}`,
+        action: "PAYOUT_UNCONFIRMED",
+        targetType: "User",
+        targetId: u.id,
+        meta: {
+          kind: "PYRE_CLAIM",
+          txHash: err.hash,
+          userId: u.id,
+          usdMicros: total.toString(),
+          wei: wei.toString(),
+          stakes: stakes.map((s) => ({ id: s.id, appId: s.appId, earnedMicros: s.earnedMicros.toString() })),
+        },
+      }).catch((e: unknown) => logger.error({ err: e, userId: u.id }, "staker rewards unconfirmed audit write failed"));
+      throw new HttpError(502, "claim_unconfirmed", { txHash: err.hash });
+    }
     await restore();
     logger.error({ err, userId: u.id }, "staker rewards payout failed");
     throw new HttpError(502, "claim_payout_failed");
   }
 
-  // Clear the STAKERS ledger per app + debit the treasury, so the books stay balanced.
-  const byApp: Record<string, bigint> = {};
-  for (const s of stakes) byApp[s.appId] = (byApp[s.appId] ?? 0n) + s.earnedMicros;
   await prisma.ledgerEntry.createMany({
     data: [
       ...Object.entries(byApp).map(([appId, micros]) => ({

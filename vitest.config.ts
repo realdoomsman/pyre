@@ -49,7 +49,6 @@ export default defineConfig({
       UNIV4_QUOTER: "0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94",
       UNIV4_STATE_VIEW: "0xF3334192D15450CdD385c8B70e03f9A6bD9E673b",
       BLOCKSCOUT_URL: "https://explorer.pyre.test",
-      GECKOTERMINAL_URL: "https://gecko.pyre.test/api/v2",
       ANTHROPIC_API_KEY: "sk-ant-test",
       GITHUB_WEBHOOK_SECRET: "test-github-secret",
       // Runner-only requirements (apps/runner/src/env.ts).

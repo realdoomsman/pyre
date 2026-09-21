@@ -5,6 +5,7 @@ import { checkBurns } from "./burns.js";
 import { checkFees } from "./fees.js";
 import { checkJobs } from "./jobs.js";
 import { checkLedger } from "./ledger.js";
+import { checkPayouts } from "./payouts.js";
 import { runCheck, type Check, type ReconcileKind } from "./report.js";
 import { checkSandboxes } from "./sandboxes.js";
 import { checkJobTokens } from "./tokens.js";
@@ -23,6 +24,7 @@ const CHECKS: [ReconcileKind, Check][] = [
   ["JOBS", checkJobs],
   ["SANDBOXES", checkSandboxes],
   ["JOBTOKENS", checkJobTokens],
+  ["PAYOUTS", checkPayouts],
   ["LEDGER", checkLedger],
   ["FEES", checkFees],
   ["BURNS", checkBurns],

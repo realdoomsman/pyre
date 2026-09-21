@@ -6,7 +6,6 @@
 const DEFAULTS: Record<string, string> = {
   RPC_URL: "https://rpc.mainnet.chain.robinhood.com",
   BLOCKSCOUT_URL: "https://robinhoodchain.blockscout.com",
-  GECKOTERMINAL_URL: "https://api.geckoterminal.com/api/v2",
   USDG_ADDRESS: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
 };
 
@@ -26,5 +25,4 @@ export const envOr = (key: keyof typeof DEFAULTS | string): string => optionalEn
 
 export const rpcUrl = (): string => envOr("RPC_URL");
 export const blockscoutUrl = (): string => envOr("BLOCKSCOUT_URL").replace(/\/+$/, "");
-export const geckoTerminalUrl = (): string => envOr("GECKOTERMINAL_URL").replace(/\/+$/, "");
 export const platformMasterSeedHex = (): string => requiredEnv("PLATFORM_MASTER_SEED_HEX");

@@ -18,9 +18,11 @@ export type AuditAction =
   | "WALLET_WITHDRAW"
   | "CUSTODIAL_TRADE"
   | "PROPOSAL_STATUS"
-  | "PYRE_CLAIM";
+  | "PYRE_CLAIM"
+  /** A treasury payout was broadcast but its receipt could not be read; the runner's PAYOUTS reconcile settles it. */
+  | "PAYOUT_UNCONFIRMED";
 
-export type AuditTargetType = "App" | "BuildJob" | "AbuseFlag" | "Report" | "PlatformSetting" | "Bounty" | "PyreStake" | "User" | "Proposal";
+export type AuditTargetType = "App" | "BuildJob" | "AbuseFlag" | "Report" | "PlatformSetting" | "Bounty" | "PyreStake" | "User" | "Proposal" | "LedgerEntry";
 
 export interface AuditEntry {
   /** User.id of the acting admin, or null for system/worker actions. */

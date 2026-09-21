@@ -30,6 +30,8 @@ export type AuditAction =
   | "KILL_SANDBOX"
   | "REVOKE_TOKEN"
   | "RECONCILE"
+  /** A `PAYOUT_UNCONFIRMED` row from the API was settled from its receipt (meta.unconfirmedId points at it). */
+  | "PAYOUT_RESOLVED"
   | "SHUTDOWN";
 
 export interface AuditInput {

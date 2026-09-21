@@ -1,3 +1,4 @@
+import { configureSendLock, redisSendLockStore } from "@pyre/chain";
 import { prisma } from "@pyre/db";
 import type { Worker } from "bullmq";
 import { inFlightBuilds } from "./build/engine.js";
@@ -22,6 +23,8 @@ const SHUTDOWN_TIMEOUT_MS = 45_000;
 const main = async (): Promise<void> => {
   await prisma.$connect();
   const redis = createRedis();
+  // Treasury and app wallets are also signed by the API: the send lock serialises them across processes.
+  configureSendLock(redisSendLockStore(redis));
   const ctx: WorkerContext = { redis, log };
 
   const workers: Worker[] = (

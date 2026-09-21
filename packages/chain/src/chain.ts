@@ -12,6 +12,7 @@ import {
 } from "viem";
 import { defineRobinhoodChain, PUBLIC_RPC_URL } from "./browser.js";
 import { rpcUrl } from "./env.js";
+import { withSendLock } from "./sendLock.js";
 
 export { EXPLORER_URL, PUBLIC_RPC_URL, ROBINHOOD_CHAIN_ID, explorerAddressUrl, explorerTxUrl } from "./browser.js";
 
@@ -64,9 +65,45 @@ export function walletClient(account: LocalAccount): PyreWalletClient {
   return createWalletClient({ account, chain: pyreChain, transport: transport() });
 }
 
-/** Waits for the receipt and throws if the transaction reverted. */
+/** The transaction was mined and reverted: nothing it was meant to move has moved. */
+export class TransactionRevertedError extends Error {
+  constructor(readonly hash: Hash) {
+    super(`transaction ${hash} reverted`);
+    this.name = "TransactionRevertedError";
+  }
+}
+
+/**
+ * The transaction was broadcast but its receipt could not be read (timeout, replacement, RPC
+ * error). It may still mine: a caller that moved funds MUST NOT treat this as "never sent".
+ */
+export class TransactionUnconfirmedError extends Error {
+  constructor(
+    readonly hash: Hash,
+    override readonly cause: unknown,
+  ) {
+    super(`transaction ${hash} broadcast but unconfirmed: ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = "TransactionUnconfirmedError";
+  }
+}
+
+/** Waits for the receipt; throws `TransactionRevertedError` on revert, `TransactionUnconfirmedError` when the receipt cannot be read. */
 export async function waitForSuccess(hash: Hash, client: PyrePublicClient = publicClient()): Promise<TransactionReceipt> {
-  const receipt = await client.waitForTransactionReceipt({ hash, confirmations: 1 });
-  if (receipt.status !== "success") throw new Error(`transaction ${hash} reverted`);
+  let receipt: TransactionReceipt;
+  try {
+    receipt = await client.waitForTransactionReceipt({ hash, confirmations: 1 });
+  } catch (err) {
+    throw new TransactionUnconfirmedError(hash, err);
+  }
+  if (receipt.status !== "success") throw new TransactionRevertedError(hash);
   return receipt;
+}
+
+/**
+ * Every state-changing transaction goes through here: `send` broadcasts from the account's wallet
+ * client, then the receipt is awaited — all under the sender's cross-process lock so two services
+ * signing the same key cannot race a nonce. Resolves with the successful receipt.
+ */
+export function sendTx(account: LocalAccount, send: (wallet: PyreWalletClient) => Promise<Hash>, client: PyrePublicClient = publicClient()): Promise<TransactionReceipt> {
+  return withSendLock(account.address, async () => waitForSuccess(await send(walletClient(account)), client));
 }

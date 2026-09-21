@@ -8,7 +8,7 @@ import { curveQuoteBuy } from "./pons/curve.js";
 import { accruingFees, getPrice, getTokenInfo, readLaunch } from "./pons/read.js";
 import { v4QuoteExactIn } from "./pons/v4.js";
 import { usdgAddress } from "./transfer.js";
-import { getCandles, getTrades } from "./candles.js";
+import { buildCandlesFromTrades, getTrades } from "./candles.js";
 
 /*
  * Read-only checks against the live chain. Opt in with CHAIN_LIVE_TESTS=1; the default suite stays
@@ -19,7 +19,6 @@ const LIVE = process.env.CHAIN_LIVE_TESTS === "1";
 // network by accident; a live run needs the real ones (override RPC with CHAIN_LIVE_RPC_URL).
 if (LIVE) {
   process.env.RPC_URL = process.env.CHAIN_LIVE_RPC_URL ?? PUBLIC_RPC_URL;
-  delete process.env.GECKOTERMINAL_URL;
   delete process.env.BLOCKSCOUT_URL;
 }
 const SEED = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
@@ -86,16 +85,15 @@ describe.skipIf(!LIVE)("live Robinhood Chain (CHAIN_LIVE_TESTS=1)", () => {
     expect(onChain).toBe("0x7a3d7400b27830f4f91c2c16a082486d67c1befecaec2f53b33f1f35d5b62036");
   });
 
-  it("candles and trades resolve for the graduated pool", async () => {
+  it("trades resolve for the graduated pool and fold into candles", async () => {
     const launch = await readLaunch(EQUITY);
-    const candles = await getCandles(launch, "1h", 24);
-    expect(candles.length).toBeGreaterThan(0);
-    expect(candles[0]!.t).toBeLessThanOrEqual(candles[candles.length - 1]!.t);
     const latest = await client.getBlockNumber();
     const trades = await getTrades(launch, latest - 5_000n, latest);
     for (const t of trades) {
       expect(t.priceEth).toBeGreaterThan(0);
       expect(["buy", "sell"]).toContain(t.side);
     }
+    const candles = buildCandlesFromTrades(trades, "1h", 1);
+    for (let i = 1; i < candles.length; i++) expect(candles[i - 1]!.t).toBeLessThan(candles[i]!.t);
   });
 });

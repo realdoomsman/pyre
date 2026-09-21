@@ -26,7 +26,6 @@ const Env = z.object({
   USDG_ADDRESS: optionalAddress,
   BLOCKSCOUT_URL: optionalUrl,
   BLOCKSCOUT_API_KEY: optional,
-  GECKOTERMINAL_URL: optionalUrl,
   /** Card-funding deposit address for model credits; unset keeps credits accruing in the ledger. */
   CREDITS_FUNDING_WALLET: optionalAddress,
 

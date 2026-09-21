@@ -1,8 +1,5 @@
 import { getAbiItem, getAddress, type Address, type Hash } from "viem";
-import { z } from "zod";
 import { publicClient, type PyrePublicClient } from "./chain.js";
-import { geckoTerminalUrl } from "./env.js";
-import { getEthPriceUsd } from "./price.js";
 import { curveAbi, poolManagerAbi } from "./pons/abi.js";
 import { ponsAddresses } from "./pons/addresses.js";
 import type { LaunchRecord } from "./pons/read.js";
@@ -35,32 +32,11 @@ export interface Trade {
 
 export const INTERVAL_SECONDS: Record<CandleInterval, number> = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14_400, "1d": 86_400 };
 
-/** GeckoTerminal `/ohlcv/{timeframe}?aggregate=` mapping. https://apiguide.geckoterminal.com/ */
-const GECKO_TIMEFRAME: Record<CandleInterval, { timeframe: "minute" | "hour" | "day"; aggregate: number }> = {
-  "1m": { timeframe: "minute", aggregate: 1 },
-  "5m": { timeframe: "minute", aggregate: 5 },
-  "15m": { timeframe: "minute", aggregate: 15 },
-  "1h": { timeframe: "hour", aggregate: 1 },
-  "4h": { timeframe: "hour", aggregate: 4 },
-  "1d": { timeframe: "day", aggregate: 1 },
-};
-
-const GECKO_NETWORK = "robinhood";
-const GeckoOhlcv = z.object({ data: z.object({ attributes: z.object({ ohlcv_list: z.array(z.tuple([z.number(), z.number(), z.number(), z.number(), z.number(), z.number()])) }) }) });
-
-const CACHE_MS = 20_000;
 /** Public RPC log queries must stay bounded; Arbitrum Nitro accepts wide ranges but times out on huge ones. */
 export const LOG_CHUNK_BLOCKS = 10_000n;
 const LOG_CONCURRENCY = 4;
-/** ~0.1 s blocks: 100k blocks ≈ 3 hours of history for the on-chain fallback. */
-const MAX_FALLBACK_BLOCKS = 100_000n;
-const BLOCKS_PER_SECOND = 10;
 
-const cache = new Map<string, { at: number; candles: Candle[] }>();
-const inflight = new Map<string, Promise<Candle[]>>();
-
-
-/** Folds trades into ascending OHLCV candles priced in USD. Pure; used as the GeckoTerminal fallback. */
+/** Folds trades into ascending OHLCV candles priced in USD. Pure; the runner's market indexer builds every stored interval with it. */
 export function buildCandlesFromTrades(trades: Trade[], interval: CandleInterval, ethPriceUsd: number): Candle[] {
   const size = INTERVAL_SECONDS[interval];
   const sorted = [...trades].sort((a, b) => a.ts - b.ts || a.block - b.block);
@@ -190,61 +166,4 @@ export async function getTrades(launch: LaunchRecord, fromBlock: bigint, toBlock
     const { recipient, tokensIn, quoteOut } = log.args;
     return { hash: log.transactionHash, block: Number(log.blockNumber), ts, side: "sell", wallet: getAddress(recipient), tokenUnits: tokensIn, quoteWei: quoteOut, priceEth: tokensIn > 0n ? Number(quoteOut) / Number(tokensIn) : 0 };
   });
-}
-
-async function fetchGeckoCandles(poolIdentifier: string, interval: CandleInterval, limit: number): Promise<Candle[]> {
-  const { timeframe, aggregate } = GECKO_TIMEFRAME[interval];
-  const url = new URL(`${geckoTerminalUrl()}/networks/${GECKO_NETWORK}/pools/${poolIdentifier}/ohlcv/${timeframe}`);
-  url.searchParams.set("aggregate", String(aggregate));
-  url.searchParams.set("limit", String(Math.min(limit, 1000)));
-  url.searchParams.set("currency", "usd");
-  const res = await fetch(url, { headers: { accept: "application/json;version=20230302" }, signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) throw new Error(`geckoterminal ${res.status} ${poolIdentifier}`);
-  const rows = GeckoOhlcv.parse(await res.json()).data.attributes.ohlcv_list;
-  return rows.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })).sort((a, b) => a.t - b.t);
-}
-
-/**
- * Candles for a launch. GeckoTerminal first (dex `pons-v2`: pool address = curve; `pons-v2-dex`:
- * pool address = 32-byte poolId), trying the identifier for the current phase then the other in
- * case indexing lags a graduation. Falls back to candles built from on-chain trades over the last
- * ≤100k blocks. Cached 20 s per (launch, interval).
- */
-export async function getCandles(launch: LaunchRecord, interval: CandleInterval, limit = 300): Promise<Candle[]> {
-  const key = `${launch.token}:${interval}:${limit}`;
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.candles;
-  let pending = inflight.get(key);
-  if (!pending) {
-    pending = (async () => {
-      try {
-        const candles = await buildCandles(launch, interval, limit);
-        cache.set(key, { at: Date.now(), candles });
-        return candles;
-      } finally {
-        inflight.delete(key);
-      }
-    })();
-    inflight.set(key, pending);
-  }
-  return pending;
-}
-
-async function buildCandles(launch: LaunchRecord, interval: CandleInterval, limit: number): Promise<Candle[]> {
-  const identifiers = launch.phase === 2 ? [launch.poolId, launch.curve] : [launch.curve, launch.poolId];
-  for (const id of identifiers) {
-    try {
-      const candles = await fetchGeckoCandles(id, interval, limit);
-      if (candles.length > 0) return candles;
-    } catch {
-      // try the next identifier, then the on-chain fallback
-    }
-  }
-  const client = publicClient();
-  const [latest, ethUsd] = await Promise.all([client.getBlockNumber(), getEthPriceUsd()]);
-  const wanted = BigInt(limit * INTERVAL_SECONDS[interval] * BLOCKS_PER_SECOND);
-  const span = wanted < MAX_FALLBACK_BLOCKS ? wanted : MAX_FALLBACK_BLOCKS;
-  const fromBlock = latest > span ? latest - span : 0n;
-  const trades = await getTrades(launch, fromBlock, latest, client);
-  return buildCandlesFromTrades(trades, interval, ethUsd).slice(-limit);
 }

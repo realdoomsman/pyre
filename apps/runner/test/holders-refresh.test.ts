@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * with them, never counting protocol-owned balances as holders.
  */
 
-const holderBalance = { deleteMany: vi.fn(), createMany: vi.fn(), findMany: vi.fn(), upsert: vi.fn() };
+const holderBalance = { deleteMany: vi.fn(), createMany: vi.fn(), findMany: vi.fn() };
 const app = { findMany: vi.fn(), update: vi.fn() };
 const platformSetting = { findUnique: vi.fn(), upsert: vi.fn() };
 const prisma = {
@@ -144,9 +144,17 @@ describe("transfer-log indexing (no explorer key)", () => {
     expect(getLogs).toHaveBeenCalledTimes(1);
     expect(getLogs.mock.calls[0]![0]).toMatchObject({ address: TOKEN, fromBlock: 100n, toBlock: 150n });
     expect(holderBalance.findMany).not.toHaveBeenCalled(); // first pass builds from scratch
-    expect(holderBalance.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { amount: dec(140n) }, where: { appId_wallet: { appId: "a1", wallet: W1 } } }));
-    expect(holderBalance.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { amount: dec(850n) }, where: { appId_wallet: { appId: "a1", wallet: CURVE } } }));
-    expect(holderBalance.deleteMany).toHaveBeenCalledWith({ where: { appId: "a1", wallet: W2 } });
+    // Every changed wallet is cleared and the ones still holding are re-inserted in one batch: W2 sold out, so it is not rewritten.
+    expect(holderBalance.deleteMany).toHaveBeenCalledWith({ where: { appId: "a1", wallet: { in: expect.arrayContaining([CURVE, W1, W2, LOCKER]) } } });
+    expect(holderBalance.createMany).toHaveBeenCalledTimes(1);
+    expect(holderBalance.createMany.mock.calls[0]![0]).toEqual({
+      data: expect.arrayContaining([
+        { appId: "a1", wallet: CURVE, amount: dec(850n) },
+        { appId: "a1", wallet: W1, amount: dec(140n) },
+        { appId: "a1", wallet: LOCKER, amount: dec(10n) },
+      ]),
+    });
+    expect(holderBalance.createMany.mock.calls[0]![0].data).toHaveLength(3);
     expect(app.update).toHaveBeenCalledWith({ where: { id: "a1" }, data: { holdersCount: 1 } });
     expect(platformSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({ create: { key: "holdersCursor:a1", value: "150" } }));
   });
@@ -162,8 +170,13 @@ describe("transfer-log indexing (no explorer key)", () => {
     await runHolderRefresh(ctx);
 
     expect(getLogs.mock.calls[0]![0]).toMatchObject({ fromBlock: 151n, toBlock: 160n });
-    expect(holderBalance.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { amount: dec(100n) }, where: { appId_wallet: { appId: "a1", wallet: W1 } } }));
-    expect(holderBalance.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { amount: dec(40n) }, where: { appId_wallet: { appId: "a1", wallet: W2 } } }));
+    expect(holderBalance.deleteMany).toHaveBeenCalledWith({ where: { appId: "a1", wallet: { in: expect.arrayContaining([W1, W2]) } } });
+    expect(holderBalance.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        { appId: "a1", wallet: W1, amount: dec(100n) },
+        { appId: "a1", wallet: W2, amount: dec(40n) },
+      ]),
+    });
     expect(app.update).toHaveBeenCalledWith({ where: { id: "a1" }, data: { holdersCount: 2 } });
   });
 

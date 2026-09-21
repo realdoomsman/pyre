@@ -15,8 +15,7 @@ import {
   universalRouterAbi,
   usdgAddress,
   v4QuoterAbi,
-  waitForSuccess,
-  walletClient,
+  sendTx,
   type LaunchRecord,
   type PoolKey,
 } from "@pyre/chain";
@@ -107,14 +106,12 @@ async function swapEthForUsdg(pool: LaunchRecord, wei: bigint): Promise<{ hash: 
   const minOut = (result[0] * (10_000n - SLIPPAGE_BPS)) / 10_000n;
   const { commands, inputs } = encodeV4ExactInSingle(pool, { ethIn: wei }, minOut, t.address, t.address, zeroAddress);
   const deadline = BigInt(Math.floor(Date.now() / 1000)) + DEADLINE_SECONDS;
-  const hash = await walletClient(t.account).writeContract({
-    address: universalRouter,
-    abi: universalRouterAbi,
-    functionName: "execute",
-    args: [commands, inputs, deadline],
-    value: wei,
-  });
-  const receipt = await waitForSuccess(hash, client);
+  const receipt = await sendTx(
+    t.account,
+    (wallet) => wallet.writeContract({ address: universalRouter, abi: universalRouterAbi, functionName: "execute", args: [commands, inputs, deadline], value: wei }),
+    client,
+  );
+  const hash = receipt.transactionHash;
   const usdgUnits = parseEventLogs({ abi: erc20Abi, eventName: "Transfer", logs: receipt.logs, args: { to: t.address } })
     .filter((log) => log.address.toLowerCase() === pool.token.toLowerCase())
     .reduce((sum, log) => sum + log.args.value, 0n);

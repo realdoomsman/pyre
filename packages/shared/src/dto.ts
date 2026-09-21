@@ -353,6 +353,38 @@ export type AppDetailDto = z.infer<typeof AppDetailDto>;
 export const AppsPageDto = pageOf(AppSummaryDto);
 export type AppsPageDto = z.infer<typeof AppsPageDto>;
 
+/* ─────────────────────────── Market snapshot (runner → API) ─────────────────────────── */
+
+/** `PlatformSetting.key` under which the runner's price pass stores `MarketSnapshot`. */
+export const MARKET_SNAPSHOT_KEY = "market:snapshot";
+
+/**
+ * Platform-wide market figures the public read paths need (`/v1/stats`, `/v1/pyre`, app pages):
+ * the ETH/USD price and $PYRE's on-chain state. Written by the runner every price pass so the API
+ * serves them from Postgres/Redis and never blocks a request on the RPC or a price feed.
+ */
+export const MarketSnapshot = z.object({
+  ethPriceUsd: z.number().positive(),
+  pyreToken: z
+    .object({
+      address: EvmAddress,
+      name: z.string(),
+      symbol: z.string(),
+      phase: LaunchPhase,
+      curveAddress: EvmAddress,
+      poolId: z.string(),
+      progress: z.number(),
+      priceUsd: z.number(),
+      priceEth: z.number(),
+      mcapUsd: z.number(),
+      totalSupplyUnits: BigIntString,
+      burnedUnits: BigIntString,
+    })
+    .nullable(),
+  updatedAt: IsoDate,
+});
+export type MarketSnapshot = z.infer<typeof MarketSnapshot>;
+
 /* ─────────────────────────── Stats ─────────────────────────── */
 
 export const StatsDto = z.object({

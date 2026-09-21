@@ -1,3 +1,4 @@
+import type * as Db from "@pyre/db";
 import { PONS_TOTAL_SUPPLY } from "@pyre/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -16,7 +17,7 @@ const curveBuy = vi.fn();
 const v4QuoteExactIn = vi.fn();
 const v4SwapExactIn = vi.fn();
 
-vi.mock("@pyre/db", () => ({ prisma: {} }));
+vi.mock("@pyre/db", async (importOriginal) => ({ ...(await importOriginal<typeof Db>()), prisma: {} }));
 vi.mock("@pyre/chain", () => ({
   curveQuoteBuy,
   curveBuy,
@@ -39,7 +40,8 @@ vi.mock("../src/lib/audit.js", () => ({ audit: vi.fn() }));
 vi.mock("../src/lib/lock.js", () => ({ withLock: vi.fn() }));
 
 // Dynamic import: the module binds `@pyre/chain` at load time, so it must come after the mocks.
-const { buyTokens, burnedPctOfSupply } = await import("../src/workers/chain/buyback.js");
+const { buyTokens, burnedPctOfSupply, treasurySpentMicros } = await import("../src/workers/chain/buyback.js");
+const { dec } = await import("@pyre/db");
 
 const launch = (phase: 0 | 1 | 2 | 3) => ({
   token: TOKEN,
@@ -105,5 +107,18 @@ describe("burnedPctOfSupply", () => {
   it("is the share of the 1B launch supply in percent", () => {
     expect(burnedPctOfSupply(PONS_TOTAL_SUPPLY / 100n)).toBeCloseTo(1, 9);
     expect(burnedPctOfSupply(0n)).toBe(0);
+  });
+});
+
+describe("treasurySpentMicros", () => {
+  // $100 of revenue → $85 buyback share quoted as 1 ETH; the clamped final curve buy refunded a quarter of it.
+  const row = { revenueMicros: 100_000_000n, ethWei: dec(750_000_000_000_000_000n), refundWei: dec(250_000_000_000_000_000n) };
+
+  it("debits only the wei the chain consumed, not the quoted share", () => {
+    expect(treasurySpentMicros(row)).toBe(63_750_000n);
+  });
+
+  it("equals the quoted share when nothing was refunded", () => {
+    expect(treasurySpentMicros({ ...row, ethWei: dec(10n ** 18n), refundWei: dec(0n) })).toBe(85_000_000n);
   });
 });

@@ -43,8 +43,8 @@ Thirteen queues, registered in `apps/runner/src/index.ts`. Repeatables are upser
 | `build` | scheduler, monitor, API | runner | `BuildJobData`: SCAFFOLD + MVP + VERIFY + DEPLOY, ITERATE, SELF_HEAL, PR_REVIEW |
 | `prReview` | API (GitHub webhook) | runner | review + merge community PR, pay bounty |
 | `feeSweep` | repeatable, every 5 min | runner | per LIVE/DORMANT app: `sweepCreatorFees` → `claimEscrow` → `FeeEvent` + split; then $PYRE platform fees, stake refunds, credits funding |
-| `buyback` | repeatable `scan`, every 10 min | runner | per app with pending revenue ≥ $5: buy → burn → attest, `Buyback` row; then the $PYRE ledger balance |
-| `price` | repeatable, every 60 s | runner | curve reserves (phase 0) or v4 `getSlot0` (phase 2) × ETH/USD → `priceUsd`, `marketCapUsd`, `progress`, `change24hPct` |
+| `buyback` | repeatable `scan`, every 10 min | runner | per app with pending revenue ≥ $5: buy → burn → attest, `Buyback` row; then the $PYRE ledger balance through the same PENDING → SWAPPING → SWAPPED → BURNED steps on a `PyreBurn` row |
+| `price` | repeatable, every 60 s | runner | first persists `MarketSnapshot` (ETH/USD + $PYRE on-chain state) to `PlatformSetting["market:snapshot"]`, which is the ONLY market source the API's public reads use (`/v1/stats`, `/v1/pyre`, app summaries; 30 s cache, never an RPC call in the request path); then per app: curve reserves (phase 0) or v4 `getSlot0` (phase 2) × ETH/USD → `priceUsd`, `marketCapUsd`, `progress`, `change24hPct` |
 | `holders` | repeatable, every 10 min | runner | Blockscout holders API when `BLOCKSCOUT_API_KEY` is set, otherwise self-indexed ERC-20 `Transfer` logs → `HolderBalance` |
 | `market` | repeatable, every 60 s | runner | index `CurveBuy`/`CurveSell` and PoolManager `Swap` logs from `lastIndexedBlock` → `Trade` rows, 1m…1d candles, `volume24hUsd`, `TRADE` feed events |
 | `monitor` | repeatable, every 60 s | runner | probe deployed apps; 3 consecutive fails → SELF_HEAL build |
@@ -97,7 +97,7 @@ flowchart TD
   PYRE -->|≥ $5, when PYRE_TOKEN set| PBurn[buy $PYRE → burn → attest]
 ```
 
-Every movement writes a `LedgerEntry` on one of `TREASURY`, `PYRE_TOKEN`, `OPS`, `CREDITS:<appId>`, `LAUNCHER:<userId>`, `BUILD:<appId>`, `CONTRIB:<appId>`, `STAKERS:<appId>`. Claimed ETH after each sweep (minus a 0.0005 ETH gas reserve) is moved from the app wallet to the treasury, which is the only wallet that spends: it pre-funds launches, relays USDG authorizations, executes buybacks and burns, refunds stakes, and never drops below `TREASURY_FLOOR_WEI` (0.01 ETH) — passes that would breach it fail closed and retry next cycle.
+Every movement writes a `LedgerEntry` on one of `TREASURY`, `PYRE_TOKEN`, `OPS`, `CREDITS:<appId>`, `LAUNCHER:<userId>`, `BUILD:<appId>`, `STAKERS:<appId>`. Claimed ETH after each sweep (minus a 0.0005 ETH gas reserve) is moved from the app wallet to the treasury, which is the only wallet that spends: it pre-funds launches, relays USDG authorizations, executes buybacks and burns, refunds stakes, and never drops below `TREASURY_FLOOR_WEI` (0.01 ETH) — passes that would breach it fail closed and retry next cycle. The treasury and app wallets are signed from both the API and the runner: every send goes through `sendTx` in `@pyre/chain`, which holds a Redis mutex `lock:send:<address>` from broadcast to receipt (viem's nonce manager covers in-process concurrency), so two processes can never race a nonce.
 
 The burn attestation is a zero-value transaction from the treasury to itself with calldata `0x50595245 ‖ 0x01 ‖ sha256(sorted revenue event ids)` (`ATTESTATION_PREFIX`, `encodeAttestation` in `@pyre/chain`); `Buyback.attestTx` stores it and the burned amount is proven by the `totalSupply()` delta (`Buyback.burnedUnits`).
 
@@ -118,9 +118,10 @@ Every 5 minutes, in this order, each writing a `ReconcileRun` row:
 | `JOBS` | RUNNING builds older than sandbox timeout + grace; QUEUED rows with no BullMQ job | settle as FAILED with actual spend, revoke token, kill sandbox; re-enqueue or cancel |
 | `SANDBOXES` | E2B sandboxes whose job is settled or missing | kill |
 | `JOBTOKENS` | expired or revoked tokens on settled jobs | revoke + delete |
-| `LEDGER` | `BUILD:` ledger vs `budgetMicros`, attested buybacks ≤ revenue, unattested revenue vs `pendingRevenueMicros`, fee-split sums | report only |
+| `PAYOUTS` | `PAYOUT_UNCONFIRMED` audit rows (a treasury payout the API broadcast but could not confirm: fee claim, unstake, staker rewards, bounty) | read the receipt: finalise the ledger/status on success, release the funds on revert, report `PAYOUT_PENDING`/`PAYOUT_DROPPED` while missing |
+| `LEDGER` | `BUILD:` ledger vs `budgetMicros`, attested buybacks ≤ revenue, unsettled revenue (no buyback, or one not yet BURNED) vs `pendingRevenueMicros`, fee-split sums | report only |
 | `FEES` | FeeEscrow `Claimed` logs vs `FeeEvent` rows (cursor in `PlatformSetting`); app wallets holding unswept ETH | replay `recordCreatorFee` for unrecorded claims |
-| `BURNS` | Σ `Buyback.burnedUnits` ≤ on-chain supply reduction; `tokensBurned` = `burnedUnits` | report only |
+| `BURNS` | Σ `Buyback.burnedUnits` ≤ on-chain supply reduction; `tokensBurned` = `burnedUnits`; same over `PyreBurn` rows, plus `PyreBurn` rows stuck SWAPPING/SWAPPED for over 30 min | report only |
 
 ## Security perimeter
 

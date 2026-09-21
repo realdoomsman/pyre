@@ -1,5 +1,5 @@
 import { getAddress, hexToBytes, toHex, type Address, type PrivateKeyAccount } from "viem";
-import { HDKey, privateKeyToAccount } from "viem/accounts";
+import { HDKey, nonceManager, privateKeyToAccount } from "viem/accounts";
 import { platformMasterSeedHex } from "./env.js";
 
 /**
@@ -39,7 +39,9 @@ function derive(seedHex: string, branch: number, index: number): DerivedWallet {
   if (!Number.isInteger(index) || index < 0 || index > MAX_INDEX) throw new Error(`wallet index out of range: ${index}`);
   const child = master(seedHex).derive(`m/44'/60'/${branch}'/0/${index}`);
   if (!child.privateKey) throw new Error(`no private key for branch ${branch} index ${index}`);
-  const account = privateKeyToAccount(toHex(child.privateKey));
+  // viem's nonce manager: `pending` count plus an in-flight delta per address, so concurrent sends
+  // from one process never reuse a nonce. Cross-process serialisation is `withSendLock`.
+  const account = privateKeyToAccount(toHex(child.privateKey), { nonceManager });
   return { address: getAddress(account.address), account };
 }
 

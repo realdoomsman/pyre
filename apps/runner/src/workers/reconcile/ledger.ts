@@ -39,7 +39,13 @@ export const checkLedger = async (ctx: WorkerContext): Promise<CheckOutcome> => 
   const buybackByApp: Record<string, bigint> = {};
   for (const row of buybacks) buybackByApp[row.appId] = row._sum.revenueMicros ?? 0n;
 
-  const unattested = await prisma.revenueEvent.groupBy({ by: ["appId"], where: { buybackId: null }, _sum: { usdMicros: true } });
+  // Revenue claimed by a buyback that has not settled is still "pending" on the App column: only
+  // a BURNED buyback decrements it, so PENDING/SWAPPING/SWAPPED rows must count as unattested here.
+  const unattested = await prisma.revenueEvent.groupBy({
+    by: ["appId"],
+    where: { OR: [{ buybackId: null }, { buyback: { status: { in: ["PENDING", "SWAPPING", "SWAPPED"] } } }] },
+    _sum: { usdMicros: true },
+  });
   const unattestedByApp: Record<string, bigint> = {};
   for (const row of unattested) unattestedByApp[row.appId] = row._sum.usdMicros ?? 0n;
 

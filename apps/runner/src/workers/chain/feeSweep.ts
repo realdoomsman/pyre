@@ -69,7 +69,11 @@ export async function recordCreatorFee(app: SweepApp, wei: bigint, txHash: Hash,
       ledger.push({ account: `CREDITS:${app.id}`, deltaMicros: split.creditsMicros, refType: "FeeEvent", refId: fee.id, memo: "credit funding" });
     }
     if (parent && split.upstreamMicros > 0n) {
-      // The royalty row shares this claim's tx; it is idempotent through the parent row's unique txHash.
+      // The royalty row carries no txHash of its own: what makes it idempotent is the check-then-act
+      // `findUnique` on the child's claim tx at the top of this function plus the unique constraint
+      // on the child FeeEvent inside this transaction. Replaying `recordCreatorFee` for a recorded tx
+      // returns null before reaching here; a lost race between the sweep pass and the reconcile
+      // repair fails the child's unique insert and rolls this whole transaction back (no double credit).
       const royaltyWei = (wei * split.upstreamMicros) / (usdMicros > 0n ? usdMicros : 1n);
       const royalty = await tx.feeEvent.create({
         data: {
