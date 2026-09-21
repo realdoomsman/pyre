@@ -106,6 +106,7 @@ Rules:
 - **No price talk.** No targets, no "up only", no "cheap", no charts-with-arrows. Market cap is a fact we display, never a claim we make.
 - **Buybacks are burns, never distributions.** Nothing is paid out to holders. Say *supply falls*, *burned*, *bought back and burned*. Never *yield*, *dividend*, *revenue share*, *passive income*, *rewards*.
 - **Coin, not token** in prose. Contract addresses are always printed in full, in mono.
+- **No `$PYRE` cashtag on X yet.** X auto-links `$PYRE` to an unrelated asset; write `PYRE` until our coin is live and the mapping is verified.
 - **Apps are the point.** Lead with what the app does and what it earned. The coin is the consequence.
 - Every post that names an amount links the tx or the app. If it can't be verified on Blockscout, don't post it.
 - `not financial advice` appended to anything that mentions a market cap or a price.

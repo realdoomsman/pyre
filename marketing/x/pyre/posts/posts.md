@@ -384,3 +384,14 @@ launchpads solved launching and skipped the part where something gets built. a c
 
 we wanted a coin whose supply falls because its app earned, with receipts on chain. pyre is that. small, real, open.
 ```
+
+## published state (2026-09-21)
+
+- Article: https://x.com/PyreFun/status/2102044469059027329 (X Article, 11 figures, cover = banner)
+- Pinned post (quote of the article + `video/pyre-launch.mp4` + captions): https://x.com/PyreFun/status/2102045570156155274
+- Day 1 (post 01) published: https://x.com/PyreFun/status/2102047451544735931 with `https://pyre.fun` in the first reply
+- Days 2–21 scheduled in X's native scheduler, one per day at 15:00 local, Sep 22 → Oct 11 (order per the table above). Manage at x.com/compose/post/unsent/scheduled.
+- Profile set: avatar `pfp.png`, header `banner.png`, bio/location/website per profile.md.
+- Replies posted (5): to @Captainweb01, @PaydRH, @portgost, @MIOnMinara, @lemondotfun (see replies.md for the voice rules).
+
+**Cashtag warning.** X's composer auto-resolves the `$PYRE` cashtag to an unrelated asset (`robinhood:0x0d11e308e40c15e1181aed4f4bbfc4744e9deeed`) and shows that in the post. Until our coin is live and X maps the cashtag to it, write `PYRE` (no `$`) in posts; posts 02, 03 and 18 were scheduled that way.
