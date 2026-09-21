@@ -1,0 +1,204 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>pyre-launch scenes</title>
+<link rel="stylesheet" href="scenes.css">
+<script src="../build/timeline.js"></script>
+<body>
+<div id="stage">
+
+  <!-- 00 open -->
+  <section class="scene" id="s-open">
+    <div class="heat"></div>
+    <img class="mark" src="brand/mark.svg" alt="">
+    <div class="h1 serif">
+      <div class="l1">coins that <i>build</i> apps.</div>
+      <div class="l2">revenue <i>burns</i> them.</div>
+    </div>
+    <div class="sub label">pyre.fun · robinhood chain</div>
+  </section>
+
+  <!-- 01 launch -->
+  <section class="scene" id="s-launch">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="label">01 · launch</div>
+      <div class="prompt card"><span class="ph">one sentence</span><span class="typed"></span><span class="caret"></span></div>
+      <div class="spec card rise-card">
+        <div class="hd"><span class="label">spec · intake agent</span><span class="chip accent approve"><span class="dot"></span>launcher approves</span></div>
+        <div class="row"><b>what it does</b><span>grades a landing page and lists what to fix</span></div>
+        <div class="row"><b>who pays</b><span>indie founders shipping their first site</span></div>
+        <div class="row"><b>mvp</b><span>paste a url · get a scored fix list</span></div>
+        <div class="row"><b>price</b><span>$7 one-time · USDG</span></div>
+      </div>
+      <div class="tail">
+        <span class="chip stake"><span class="dot"></span>stake 0.002 ETH · refundable</span>
+        <span class="chip wallet">launched from the app's own derived wallet</span>
+      </div>
+      <div class="launchline serif">launched on <i>pons</i> v2 · Robinhood Chain 4663</div>
+      <div class="addr mono">factory 0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e · bonding curve → Uniswap v4 pool at 4.2 ETH</div>
+    </div>
+  </section>
+
+  <!-- capture: /launch -->
+  <section class="scene cap-scene" id="s-launch-cap" data-cap="launch" data-focal="0.46,0.28" data-zoom="1.35,1.26">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="caption"><span class="chip">pyre.fun/launch</span><span class="chip dimmer">live capture · signed-out view</span></div>
+  </section>
+
+  <!-- 02 fees -->
+  <section class="scene" id="s-fees">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="label">02 · fees</div>
+      <h2 class="h2 serif">every trade pays <i>1%</i>.</h2>
+      <div class="barrow r1"><div class="k">trade fee<small>PONS v2 · 1% of every fill</small></div><div class="bar"><i style="background:var(--ink)"></i></div><div class="v">1%</div></div>
+      <div class="barrow r2"><div class="k">to the app's wallet<small>creator share of the fee</small></div><div class="bar"><i style="background:var(--accent)"></i></div><div class="v">70%</div></div>
+      <div class="barrow r3"><div class="k">build budget<small>pays the agent</small></div><div class="bar"><i style="background:var(--build)"></i></div><div class="v">60%</div></div>
+      <div class="barrow r4"><div class="k">$PYRE buyback<small>burned, never distributed</small></div><div class="bar"><i style="background:var(--accent2)"></i></div><div class="v">25%</div></div>
+      <div class="barrow r5"><div class="k">launcher<small>the person who wrote the sentence</small></div><div class="bar"><i style="background:var(--ink2)"></i></div><div class="v">15%</div></div>
+      <div class="foot mono">claimed every 5 min from the PONS FeeEscrow 0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e</div>
+    </div>
+  </section>
+
+  <!-- capture: coin page loop panel (+ fee table pip) -->
+  <section class="scene cap-scene" id="s-fees-cap" data-cap="loop" data-focal="0.5,0.59" data-sqfocal="0.42,0.52" data-zoom="1.22,1.16" data-sqzoom="1.15" data-pip="fees" data-pipfocal="0.767,0.54">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="pip"><img alt=""></div>
+    <div class="caption"><span class="chip">pyre.fun/c/inboxzero · the loop</span><span class="chip burn">demo data · seeded to build and verify the platform</span></div>
+  </section>
+
+  <!-- 03 agent -->
+  <section class="scene" id="s-agent">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="console card">
+        <div class="hd"><span class="dot"></span><span>build · $GRADE · pagegrade</span><span class="dimmer">e2b microvm · fixed template · example job</span></div>
+        <div class="lines"></div>
+      </div>
+      <div class="gates card">
+        <div class="label" style="margin-bottom:10px">03 · agent · gates</div>
+        <div class="g" data-gate="build"><span class="st">✓</span>npm run build</div>
+        <div class="g" data-gate="smoke"><span class="st">✓</span>playwright smoke</div>
+        <div class="g" data-gate="shots"><span class="st">✓</span>screenshots</div>
+        <div class="g" data-gate="lh"><span class="st">✓</span>lighthouse</div>
+        <div class="g" data-gate="review"><span class="st">✓</span>reviewer agent</div>
+        <div class="g deploy" data-gate="deploy"><span class="st">↑</span>deploy · pagegrade.pyre.fun</div>
+        <div class="facts">starts at $50 budget · claude agent sdk<br>never writes auth, wallet or payment code<br>per-job budget token on an anthropic proxy</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 app -->
+  <section class="scene" id="s-app">
+    <div class="heat"></div>
+    <div class="browser">
+      <div class="bar-url"><span class="dots"><i></i><i></i><i></i></span><div class="url"><span class="u"></span><span class="caret"></span></div></div>
+      <div class="page">
+        <h3>Pagegrade</h3>
+        <p>paste a landing page. get a scored list of what to fix.</p>
+        <div class="field"><div class="in">https://example.com</div><div class="btn">grade it · $7</div></div>
+        <div class="checkout">
+          <div class="r"><span>charge</span><span class="mono">$7.00 USDG</span></div>
+          <div class="r"><span>authorization</span><span class="m">EIP-3009 · signed by the user <span class="st s1">…</span></span></div>
+          <div class="r"><span>relay</span><span class="m">treasury pays gas · user pays 0 <span class="st s2">…</span></span></div>
+          <div class="r"><span>settled</span><span class="m">Robinhood Chain · ~0.1 s blocks <span class="st s3">…</span></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="under">
+      <span class="chip">USDG 0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168</span>
+      <span class="chip">cap $250 / charge · $1,000 / user / app / day</span>
+      <span class="chip">strict CSP · no outbound network · QuickJS 64 MB · 5 s</span>
+    </div>
+  </section>
+
+  <!-- 05 revenue -->
+  <section class="scene" id="s-revenue">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="label">05 · revenue</div>
+      <h2 class="h2 serif">app revenue <i>buys the coin back</i>.</h2>
+      <div class="split"><i class="a" style="background:var(--burn)"></i><i class="b" style="background:var(--accent)"></i><i class="c" style="background:var(--ink3)"></i></div>
+      <div class="legend">
+        <div><b style="color:var(--burn)">85%</b><span>buyback and burn</span><small>this coin</small></div>
+        <div><b style="color:var(--accent)">10%</b><span>$PYRE buyback</span><small>burned</small></div>
+        <div><b style="color:var(--ink2)">5%</b><span>ops</span><small>hosting, proxies, review</small></div>
+      </div>
+      <div class="foot mono">every 10 min when ≥ $5 is pending · nothing is paid out to holders</div>
+    </div>
+  </section>
+
+  <!-- capture: home feed -->
+  <section class="scene cap-scene" id="s-revenue-cap" data-cap="home" data-focal="0.5,0.55" data-zoom="1.22,1.14">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="caption"><span class="chip">pyre.fun · ranked by dollars earned, not volume</span><span class="chip burn">demo data · seeded to build and verify the platform</span></div>
+  </section>
+
+  <!-- 06 burn -->
+  <section class="scene" id="s-burn">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="stack"><svg viewBox="0 0 320 520"></svg></div>
+      <div>
+        <div class="label">06 · buyback → burn</div>
+        <div class="supply mono"><span class="n">1,000,000,000</span><small>totalSupply() · ERC20Burnable · falls on every burn</small></div>
+        <div class="steps">
+          <span class="chip s1"><span class="dot"></span>buy on the curve · uniswap v4 after graduation</span>
+          <span class="chip burn s2"><span class="dot"></span>burn()</span>
+          <span class="chip s3">attestation tx</span>
+        </div>
+        <div class="att card">
+          <div class="k">attestation calldata · anyone can reproduce payments → destroyed supply</div>
+          <div class="bytes"><span class="p"></span><span class="h"></span><span class="caret"></span></div>
+          <div class="note">0x5059524501 || sha256(revenue event ids)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- capture: burn ledger (+ kiln pip) -->
+  <section class="scene cap-scene" id="s-burn-cap" data-cap="burns" data-focal="0.5,0.5" data-zoom="1.15,1.08" data-offset="12" data-pip="kiln" data-pipfocal="0.767,0.43">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="pip"><img alt=""></div>
+    <div class="caption"><span class="chip">pyre.fun/burns · every burn links its tx and attestation</span><span class="chip burn">demo data · seeded to build and verify the platform</span></div>
+  </section>
+
+  <!-- 07 dormant -->
+  <section class="scene" id="s-dormant">
+    <div class="heat"></div>
+    <div class="top"><div class="label">07 · budget</div><div class="mono budget" style="font-size:44px;margin-top:8px">$0.00</div></div>
+    <div class="tile"><img src="brand/mark.svg" alt=""><div class="ash"></div></div>
+    <div class="state serif"><span class="st"></span></div>
+    <div class="fee chip earn"><span class="dot"></span>fee claimed · +0.0031 ETH · budget +60%</div>
+  </section>
+
+  <!-- 08 proof -->
+  <section class="scene" id="s-proof">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="label">08 · proof</div>
+      <div class="grid">
+        <div class="cell"><div class="n serif rise"><span>408</span></div><div class="t">unit tests</div><div class="d">api · worker · sdk</div></div>
+        <div class="cell"><div class="n serif rise"><span>58<small>/68</small></span></div><div class="t">production feature audit</div><div class="d">6 blocked on treasury funding · 3 skipped</div></div>
+        <div class="cell"><div class="n serif rise"><span>27<small>/28</small></span></div><div class="t">perimeter security checks</div><div class="d">the last clears on deploy</div></div>
+      </div>
+      <div class="lines">
+        <div><span class="m">security review</span><span>independent · high finding fixed (treasury drain via arbitrary stake tx) · 5 mediums fixed</span></div>
+        <div><span class="m">reconcile</span><span>every 5 min across jobs · sandboxes · job tokens · ledger · fees · burns · payouts</span></div>
+        <div><span class="m">source</span><span>github.com/realdoomsman/pyre · MIT · custodial HD wallets or your own via EIP-191</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 close -->
+  <section class="scene" id="s-close">
+    <div class="heat"></div>
+    <div class="lockup rise"><img src="brand/lockup.svg" alt="Pyre"></div>
+    <div class="line"><b>pyre.fun</b><span class="sep">·</span>Robinhood Chain<span class="sep">·</span><b>@PyreFun</b></div>
+    <div class="soon mono">$PYRE launching soon · coins are not investments · buybacks are burns, never distributions</div>
+  </section>
+
+  <div id="wipe"></div>
+</div>
+<script src="scenes.js"></script>
+</body>

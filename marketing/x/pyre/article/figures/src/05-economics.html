@@ -1,0 +1,60 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fig.css">
+<style>
+  #g{position:absolute;left:64px;top:268px;width:1472px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px 8px;box-sizing:border-box}
+  .card h2{margin:0 0 14px;font:400 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+  table{width:100%;border-collapse:collapse}
+  td{padding:11px 0;border-top:1px solid var(--line);font:400 15px/1.35 Geist,sans-serif;color:var(--ink2);vertical-align:top}
+  td.v{font:500 17px/1.35 'Geist Mono',monospace;color:var(--ink);text-align:right;white-space:nowrap;padding-left:14px}
+  td.v.b{color:var(--build)} td.v.e{color:var(--earn)} td.v.r{color:var(--burn)} td.v.a{color:var(--accent)}
+  tr:first-child td{border-top:0}
+  .big{font:400 44px/1 'Instrument Serif',serif;letter-spacing:-.02em;color:var(--ink);margin:6px 0 14px}
+</style>
+<div id="c">
+  <div id="heat"></div>
+  <img id="lockup" src="../../../../../brand/pyre/lockup.svg">
+  <div id="eyebrow">figure 5 · economics</div>
+  <h1>the constants.</h1>
+  <div class="sub">every number the loop runs on. the splits and thresholds are platform constants in packages/shared of the public repo; only what an app charges is set per coin.</div>
+  <div id="g">
+    <div class="card"><h2>trade fee · pons v2</h2>
+      <table>
+        <tr><td>fee on every trade (curve and v4 pool)</td><td class="v">1%</td></tr>
+        <tr><td>of that, to the creator wallet (the app)</td><td class="v a">70%</td></tr>
+        <tr><td>of the app's share → build budget</td><td class="v b">60%</td></tr>
+        <tr><td>→ $PYRE buyback and burn</td><td class="v a">25%</td></tr>
+        <tr><td>→ launcher</td><td class="v">15%</td></tr>
+        <tr><td>claim cadence (pull from FeeEscrow)</td><td class="v">every 5 min</td></tr>
+        <tr><td>pyre's cut of trades</td><td class="v">0</td></tr>
+      </table>
+    </div>
+    <div class="card"><h2>app revenue · USDG</h2>
+      <table>
+        <tr><td>→ buyback and burn of the app's coin</td><td class="v r">85%</td></tr>
+        <tr><td>→ $PYRE buyback and burn</td><td class="v a">10%</td></tr>
+        <tr><td>→ ops</td><td class="v">5%</td></tr>
+        <tr><td>buyback cadence</td><td class="v">every 10 min</td></tr>
+        <tr><td>minimum pending to fire a buyback</td><td class="v e">$5</td></tr>
+        <tr><td>per-charge cap</td><td class="v">$250</td></tr>
+        <tr><td>per user, per app, per day</td><td class="v">$1,000</td></tr>
+        <tr><td>gas paid by the user</td><td class="v">0</td></tr>
+      </table>
+    </div>
+    <div class="card"><h2>thresholds</h2>
+      <table>
+        <tr><td>launch stake (refundable)</td><td class="v">0.002 ETH</td></tr>
+        <tr><td>first build starts at</td><td class="v b">$50 budget</td></tr>
+        <tr><td>graduation from curve to uniswap v4</td><td class="v">4.2 ETH</td></tr>
+        <tr><td>dormant ("ash") at</td><td class="v">$0 budget</td></tr>
+        <tr><td>relights on</td><td class="v">any new fee</td></tr>
+        <tr><td>server function limits</td><td class="v">64 MB · 5 s</td></tr>
+        <tr><td>reconcile pass</td><td class="v">every 5 min</td></tr>
+        <tr><td>block time</td><td class="v">~0.1 s</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="foot">robinhood chain · chain id 4663 · buybacks are burns, never distributions · not financial advice</div>
+  <div id="lip"></div>
+</div>

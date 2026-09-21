@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fig.css">
+<style>
+  #strip{position:absolute;left:64px;top:262px;width:1472px;display:flex;gap:10px;align-items:stretch}
+  .seg{position:relative;border-radius:12px;border:1px solid var(--line2);background:var(--surface);padding:18px 18px 16px;box-sizing:border-box}
+  .seg .by{font:500 30px/1 'Geist Mono',monospace;letter-spacing:.02em;color:var(--ink);white-space:nowrap}
+  .seg .nm{margin-top:12px;font:400 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+  .seg .ex{margin-top:8px;font:400 14px/1.35 Geist,sans-serif;color:var(--ink2)}
+  .seg .len{position:absolute;right:16px;top:16px;font:400 12px/1 'Geist Mono',monospace;color:var(--ink3)}
+  .seg.p{border-color:var(--accent)} .seg.v{border-color:var(--build)} .seg.h{border-color:var(--burn);flex:1}
+  #ex{position:absolute;left:64px;top:470px;width:1472px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px 30px;box-sizing:border-box}
+  .r{display:grid;grid-template-columns:230px 1fr;gap:18px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}
+  .r:first-child{border-top:0;padding-top:0}
+  .r .k{font:400 13px/1.3 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+  .r .v{font:400 17px/1.45 'Geist Mono',monospace;color:var(--ink);word-break:break-all}
+  .r .v i{font-style:normal;color:var(--accent)} .r .v u{text-decoration:none;color:var(--build)} .r .v s{text-decoration:none;color:var(--burn)}
+</style>
+<div id="c">
+  <div id="heat"></div>
+  <img id="lockup" src="../../../../../brand/pyre/lockup.svg">
+  <div id="eyebrow">figure 3 · the attestation</div>
+  <h1>37 bytes that tie a burn to the <em>revenue</em> that paid for it.</h1>
+  <div class="sub">after every buyback-and-burn the treasury sends a zero-value transaction to itself. its calldata is a fixed prefix, a version byte and a sha256 of the revenue-event ids consumed.</div>
+
+  <div id="strip">
+    <div class="seg" style="width:120px"><div class="by">0x</div><div class="nm">hex</div><div class="ex">calldata field of the tx</div></div>
+    <div class="seg p" style="width:330px"><span class="len">4 bytes</span><div class="by">50 59 52 45</div><div class="nm">magic</div><div class="ex">ascii "P" "Y" "R" "E". marks the tx as a pyre attestation.</div></div>
+    <div class="seg v" style="width:190px"><span class="len">1 byte</span><div class="by">01</div><div class="nm">version</div><div class="ex">scheme v1. any other value is not an attestation.</div></div>
+    <div class="seg h"><span class="len">32 bytes</span><div class="by">sha256( sorted ids, joined by "," )</div><div class="nm">revenue hash</div><div class="ex">the revenue-event ids the buyback consumed, sorted, comma-joined, hashed. order-independent; any change to the set changes the hash.</div></div>
+  </div>
+
+  <div id="ex">
+    <div class="r"><div class="k">worked example · ids</div><div class="v">["rev_c", "rev_a", "rev_b"]</div></div>
+    <div class="r"><div class="k">sorted, joined</div><div class="v">"rev_a,rev_b,rev_c"</div></div>
+    <div class="r"><div class="k">sha256</div><div class="v"><s>78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723</s></div></div>
+    <div class="r"><div class="k">calldata (37 bytes)</div><div class="v">0x<i>50595245</i><u>01</u><s>78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723</s></div></div>
+    <div class="r"><div class="k">tx</div><div class="v">from: treasury · to: treasury · value: 0 · sent after burnTx confirms</div></div>
+  </div>
+  <div class="foot">verify: take the revenue-event ids the ledger row lists, sort, join with ",", sha256, prepend 0x5059524501, compare with the attest tx calldata on robinhoodchain.blockscout.com. the example ids are illustrative; the hash is real.</div>
+  <div id="lip"></div>
+</div>

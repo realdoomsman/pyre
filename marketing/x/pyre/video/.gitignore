@@ -1,0 +1,2 @@
+# regenerable intermediates (captures, stems, silent renders, qa frames): node src/build.mjs
+build/

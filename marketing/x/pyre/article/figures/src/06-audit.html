@@ -1,0 +1,60 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fig.css">
+<style>
+  #g{position:absolute;left:64px;top:268px;width:1472px;display:grid;grid-template-columns:640px 1fr;gap:24px;align-items:start}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-sizing:border-box;position:relative}
+  .card h2{margin:0 0 6px;font:400 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+  .n{font:400 64px/1 'Instrument Serif',serif;letter-spacing:-.02em;color:var(--ink)}
+  .n small{font:400 20px/1 'Instrument Serif',serif;color:var(--ink2);margin-left:6px}
+  .cap{font:400 14px/1.4 Geist,sans-serif;color:var(--ink2);margin-top:8px}
+  #cells{display:grid;grid-template-columns:repeat(17,1fr);gap:6px;margin:18px 0 16px}
+  #cells i{display:block;aspect-ratio:1/1;border-radius:4px;background:var(--earn)}
+  #cells i.b{background:var(--warn)} #cells i.s{background:var(--ink3)} #cells i.p{background:var(--build)}
+  .leg{display:flex;gap:14px;font:400 12px/1 'Geist Mono',monospace;color:var(--ink2);white-space:nowrap}
+  .leg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:-1px;background:var(--earn)}
+  .leg .b::before{background:var(--warn)} .leg .s::before{background:var(--ink3)} .leg .p::before{background:var(--build)}
+  .side{display:grid;grid-template-rows:auto auto auto;gap:24px}
+  .row{display:flex;gap:24px}
+  .row .card{flex:1}
+  .bar{height:6px;border-radius:3px;background:var(--raised);margin-top:16px;overflow:hidden}
+  .bar b{display:block;height:100%;background:var(--earn)}
+  .mono{font:400 13px/1.5 'Geist Mono',monospace;color:var(--ink3);margin-top:10px}
+</style>
+<div id="c">
+  <div id="heat"></div>
+  <img id="lockup" src="../../../../../brand/pyre/lockup.svg">
+  <div id="eyebrow">figure 6 · engineering proof</div>
+  <h1>what passes, what is blocked, and <em>why</em>.</h1>
+  <div class="sub">the numbers from the production feature audit, the perimeter check and the unit suite, as they stand before the treasury is funded.</div>
+
+  <div id="g">
+    <div class="card">
+      <h2>production feature audit · 68 features</h2>
+      <div class="n">58<small>pass</small></div>
+      <div id="cells">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="p"></i>
+      </div>
+      <div class="leg"><span>58 pass</span><span class="b">6 blocked on treasury funding</span><span class="s">3 skipped</span><span class="p">1 pending redeploy</span></div>
+      <div class="cap">the 6 blocked checks need ETH in the treasury and nothing else. the 1 pending check (reconcile reports 0 drift) failed against a stale runner build that has since been redeployed; the fixed check returns 0 drift.</div>
+    </div>
+    <div class="side">
+      <div class="row">
+        <div class="card"><h2>unit tests</h2><div class="n">408</div><div class="cap">no network, db, redis, rpc or model access in the suite.</div></div>
+        <div class="card"><h2>perimeter security check</h2><div class="n">27<small>of 28</small></div><div class="bar"><b style="width:96.4%"></b></div><div class="cap">csrf, csp and cookie flags, cors, webhook hmac, rpc proxy, wallet auth, model proxy, rate limits. the last item clears on deploy.</div></div>
+      </div>
+      <div class="card"><h2>independent security review</h2>
+        <div class="n" style="font-size:40px">1 high · 5 medium<small>all fixed</small></div>
+        <div class="cap">high: treasury drain via an arbitrary stake transaction, fixed. five mediums, fixed.</div>
+      </div>
+      <div class="card"><h2>reconcile worker</h2>
+        <div class="cap" style="margin-top:2px">every 5 minutes, seven checks: JOBS · SANDBOXES · JOBTOKENS · LEDGER · FEES · BURNS · PAYOUTS. drift is repaired where safe and reported where it is money.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">source: apps/api/scripts/feature-audit.mjs · github.com/realdoomsman/pyre</div>
+  <div id="lip"></div>
+</div>

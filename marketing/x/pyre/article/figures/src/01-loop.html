@@ -1,0 +1,58 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fig.css">
+<style>
+  .row{position:absolute;left:64px;right:64px;top:290px;display:flex;gap:0;align-items:stretch}
+  .step{flex:1;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 20px 24px;min-height:330px;box-sizing:border-box}
+  .step+.step{margin-left:40px}
+  .n{font:400 13px/1 'Geist Mono',monospace;letter-spacing:.06em;color:var(--ink2);text-transform:uppercase;display:flex;justify-content:space-between}
+  .t{font:400 40px/1 'Instrument Serif',serif;letter-spacing:-.02em;margin:18px 0 16px}
+  .d{font:400 15px/1.45 Geist,sans-serif;color:var(--ink2)}
+  .d b{color:var(--ink);font-weight:500}
+  .k{position:absolute;left:20px;right:20px;bottom:20px;font:400 13px/1.4 'Geist Mono',monospace;color:var(--ink3)}
+  .bar{position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:0 0 14px 14px}
+  .arr{position:absolute;top:130px;width:40px;height:20px;right:-40px}
+  #ret{position:absolute;left:64px;right:64px;top:600px;height:170px}
+</style>
+<div id="c">
+  <div id="heat"></div>
+  <img id="lockup" src="../../../../../brand/pyre/lockup.svg">
+  <div id="eyebrow">figure 1 · the loop</div>
+  <h1>one loop. revenue <em>closes</em> it.</h1>
+  <div class="sub">a coin launches, its trading fees fund an agent, the agent ships an app, the app charges money, the money buys the coin back and burns it.</div>
+
+  <div class="row">
+    <div class="step"><div class="n"><span>01</span><span>launch</span></div><div class="t">launch</div>
+      <div class="d">one sentence → intake spec (what it does, who pays, mvp, price) → <b>0.002 ETH</b> refundable stake → <b>pons v2</b> launch.</div>
+      <div class="k">robinhood chain · 4663</div><div class="bar" style="background:var(--accent)"></div>
+      <svg class="arr" viewBox="0 0 40 20"><path d="M2 10h30M26 4l8 6-8 6" fill="none" stroke="#62605B" stroke-width="1.5"/></svg></div>
+    <div class="step"><div class="n"><span>02</span><span>fees</span></div><div class="t">fees</div>
+      <div class="d"><b>1%</b> per trade on the curve and in the pool. <b>70%</b> of it to the creator wallet, which is the app. pull-claimed from FeeEscrow every <b>5 min</b>.</div>
+      <div class="k">60 build · 25 $PYRE · 15 launcher</div><div class="bar" style="background:var(--accent)"></div>
+      <svg class="arr" viewBox="0 0 40 20"><path d="M2 10h30M26 4l8 6-8 6" fill="none" stroke="#62605B" stroke-width="1.5"/></svg></div>
+    <div class="step"><div class="n"><span>03</span><span>build</span></div><div class="t">build</div>
+      <div class="d">at <b>$50</b> of budget an <b>E2B microVM</b> runs the claude agent sdk on a fixed template. it never writes auth, wallet or payment code.</div>
+      <div class="k">@pyre/app-sdk · budget token per job</div><div class="bar" style="background:var(--build)"></div>
+      <svg class="arr" viewBox="0 0 40 20"><path d="M2 10h30M26 4l8 6-8 6" fill="none" stroke="#62605B" stroke-width="1.5"/></svg></div>
+    <div class="step"><div class="n"><span>04</span><span>ship</span></div><div class="t">ship</div>
+      <div class="d"><b>npm run build</b>, playwright smoke, screenshots, lighthouse, then a <b>reviewer agent</b>. only then does it deploy.</div>
+      <div class="k">&lt;slug&gt;.pyre.fun</div><div class="bar" style="background:var(--build)"></div>
+      <svg class="arr" viewBox="0 0 40 20"><path d="M2 10h30M26 4l8 6-8 6" fill="none" stroke="#62605B" stroke-width="1.5"/></svg></div>
+    <div class="step"><div class="n"><span>05</span><span>earn</span></div><div class="t">earn</div>
+      <div class="d">the app charges <b>USDG</b>. EIP-3009 transfers relayed by the treasury, so users pay <b>no gas</b>. $250 cap per charge.</div>
+      <div class="k">85 buyback · 10 $PYRE · 5 ops</div><div class="bar" style="background:var(--earn)"></div>
+      <svg class="arr" viewBox="0 0 40 20"><path d="M2 10h30M26 4l8 6-8 6" fill="none" stroke="#62605B" stroke-width="1.5"/></svg></div>
+    <div class="step"><div class="n"><span>06</span><span>burn</span></div><div class="t">burn</div>
+      <div class="d">every <b>10 min</b> when ≥ $5 is pending: buy on the curve or the v4 pool, <b>burn()</b>, then an attestation tx. <b>totalSupply falls.</b></div>
+      <div class="k">0x5059524501 || sha256(revenue ids)</div><div class="bar" style="background:var(--burn)"></div></div>
+  </div>
+
+  <svg id="ret" viewBox="0 0 1472 170" style="top:630px">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5 0 10z" fill="#9D8CFF"/></marker></defs>
+    <path d="M1350 0v40q0 16-16 16H265q-16 0-16-16V0" fill="none" stroke="#9D8CFF" stroke-width="1.5" stroke-dasharray="4 5" marker-end="url(#ah)"/>
+    <text x="736" y="86" text-anchor="middle" fill="#9B9891" font-size="16">supply falls with every burn. the coins are gone; nothing is paid out to anyone.</text>
+    <text x="736" y="112" text-anchor="middle" fill="#62605B" font-size="14" class="m">dormant at $0 budget ("ash") · any new fee relights it</text>
+  </svg>
+  <div class="foot">pyre.fun · every step is a transaction on robinhood chain or a row in the public build log · not financial advice</div>
+  <div id="lip"></div>
+</div>

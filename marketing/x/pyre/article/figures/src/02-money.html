@@ -1,0 +1,71 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fig.css">
+<style>
+  #d{position:absolute;left:64px;top:270px;width:1472px;height:560px}
+  .bx{fill:#121215;stroke:rgba(255,255,255,.1)}
+  .t1{font-size:22px;fill:#F3F2EE}
+  .t2{font-size:14px;fill:#9B9891}
+  .pct{font-family:'Instrument Serif',serif;font-size:44px;fill:#F3F2EE;letter-spacing:-.02em}
+  .flow{fill:none;stroke-width:1.5}
+</style>
+<div id="c">
+  <div id="heat"></div>
+  <img id="lockup" src="../../../../../brand/pyre/lockup.svg">
+  <div id="eyebrow">figure 2 · where the money goes</div>
+  <h1>two inflows. <em>one</em> destination.</h1>
+  <div class="sub">trading fees fund the build. app revenue funds the burn. pyre takes nothing from trades; its share of revenue is 5% for ops.</div>
+
+  <svg id="d" viewBox="0 0 1472 560">
+    <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5 0 10z" fill="#62605B"/></marker></defs>
+
+    <!-- LEFT: trading fees -->
+    <text x="0" y="14" class="m t2" style="letter-spacing:.06em;text-transform:uppercase">inflow a · trading fees</text>
+    <rect x="0" y="40" width="420" height="96" rx="12" class="bx"/>
+    <text x="20" y="78" class="t1">every trade on the coin</text>
+    <text x="20" y="104" class="t2">curve, then the uniswap v4 pool after graduation</text>
+
+    <path class="flow" stroke="#62605B" d="M210 136v44" marker-end="url(#a)"/>
+    <rect x="0" y="184" width="420" height="96" rx="12" class="bx"/>
+    <text x="20" y="214" class="t2">pons v2 fee, of trade size</text>
+    <text x="20" y="262" class="pct">1%</text>
+    <text x="110" y="246" class="t2">70% of it → the creator wallet</text>
+    <text x="110" y="266" class="t2">= the app's own wallet, pull-claimed every 5 min</text>
+
+    <path class="flow" stroke="#62605B" d="M210 280v44" marker-end="url(#a)"/>
+    <text x="0" y="356" class="m t2" style="letter-spacing:.06em;text-transform:uppercase">the app's 70% is split</text>
+    <rect x="0" y="372" width="180" height="150" rx="12" class="bx" style="stroke:#3E8BFF"/>
+    <text x="16" y="418" class="pct">60%</text><text x="16" y="446" class="t1" style="font-size:16px">build budget</text><text x="16" y="468" class="t2">funds the agent.</text><text x="16" y="486" class="t2">first build at $50.</text>
+    <rect x="196" y="372" width="150" height="150" rx="12" class="bx" style="stroke:#9D8CFF"/>
+    <text x="212" y="418" class="pct">25%</text><text x="212" y="446" class="t1" style="font-size:16px">$PYRE buyback</text><text x="212" y="468" class="t2">bought and burned.</text>
+    <rect x="362" y="372" width="150" height="150" rx="12" class="bx" style="stroke:#62605B"/>
+    <text x="378" y="418" class="pct">15%</text><text x="378" y="446" class="t1" style="font-size:16px">launcher</text><text x="378" y="468" class="t2">the person who</text><text x="378" y="486" class="t2">wrote the sentence.</text>
+
+    <!-- divider -->
+    <line x1="700" y1="10" x2="700" y2="530" stroke="rgba(255,255,255,.07)"/>
+
+    <!-- RIGHT: app revenue -->
+    <text x="760" y="14" class="m t2" style="letter-spacing:.06em;text-transform:uppercase">inflow b · app revenue</text>
+    <rect x="760" y="40" width="560" height="96" rx="12" class="bx"/>
+    <text x="780" y="78" class="t1">a user pays the app in USDG</text>
+    <text x="780" y="104" class="t2">EIP-3009 transfer relayed by the treasury · no gas for the user</text>
+
+    <path class="flow" stroke="#62605B" d="M1040 136v44" marker-end="url(#a)"/>
+    <rect x="760" y="184" width="560" height="96" rx="12" class="bx"/>
+    <text x="780" y="214" class="t2">caps</text>
+    <text x="780" y="248" class="t1">$250 per charge · $1,000 per user, per app, per day</text>
+    <text x="780" y="270" class="t2">ledgered as revenue events; each one gets an id</text>
+
+    <path class="flow" stroke="#62605B" d="M1040 280v44" marker-end="url(#a)"/>
+    <text x="760" y="356" class="m t2" style="letter-spacing:.06em;text-transform:uppercase">every revenue event is split</text>
+    <rect x="760" y="372" width="360" height="150" rx="12" class="bx" style="stroke:#FF4D6D"/>
+    <text x="776" y="418" class="pct">85%</text><text x="776" y="446" class="t1" style="font-size:16px">buyback and burn of the app's coin</text>
+    <text x="776" y="468" class="t2">every 10 min when ≥ $5 is pending. buy, burn(),</text><text x="776" y="486" class="t2">attest. totalSupply falls. nothing is distributed.</text>
+    <rect x="1136" y="372" width="160" height="150" rx="12" class="bx" style="stroke:#9D8CFF"/>
+    <text x="1152" y="418" class="pct">10%</text><text x="1152" y="446" class="t1" style="font-size:16px">$PYRE buyback</text><text x="1152" y="468" class="t2">bought and burned.</text>
+    <rect x="1312" y="372" width="160" height="150" rx="12" class="bx" style="stroke:#62605B"/>
+    <text x="1328" y="418" class="pct">5%</text><text x="1328" y="446" class="t1" style="font-size:16px">ops</text><text x="1328" y="468" class="t2">pyre's share.</text>
+  </svg>
+  <div class="foot">percentages are the platform constants. $PYRE launching soon; until then the $PYRE slices accrue on the ledger. not financial advice.</div>
+  <div id="lip"></div>
+</div>

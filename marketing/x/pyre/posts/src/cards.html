@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pyre — X post cards</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+  :root{
+    --canvas:#0A0A0C;--surface:#121215;--raised:#18181D;--line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.12);
+    --ink:#F3F2EE;--ink2:#9B9891;--ink3:#62605B;--accent:#9D8CFF;--accent2:#7A66F5;--build:#3E8BFF;--earn:#4FD1A6;--burn:#FF4D6D;--warn:#E5C15C;--hot:#E9F1FF;
+    --paper:#F4F1EA;--paper-ink:#141311;
+  }
+  html,body{margin:0;background:#000}
+  *{box-sizing:border-box}
+  #c{width:1600px;height:900px;background:var(--canvas);position:relative;overflow:hidden;color:var(--ink);font-family:Geist,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+  #heat{position:absolute;left:0;right:0;bottom:0;height:260px;pointer-events:none;
+    background:radial-gradient(60% 55% at 50% 100%, rgba(156,210,255,.14), rgba(62,139,255,.10) 30%, rgba(122,102,245,.05) 58%, transparent 80%),
+               linear-gradient(180deg, transparent, rgba(28,27,46,.35) 60%, rgba(59,47,122,.28));}
+  #lip{position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg, transparent, #9CD2FF 25%, #E9F1FF 50%, #9CD2FF 75%, transparent)}
+  #hd{position:absolute;left:72px;right:72px;top:56px;display:flex;align-items:center;justify-content:space-between;z-index:3}
+  #hd img{height:54px;display:block}
+  #hd .k{font:400 15px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);display:flex;gap:28px}
+  #hd .k b{font-weight:500;color:var(--ink)}
+  #ft{position:absolute;left:72px;right:72px;bottom:44px;display:flex;justify-content:space-between;z-index:3;font:400 14px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+  #b{position:absolute;left:72px;right:72px;top:150px;bottom:100px;z-index:2}
+
+  h1{font:400 64px/1.04 'Instrument Serif',serif;letter-spacing:-.02em;margin:0;color:var(--ink)}
+  h1 em{font-style:italic;color:var(--accent)}
+  h1.sm{font-size:52px}
+  .lead{font:400 24px/1.35 Geist,sans-serif;color:var(--ink2);margin-top:18px;max-width:1100px}
+  .mono{font-family:'Geist Mono',monospace}
+  .lab{font:500 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+  .cap{font:400 15px/1.4 'Geist Mono',monospace;color:var(--ink3);letter-spacing:.02em}
+  .accent{color:var(--accent)} .build{color:var(--build)} .earn{color:var(--earn)} .burn{color:var(--burn)} .ink2{color:var(--ink2)} .ink3{color:var(--ink3)} .hot{color:var(--hot)}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+  .frame{background:var(--surface);border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+  .frame .bar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--line);font:400 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+  .shot{border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:#000}
+  .shot img{display:block;width:100%}
+
+  /* 01 loop */
+  .loop{display:grid;grid-template-columns:repeat(4,1fr) 90px;grid-template-rows:1fr 1fr;gap:18px 0;margin-top:36px;height:470px}
+  .loop .n{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;margin-right:56px;display:flex;flex-direction:column;justify-content:space-between}
+  .loop .n .s{font:500 13px/1 'Geist Mono',monospace;letter-spacing:.06em;color:var(--ink3)}
+  .loop .n .t{font:400 34px/1.05 'Instrument Serif',serif;letter-spacing:-.02em;margin-top:10px}
+  .loop .n .d{font:400 16px/1.35 Geist,sans-serif;color:var(--ink2);margin-top:12px}
+  .loop .n::after{content:'→';position:absolute;right:-44px;top:50%;transform:translateY(-50%);font:400 30px/1 'Geist Mono',monospace;color:var(--ink3)}
+  .loop .n.rev::after{content:'←'}
+  .loop .n.last::after{content:''}
+  .loop .turn{grid-column:5;grid-row:1/3;display:flex;align-items:center;justify-content:center;font:400 30px/1 'Geist Mono',monospace;color:var(--ink3);border-right:1px solid var(--line2);border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);border-radius:0 24px 24px 0;margin:40px 0}
+  .loop .n.hotn{border-color:rgba(157,140,255,.35);background:linear-gradient(180deg,var(--surface),rgba(59,47,122,.18))}
+  .loop .n.burnn{border-color:rgba(255,77,109,.35)}
+  .loopback{position:absolute;left:0;right:150px;bottom:-4px;height:0;border-top:1px dashed var(--line2)}
+  .loopback span{position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:var(--canvas);padding:0 16px;font:400 15px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+
+  /* 02 fee split */
+  .bar{display:flex;height:118px;border-radius:10px;overflow:hidden;margin-top:14px}
+  .bar div{display:flex;flex-direction:column;justify-content:center;padding:0 22px;font-family:'Geist Mono',monospace}
+  .bar .v{font-size:34px;line-height:1;color:var(--ink)}
+  .bar .l{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-top:8px;color:rgba(243,242,238,.75)}
+  .bracket{height:34px;margin:6px 0;border-left:1px solid var(--line2);border-bottom:1px solid var(--line2);border-bottom-left-radius:10px;position:relative}
+  .bracket::after{content:'↓';position:absolute;right:0;bottom:-12px;font:400 22px/1 'Geist Mono',monospace;color:var(--ink3)}
+  .row{display:flex;align-items:baseline;justify-content:space-between;margin-top:28px}
+  .row .lab{font-size:14px}
+  .row .big{font:400 44px/1 'Instrument Serif',serif;letter-spacing:-.02em}
+
+  /* 03 revenue */
+  .cols{display:flex;align-items:flex-end;gap:28px;height:420px;margin-top:30px}
+  .col{display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+  .col .fill{border-radius:10px 10px 0 0;display:flex;align-items:flex-end;padding:20px}
+  .col .pct{font:400 72px/1 'Instrument Serif',serif;letter-spacing:-.02em}
+  .col .who{font:500 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-top:14px;padding-top:14px;border-top:1px solid var(--line2)}
+  .seq{display:flex;flex-direction:column;gap:14px;margin-left:40px;flex:1;height:100%;justify-content:flex-end;padding-bottom:44px}
+  .seq .st{display:flex;gap:18px;align-items:baseline;border-top:1px solid var(--line);padding-top:14px}
+  .seq .st .n{font:400 13px/1 'Geist Mono',monospace;color:var(--ink3);width:30px}
+  .seq .st .t{font:400 22px/1.3 Geist,sans-serif}
+  .seq .st .t code{font-family:'Geist Mono',monospace;color:var(--ink)}
+
+  /* 04 bytes */
+  .bytes{display:flex;flex-wrap:wrap;gap:8px;margin-top:40px;max-width:1290px}
+  .byte{width:57px;height:64px;border:1px solid var(--line2);border-radius:6px;display:flex;align-items:center;justify-content:center;font:400 22px/1 'Geist Mono',monospace;color:var(--ink2);background:var(--surface)}
+  .byte.p{border-color:var(--accent);color:var(--accent);background:rgba(157,140,255,.08)}
+  .byte.v{border-color:var(--warn);color:var(--warn);background:rgba(229,193,92,.08)}
+  .byte.h{color:var(--ink)}
+  .legend{display:flex;gap:44px;margin-top:22px}
+  .legend div{display:flex;gap:12px;align-items:center;font:400 16px/1 'Geist Mono',monospace;color:var(--ink2)}
+  .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid}
+  .work{margin-top:34px;display:grid;grid-template-columns:auto 1fr;gap:12px 28px;font:400 18px/1.4 'Geist Mono',monospace;border-top:1px solid var(--line);padding-top:24px}
+  .work .k{color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;font-size:13px;padding-top:5px}
+
+  /* 05 curve */
+  .curve{position:relative;margin-top:26px;height:420px}
+  .curve svg{position:absolute;inset:0}
+  .curve .tag{position:absolute;font:400 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+  .curve .ph{position:absolute;top:0;font:400 15px/1.5 Geist,sans-serif;color:var(--ink2);width:380px}
+  .curve .ph b{display:block;font:400 30px/1.05 'Instrument Serif',serif;letter-spacing:-.02em;color:var(--ink);font-weight:400;margin-bottom:8px}
+  .addr{display:grid;grid-template-columns:auto 1fr;gap:8px 28px;font:400 15px/1.5 'Geist Mono',monospace;color:var(--ink2);margin-top:8px}
+  .addr .k{color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;font-size:12px;padding-top:3px}
+
+  /* 06 scope table */
+  .scope{display:grid;grid-template-columns:1fr 1fr;gap:0 48px;margin-top:34px}
+  .scope .h{font:400 34px/1 'Instrument Serif',serif;letter-spacing:-.02em;padding-bottom:16px;border-bottom:1px solid var(--line2)}
+  .scope ul{list-style:none;margin:0;padding:0}
+  .scope li{display:flex;gap:16px;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--line);font:400 21px/1.3 Geist,sans-serif}
+  .scope li i{font:400 18px/1 'Geist Mono',monospace;width:22px;flex:none}
+  .scope li code{font:400 19px/1 'Geist Mono',monospace;color:var(--ink)}
+  .scope li .why{color:var(--ink3);font-size:15px;margin-left:auto;font-family:'Geist Mono',monospace;white-space:nowrap;flex:none;padding-left:12px}
+  .strip{display:flex;gap:0;margin-top:32px;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+  .strip div{flex:1;padding:18px 22px;border-right:1px solid var(--line)}
+  .strip div:last-child{border-right:0}
+  .strip .v{font:400 20px/1.2 'Geist Mono',monospace;color:var(--ink);margin-top:10px}
+
+  /* 07 terminal */
+  .term{margin-top:30px;font:400 20px/1.75 'Geist Mono',monospace;padding:22px 28px}
+  .term .ln{display:grid;grid-template-columns:36px 420px 1fr;gap:0 20px;white-space:pre}
+  .term .p{color:var(--ink3)} .term .cmd{color:var(--ink)} .term .ok{color:var(--earn)} .term .fail{color:var(--burn)} .term .dim{color:var(--ink3)}
+  .term .gate{color:var(--accent)}
+
+  /* 08 state */
+  .state{display:grid;grid-template-columns:1fr 360px 1fr;gap:0;align-items:center;margin-top:8px}
+  .tile{width:170px;height:170px;border-radius:38px;position:relative;overflow:hidden;background:var(--raised);margin:0 auto}
+  .tile.lit{background:linear-gradient(180deg,#1C1C22 0%,#141418 30%,#1C1B2E 50%,#3B2F7A 66%,#7A66F5 80%,#3E8BFF 90%,#9CD2FF 96%,#E9F1FF 100%)}
+  .tile.lit::after{content:'';position:absolute;left:0;right:0;bottom:0;height:60%;background:radial-gradient(70% 60% at 50% 100%,rgba(233,241,255,.95),rgba(156,210,255,.6) 20%,rgba(62,139,255,.25) 45%,transparent 75%)}
+  .tile.ash{background:#141416;border:1px solid var(--line2)}
+  .tile.ash::after{content:'';position:absolute;left:0;right:0;top:46%;height:1px;background:var(--ink3);opacity:.5}
+  .sname{text-align:center;margin-top:20px;font:400 40px/1 'Instrument Serif',serif;letter-spacing:-.02em}
+  .sdesc{text-align:center;margin-top:10px;font:400 16px/1.4 Geist,sans-serif;color:var(--ink2)}
+  .arrows{display:flex;flex-direction:column;gap:44px}
+  .arrows div{font:400 15px/1.45 'Geist Mono',monospace;color:var(--ink2);text-align:center;position:relative;padding:0 8px}
+  .arrows div::before{content:'';display:block;height:1px;background:var(--line2);margin-bottom:12px}
+  .arrows div.fwd::after{content:'→';position:absolute;right:-6px;top:-15px;color:var(--ink3);font-size:22px}
+  .arrows div.back::after{content:'←';position:absolute;left:-6px;top:-15px;color:var(--ink3);font-size:22px}
+
+  /* 09 rank */
+  .rank{display:grid;grid-template-columns:1fr 380px;gap:44px;margin-top:26px;align-items:start}
+  .kv{border-top:1px solid var(--line2)}
+  .kv div{display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--line);font:400 20px/1 Geist,sans-serif}
+  .kv div span:last-child{font-family:'Geist Mono',monospace;font-size:16px}
+
+  /* 10 wallets */
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:28px}
+  .two .panel{padding:24px 28px}
+  .two .panel .t{font:400 30px/1.05 'Instrument Serif',serif;letter-spacing:-.02em}
+  .two .panel .m{font:400 16px/1.5 'Geist Mono',monospace;color:var(--ink2);margin-top:12px}
+  .two .panel .m b{color:var(--ink);font-weight:400}
+  .flow{margin-top:26px;position:relative;height:250px}
+  .flow .act{position:absolute;top:0;width:250px;text-align:center}
+  .flow .act .box{border:1px solid var(--line2);border-radius:12px;background:var(--surface);padding:18px 14px;font:400 24px/1.1 'Instrument Serif',serif;letter-spacing:-.02em}
+  .flow .act .sub{font:400 13px/1.4 'Geist Mono',monospace;color:var(--ink3);margin-top:8px;letter-spacing:.04em}
+  .flow .msg{position:absolute;height:0;border-top:1px solid var(--line2)}
+  .flow .msg::after{content:'▸';position:absolute;right:-6px;top:-11px;color:var(--ink2);font-size:18px}
+  .flow .msg span{position:absolute;left:0;right:0;top:14px;text-align:center;font:400 15px/1.4 'Geist Mono',monospace;color:var(--ink);padding:0 18px}
+  .flow .msg span i{display:block;font-style:normal;color:var(--ink3);font-size:13px;margin-top:4px}
+
+  /* 11 diff */
+  .diff{margin-top:26px;font:400 19px/1.7 'Geist Mono',monospace}
+  .diff .ln{display:grid;grid-template-columns:70px 1fr 300px;padding:0 24px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,77,109,.05)}
+  .diff .ln .no{color:var(--ink3)} .diff .ln .code{color:var(--ink);white-space:pre} .diff .ln .code .plus{color:var(--burn)}
+  .diff .ln .tag{color:var(--burn);text-align:right;letter-spacing:.06em;text-transform:uppercase;font-size:14px;line-height:32px}
+  .diff .ln.ok{background:rgba(79,209,166,.05)} .diff .ln.ok .tag{color:var(--earn)}
+
+  /* 12 reconcile */
+  .grid7{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:30px}
+  .g{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;min-height:205px}
+  .g .k{font:500 14px/1 'Geist Mono',monospace;letter-spacing:.08em;color:var(--accent)}
+  .g .i{font:400 13px/1 'Geist Mono',monospace;color:var(--ink3);float:right}
+  .g .d{font:400 18px/1.45 Geist,sans-serif;color:var(--ink2);margin-top:14px}
+  .g .d b{color:var(--ink);font-weight:500}
+  .g.tick{background:transparent;border-style:dashed;display:flex;flex-direction:column;justify-content:center}
+  .g.tick .big{font:400 54px/1 'Instrument Serif',serif;letter-spacing:-.02em}
+
+  /* 13 finding */
+  .finding{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .sev{display:inline-block;font:500 13px/1 'Geist Mono',monospace;letter-spacing:.1em;padding:8px 12px;border-radius:6px;border:1px solid var(--burn);color:var(--burn)}
+  .sev.ok{border-color:var(--earn);color:var(--earn)}
+  .fx{padding:26px 30px}
+  .fx .t{font:400 32px/1.1 'Instrument Serif',serif;letter-spacing:-.02em;margin-top:16px}
+  .fx ul{margin:16px 0 0;padding:0;list-style:none}
+  .fx li{display:flex;gap:14px;padding:10px 0;border-top:1px solid var(--line);font:400 18px/1.35 Geist,sans-serif;color:var(--ink2)}
+  .fx li i{font-style:normal;font-family:'Geist Mono',monospace;color:var(--ink3);width:26px;flex:none}
+  .fx li code{font-family:'Geist Mono',monospace;color:var(--ink);font-size:16px}
+
+  /* 14 numbers */
+  .nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;margin-top:40px;border-top:1px solid var(--line2)}
+  .num{padding:36px 32px 30px 0;border-right:1px solid var(--line)}
+  .num:last-child{border-right:0;padding-left:32px} .num:nth-child(2){padding-left:32px}
+  .num .v{font:400 150px/1 'Instrument Serif',serif;letter-spacing:-.03em}
+  .num .v small{font-size:60px;color:var(--ink3)}
+  .num .l{font:500 14px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-top:18px}
+  .num .n{font:400 17px/1.45 Geist,sans-serif;color:var(--ink3);margin-top:12px}
+
+  /* 15 design */
+  .ds{display:grid;grid-template-columns:420px 1fr;gap:56px;margin-top:22px;align-items:start}
+  .sw{display:flex;gap:10px;margin-top:16px}
+  .sw div{flex:1;height:64px;border-radius:8px;position:relative;border:1px solid var(--line)}
+  .sw div span{position:absolute;left:8px;bottom:6px;font:400 11px/1 'Geist Mono',monospace;letter-spacing:.04em;color:rgba(243,242,238,.8)}
+  .ramp{margin-top:22px;display:flex;gap:22px;align-items:stretch}
+  .ramp .r{width:80px;border-radius:8px;background:linear-gradient(180deg,#1C1B2E,#3B2F7A,#7A66F5,#3E8BFF,#9CD2FF,#E9F1FF)}
+  .type{flex:1}
+  .type div{padding:10px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+  .type .a{font:400 36px/1 'Instrument Serif',serif;letter-spacing:-.02em}
+  .type .b{font:500 24px/1 Geist,sans-serif}
+  .type .c{font:400 22px/1 'Geist Mono',monospace}
+  .type .lab{font-size:12px}
+
+  /* 16 trays */
+  .trays{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:22px}
+  .tray{background:var(--surface);border:1px solid var(--line2);border-radius:20px 20px 12px 12px;padding:14px 22px 22px;min-height:480px;position:relative}
+  .tray .handle{width:36px;height:4px;border-radius:99px;background:var(--line2);margin:0 auto 18px}
+  .tray .rail{display:flex;gap:10px;font:500 15px/1 Geist,sans-serif;align-items:baseline;color:var(--ink3)}
+  .tray .rail .n{font:400 12px/1 'Geist Mono',monospace}
+  .tray .rail .cur{color:var(--ink)} .tray .rail .cur .n{color:var(--accent)}
+  .tray .prog{height:1px;background:var(--line);margin:12px 0 22px;position:relative}
+  .tray .prog i{position:absolute;left:0;top:0;height:1px;background:var(--accent)}
+  .tray .f{margin-top:12px}
+  .tray .f .l{font:500 11px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+  .tray .f .in{border:1px solid var(--line2);border-radius:8px;padding:10px 12px;font:400 16px/1.3 Geist,sans-serif;color:var(--ink);background:var(--raised);min-height:40px}
+  .tray .f .in.muted{color:var(--ink2)}
+  .tray .btn{margin-top:18px;display:inline-block;background:var(--accent);color:#0A0A0C;font:500 15px/1 Geist,sans-serif;padding:12px 18px;border-radius:999px}
+  .tray .spec{font:400 15px/1.5 Geist,sans-serif;color:var(--ink2)}
+  .tray .spec b{color:var(--ink);font-weight:500}
+  .tray .spec div{padding:8px 0;border-bottom:1px solid var(--line)}
+  .tray .sum{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;font:400 14px/1.4 'Geist Mono',monospace;color:var(--ink2)}
+  .tray .sum b{display:block;color:var(--ink);font-weight:400;font-size:17px}
+
+  /* 17 verify */
+  .verify{display:grid;grid-template-columns:520px 1fr;gap:40px;margin-top:22px;align-items:start}
+  .steps{counter-reset:s}
+  .steps div{position:relative;padding:16px 0 16px 58px;border-bottom:1px solid var(--line);font:400 19px/1.4 Geist,sans-serif;color:var(--ink2)}
+  .steps div b{color:var(--ink);font-weight:500}
+  .steps div code{font-family:'Geist Mono',monospace;color:var(--ink);font-size:16px}
+  .steps div::before{counter-increment:s;content:'0' counter(s);position:absolute;left:0;top:19px;font:400 15px/1 'Geist Mono',monospace;color:var(--accent);letter-spacing:.06em}
+
+  /* 18 live/next */
+  .ln2{display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:28px}
+  .ln2 .h{font:400 34px/1 'Instrument Serif',serif;letter-spacing:-.02em;padding-bottom:14px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;align-items:baseline}
+  .ln2 ul{list-style:none;margin:0;padding:0}
+  .ln2 li{display:flex;gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line);font:400 20px/1.3 Geist,sans-serif}
+  .ln2 li i{width:10px;height:10px;border-radius:99px;flex:none;position:relative;top:-2px}
+  .ln2 .live i{background:var(--accent)} .ln2 .next i{border:1px solid var(--ink3)}
+  .ln2 li .r{margin-left:auto;font:400 14px/1 'Geist Mono',monospace;color:var(--ink3)}
+
+  /* 19 faq */
+  .faq{margin-top:10px}
+  .faq .q{font:400 58px/1.06 'Instrument Serif',serif;letter-spacing:-.02em}
+  .faq .a{font:400 150px/1 'Instrument Serif',serif;letter-spacing:-.03em;color:var(--accent);margin-top:-6px}
+  .faq .more{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:20px;border-top:1px solid var(--line2);padding-top:22px}
+  .faq .more .qq{font:400 26px/1.15 'Instrument Serif',serif;letter-spacing:-.02em}
+  .faq .more .aa{font:400 17px/1.45 Geist,sans-serif;color:var(--ink2);margin-top:10px}
+
+  /* 20 tree */
+  .tree{margin-top:26px;display:grid;grid-template-columns:1fr 520px;gap:32px}
+  .tree .frame{font:400 17px/1.6 'Geist Mono',monospace;padding:0}
+  .tree .frame .rows{padding:16px 24px}
+  .tree .r{display:grid;grid-template-columns:1fr 1fr;color:var(--ink2)}
+  .tree .r b{color:var(--ink);font-weight:400}
+  .tree .r .dir{color:var(--accent)}
+  .tree .lic{padding:26px 30px}
+  .tree .lic .t{font:400 44px/1 'Instrument Serif',serif;letter-spacing:-.02em}
+  .tree .lic p{font:400 17px/1.5 Geist,sans-serif;color:var(--ink2);margin:14px 0 0}
+
+  /* 21 letter */
+  .letter{margin-top:24px;max-width:1240px;font:400 40px/1.28 'Instrument Serif',serif;letter-spacing:-.015em;color:var(--ink)}
+  .letter em{font-style:italic;color:var(--accent)}
+  .letter .sig{font:400 15px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-top:34px}
+</style>
+</head>
+<body>
+<div id="c">
+  <div id="heat"></div>
+  <div id="hd"><img src="../../../../brand/pyre/lockup.svg" alt="Pyre"><div class="k" id="kick"></div></div>
+  <div id="b"></div>
+  <div id="ft"><span id="ftl">pyre.fun · robinhood chain · 4663</span><span id="ftr"></span></div>
+  <div id="lip"></div>
+</div>
+<script>
+const BYTES = "78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723";
+const byteCells = () => {
+  const p = ["50","59","52","45"].map(b=>`<div class="byte p">${b}</div>`).join("");
+  const v = `<div class="byte v">01</div>`;
+  const h = BYTES.match(/../g).map(b=>`<div class="byte h">${b}</div>`).join("");
+  return p+v+h;
+};
+
+const CARDS = [
+{ slug:"loop", kick:"the loop", body:`
+  <h1>one sentence in. supply <em>falls</em> out.</h1>
+  <div class="loop">
+    <div class="n"><div><div class="s">01</div><div class="t">write one sentence</div></div><div class="d">what the app should do.</div></div>
+    <div class="n"><div><div class="s">02</div><div class="t">intake writes a spec</div></div><div class="d">what it does, who pays, the mvp, the price. you approve it.</div></div>
+    <div class="n"><div><div class="s">03</div><div class="t">stake 0.002 ETH</div></div><div class="d">refunded at the first build.</div></div>
+    <div class="n hotn last"><div><div class="s">04</div><div class="t">launch on pons v2</div></div><div class="d">from the app's own derived wallet. 1B supply on a bonding curve.</div></div>
+    <div class="turn">↓</div>
+    <div class="n burnn rev"><div><div class="s">08</div><div class="t">85% buys back and burns</div></div><div class="d">every 10 min. burn() lowers totalSupply. attestation tx follows.</div></div>
+    <div class="n rev"><div><div class="s">07</div><div class="t">users pay in USDG</div></div><div class="d">no gas for the user. the treasury relays it.</div></div>
+    <div class="n rev"><div><div class="s">06</div><div class="t">an agent builds the app</div></div><div class="d">at $50 budget, in a microvm, behind a build gate. deploys to &lt;slug&gt;.pyre.fun.</div></div>
+    <div class="n rev"><div><div class="s">05</div><div class="t">creator fees fund it</div></div><div class="d">70% of the 1% trade fee, claimed every 5 min.</div></div>
+  </div>`,
+  ftr:"01 / 21" },
+
+{ slug:"fee-split", kick:"creator fees", body:`
+  <h1 class="sm">where a trade fee goes.</h1>
+  <div class="row"><span class="lab">every pons v2 trade, on the curve or in the v4 pool</span><span class="big mono">1<span class="ink3">%</span> fee</span></div>
+  <div class="bar">
+    <div style="flex:70;background:linear-gradient(180deg,#3B2F7A,#7A66F5)"><span class="v">70%</span><span class="l">to the app's own wallet · claimed every 5 min from the pons fee escrow</span></div>
+    <div style="flex:30;background:var(--raised)"><span class="v ink2">30%</span><span class="l">stays with pons</span></div>
+  </div>
+  <div class="bracket" style="width:70%"></div>
+  <div class="row"><span class="lab">each claim splits</span><span class="lab">priced in usd at claim time</span></div>
+  <div class="bar" style="width:70%">
+    <div style="flex:60;background:rgba(62,139,255,.22);border:1px solid rgba(62,139,255,.5)"><span class="v build">60%</span><span class="l">build budget · pays the agent</span></div>
+    <div style="flex:25;background:rgba(255,77,109,.14);border:1px solid rgba(255,77,109,.45)"><span class="v burn">25%</span><span class="l">$PYRE buyback</span></div>
+    <div style="flex:15;background:rgba(79,209,166,.14);border:1px solid rgba(79,209,166,.45)"><span class="v earn">15%</span><span class="l">launcher</span></div>
+  </div>
+  <div class="cap" style="margin-top:30px">nothing on the fee side goes to pyre. escrow 0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e · factory 0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e</div>`,
+  ftr:"02 / 21" },
+
+{ slug:"revenue-burn", kick:"app revenue", body:`
+  <h1 class="sm">app revenue, in USDG, three ways. the big one is a <em>burn</em>.</h1>
+  <div class="cols">
+    <div class="col" style="width:300px"><div class="fill" style="height:85%;background:linear-gradient(180deg,rgba(255,77,109,.55),rgba(255,77,109,.15))"><span class="pct">85%</span></div><div class="who">buyback and burn</div></div>
+    <div class="col" style="width:150px"><div class="fill" style="height:10%;background:rgba(157,140,255,.25);border:1px solid rgba(157,140,255,.4)"><span class="pct" style="font-size:44px">10%</span></div><div class="who">$PYRE</div></div>
+    <div class="col" style="width:110px"><div class="fill" style="height:5%;background:var(--raised);border:1px solid var(--line2)"><span class="pct" style="font-size:34px">5%</span></div><div class="who">ops</div></div>
+    <div class="seq">
+      <div class="st"><span class="n">01</span><span class="t">every 10 minutes, when at least <code>$5</code> is pending</span></div>
+      <div class="st"><span class="n">02</span><span class="t">buy the coin on the curve, or in the uniswap v4 pool after graduation</span></div>
+      <div class="st"><span class="n">03</span><span class="t"><code>burn()</code> on the coin itself. pons v2 coins are ERC20Burnable, so <code>totalSupply</code> falls</span></div>
+      <div class="st"><span class="n">04</span><span class="t">an attestation tx ties the burn to the revenue that paid for it</span></div>
+      <div class="st"><span class="n"></span><span class="t ink2">nothing is sent to holders. supply gets smaller. that is the whole effect.</span></div>
+    </div>
+  </div>`,
+  ftr:"03 / 21" },
+
+{ slug:"attestation", kick:"attestation calldata", body:`
+  <h1 class="sm">37 bytes that tie a burn to the payments behind it.</h1>
+  <div class="cap" style="margin-top:14px">a zero-value self-transfer from the treasury. calldata = 0x50595245 ‖ 0x01 ‖ sha256(revenue event ids, sorted, comma-joined)</div>
+  <div class="bytes">${byteCells()}</div>
+  <div class="legend">
+    <div><i style="border-color:var(--accent);background:rgba(157,140,255,.2)"></i>4 bytes · "PYRE"</div>
+    <div><i style="border-color:var(--warn);background:rgba(229,193,92,.2)"></i>1 byte · version</div>
+    <div><i style="border-color:var(--line2)"></i>32 bytes · sha256 of the revenue event ids</div>
+  </div>
+  <div class="work">
+    <span class="k">event ids</span><span>rev_c, rev_a, rev_b</span>
+    <span class="k">sorted, joined</span><span>rev_a,rev_b,rev_c</span>
+    <span class="k">sha256</span><span class="ink2">0x<span class="ink">78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723</span></span>
+  </div>`,
+  ftr:"04 / 21" },
+
+{ slug:"pons-v2", kick:"why pons v2", body:`
+  <h1 class="sm">a curve until 4.2 ETH, a uniswap v4 pool after. the creator is the <em>app</em>.</h1>
+  <div class="curve">
+    <svg viewBox="0 0 1456 420" width="1456" height="420">
+      <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3B2F7A"/><stop offset="1" stop-color="#9D8CFF"/></linearGradient></defs>
+      <line x1="0" y1="330" x2="1456" y2="330" stroke="rgba(255,255,255,.12)"/>
+      <path d="M0 322 Q 560 318 800 150" fill="none" stroke="url(#g1)" stroke-width="3"/>
+      <line x1="800" y1="110" x2="800" y2="340" stroke="#9D8CFF" stroke-dasharray="4 6"/>
+      <circle cx="800" cy="150" r="7" fill="#0A0A0C" stroke="#E9F1FF" stroke-width="2"/>
+      <path d="M800 150 L1456 150" fill="none" stroke="#3E8BFF" stroke-width="3"/>
+      <text x="0" y="360" fill="#62605B" font-family="Geist Mono" font-size="13" letter-spacing="1">0 ETH RAISED</text>
+      <text x="800" y="360" fill="#9D8CFF" font-family="Geist Mono" font-size="13" letter-spacing="1" text-anchor="middle">4.2 ETH · GRADUATION</text>
+      <text x="1456" y="360" fill="#62605B" font-family="Geist Mono" font-size="13" letter-spacing="1" text-anchor="end">PHASE 2</text>
+    </svg>
+    <div class="ph" style="left:0"><b>phase 0 · bonding curve</b>all 1B coins minted to a per-launch curve. buys and sells pay 1%. 70% of it accrues to the creator wallet.</div>
+    <div class="ph" style="left:880px;top:190px;width:340px"><b>graduation at 4.2 ETH</b>the curve closes, liquidity moves into a uniswap v4 pool held by pons' launch locker.</div>
+    <div class="ph" style="left:1076px"><b>phase 2 · uniswap v4</b>the pons hook charges the same 1% on every swap. still 70% to the creator wallet.</div>
+  </div>
+  <div class="addr" style="margin-top:0">
+    <span class="k">creator</span><span>the app's own derived wallet, m/44'/60'/1'/0/&lt;index&gt; · no pre-mine, no team allocation, no launcher supply</span>
+    <span class="k">factory</span><span>0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e</span>
+  </div>`,
+  ftr:"05 / 21" },
+
+{ slug:"agent-scope", kick:"what the agent can touch", body:`
+  <h1 class="sm">the agent writes the app. it never writes the parts that hold <em>money</em>.</h1>
+  <div class="scope">
+    <div>
+      <div class="h">writes</div>
+      <ul>
+        <li><i class="earn">+</i>the product: pages, state, the thing the sentence described</li>
+        <li><i class="earn">+</i>server functions, run in <code>QuickJS</code> <span class="why">64 MB · 5 s</span></li>
+        <li><i class="earn">+</i>calls into <code>@pyre/app-sdk</code> <span class="why">auth · charge · kv · fn</span></li>
+        <li><i class="earn">+</i>tests, screenshots, its own build config</li>
+      </ul>
+    </div>
+    <div>
+      <div class="h">never writes</div>
+      <ul>
+        <li><i class="burn">×</i>auth <span class="why">platform-hosted</span></li>
+        <li><i class="burn">×</i>wallet code, keys, signing <span class="why">reviewer hard block</span></li>
+        <li><i class="burn">×</i>payment code <span class="why">sdk only</span></li>
+        <li><i class="burn">×</i>outbound network <span class="why">csp · no fetch</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="strip">
+    <div><div class="lab">csp</div><div class="v">no outbound network</div></div>
+    <div><div class="lab">server functions</div><div class="v">QuickJS · 64 MB · 5 s</div></div>
+    <div><div class="lab">deploy</div><div class="v">reviewer gate</div></div>
+    <div><div class="lab">model budget</div><div class="v">per-job tokens on a proxy</div></div>
+  </div>`,
+  ftr:"06 / 21" },
+
+{ slug:"build-gate", kick:"the build gate", body:`
+  <h1 class="sm">nothing deploys because the model said it was done.</h1>
+  <div class="frame term">
+    <div class="bar"><span>build · e2b microvm · pyre-builder template</span><span>illustrative run</span></div>
+    <div style="padding:20px 0 6px">
+      <div class="ln"><span class="p">$</span><span class="cmd">npm run build</span><span class="ok">ok</span></div>
+      <div class="ln"><span class="p">$</span><span class="cmd">playwright test smoke</span><span class="ok">ok</span></div>
+      <div class="ln"><span class="p">$</span><span class="cmd">screenshots</span><span class="ok">ok</span></div>
+      <div class="ln"><span class="p">$</span><span class="cmd">lighthouse</span><span class="ok">ok  <span class="dim">perf · a11y · best practices · seo</span></span></div>
+      <div class="ln"><span class="p">$</span><span class="cmd">reviewer</span><span class="gate">hard blocks, then the model reads the diff against the spec</span></div>
+      <div class="ln"><span class="p">→</span><span class="cmd">deploy</span><span class="ok">&lt;slug&gt;.pyre.fun</span></div>
+      <div class="ln" style="margin-top:14px"><span class="p"></span><span class="fail">any gate fails</span><span class="fail">no deploy. the live version stays.</span></div>
+    </div>
+  </div>`,
+  ftr:"07 / 21" },
+
+{ slug:"ash", kick:"dormancy", body:`
+  <h1 class="sm">out of budget is not offline. it is <em>ash</em>.</h1>
+  <div class="state">
+    <div><div class="tile lit"></div><div class="sname">live</div><div class="sdesc">budget above the $10 iteration minimum.<br>the agent builds, the app serves.</div></div>
+    <div class="arrows">
+      <div class="fwd">budget under $10<br>and nothing pending</div>
+      <div class="back">a fee claim lifts the budget<br>back to $10</div>
+    </div>
+    <div><div class="tile ash"></div><div class="sname ink2">dormant</div><div class="sdesc">the app stays up, keeps earning.<br>only the build loop stops.</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:820px 1fr;gap:28px;margin-top:16px;align-items:end">
+    <div class="shot"><img src="../cap/ash-crop.png"></div>
+    <div class="cap">the app store's "ash" section, live today. the app shown is seeded demo content used to build the platform.</div>
+  </div>`,
+  ftr:"08 / 21" },
+
+{ slug:"ranked", kick:"ranking", body:`
+  <h1 class="sm">ranked by dollars <em>earned</em>, not volume.</h1>
+  <div class="rank">
+    <div>
+      <div class="shot"><img src="../cap/ranked-crop.png"></div>
+      <div class="cap" style="margin-top:14px">app store, sorted by revenue, captured from pyre.fun. the apps shown are seeded demo content; their numbers are not real revenue.</div>
+    </div>
+    <div>
+      <div class="lab" style="margin-bottom:12px">what moves an app up</div>
+      <div class="kv">
+        <div><span>usdg revenue, all time</span><span class="earn">ranks</span></div>
+        <div><span>revenue, last 24h</span><span class="earn">ranks</span></div>
+        <div><span>trade volume</span><span class="ink3">no</span></div>
+        <div><span>market cap</span><span class="ink3">no</span></div>
+        <div><span>holder count</span><span class="ink3">no</span></div>
+      </div>
+      <div class="cap" style="margin-top:16px">the coin is the consequence. the app is the point.</div>
+    </div>
+  </div>`,
+  ftr:"09 / 21" },
+
+{ slug:"wallets", kick:"wallets and payments", body:`
+  <h1 class="sm">two ways in. no gas to pay an app.</h1>
+  <div class="two">
+    <div class="panel"><div class="t">sign in with google</div><div class="m">a custodial hd wallet on robinhood chain<br><b>m/44'/60'/0'/0/&lt;user&gt;</b><br>the browser holds a session jwt, never a key. the server signs.</div></div>
+    <div class="panel"><div class="t">sign in with your own wallet</div><div class="m">an eip-191 challenge, siwe-style<br><b>sign a message, get a session</b><br>you pay the stake from your wallet. you sign your own trades.</div></div>
+  </div>
+  <div class="flow">
+    <div class="act" style="left:0"><div class="box">user's wallet</div><div class="sub">custodial or external</div></div>
+    <div class="act" style="left:603px"><div class="box">treasury</div><div class="sub">pays the gas</div></div>
+    <div class="act" style="left:1206px"><div class="box">USDG</div><div class="sub">0x5fc5360D…d168 · robinhood chain</div></div>
+    <div class="msg" style="left:250px;width:353px;top:130px"><span>signs an eip-3009 authorization<i>transferWithAuthorization · no tx, no gas</i></span></div>
+    <div class="msg" style="left:853px;width:353px;top:130px"><span>relays it on chain<i>the app is paid. per charge cap $250, $1,000 / user / app / day</i></span></div>
+  </div>`,
+  ftr:"10 / 21" },
+
+{ slug:"hard-blocks", kick:"reviewer · hard blocks", body:`
+  <h1 class="sm">twelve patterns that fail a deploy before any model reads the diff.</h1>
+  <div class="frame diff">
+    <div class="bar"><span>diff · src/ · index.html · public/ · functions/</span><span>added lines only</span></div>
+    <div class="ln"><span class="no">+12</span><span class="code"><span class="plus">+</span> const r = await fetch(url)</span><span class="tag">direct fetch()</span></div>
+    <div class="ln"><span class="no">+13</span><span class="code"><span class="plus">+</span> new XMLHttpRequest()</span><span class="tag">XMLHttpRequest</span></div>
+    <div class="ln"><span class="no">+14</span><span class="code"><span class="plus">+</span> new WebSocket(ws)</span><span class="tag">WebSocket</span></div>
+    <div class="ln"><span class="no">+15</span><span class="code"><span class="plus">+</span> &lt;script src="https://cdn…/x.js"&gt;</span><span class="tag">external script src</span></div>
+    <div class="ln"><span class="no">+16</span><span class="code"><span class="plus">+</span> privateKey · secretKey</span><span class="tag">key material</span></div>
+    <div class="ln"><span class="no">+17</span><span class="code"><span class="plus">+</span> privateKeyToAccount(pk)</span><span class="tag">privateKeyToAccount</span></div>
+    <div class="ln"><span class="no">+18</span><span class="code"><span class="plus">+</span> sendTransaction · eth_sendTransaction</span><span class="tag">sendTransaction</span></div>
+    <div class="ln"><span class="no">+19</span><span class="code"><span class="plus">+</span> signTransaction(tx)</span><span class="tag">signTransaction</span></div>
+    <div class="ln"><span class="no">+20</span><span class="code"><span class="plus">+</span> signTypedData · eth_signTypedData_v4</span><span class="tag">signTypedData</span></div>
+    <div class="ln"><span class="no">+21</span><span class="code"><span class="plus">+</span> window.ethereum.request(…)</span><span class="tag">window.ethereum</span></div>
+    <div class="ln"><span class="no">+22</span><span class="code"><span class="plus">+</span> eval(code)</span><span class="tag">eval()</span></div>
+    <div class="ln ok"><span class="no">+23</span><span class="code"><span class="plus" style="color:var(--earn)">+</span> await ship.fetch('/_pyre/fn/hello')</span><span class="tag">sdk · allowed</span></div>
+  </div>
+  <div class="cap" style="margin-top:14px">only then does the reviewer model read the diff against the approved spec. the eslint config, CLAUDE.md, tests and dev tooling are exempt: they never ship.</div>`,
+  ftr:"11 / 21" },
+
+{ slug:"reconcile", kick:"reconcile worker", body:`
+  <h1 class="sm">seven checks, every five minutes, in this order.</h1>
+  <div class="grid7">
+    <div class="g"><span class="i">01</span><div class="k">JOBS</div><div class="d">settle builds whose runner died. recover queued rows that lost their queue job. <b>a runner crash is survivable.</b></div></div>
+    <div class="g"><span class="i">02</span><div class="k">SANDBOXES</div><div class="d">every live microvm is billed until its own timeout. <b>kill any whose build already settled.</b></div></div>
+    <div class="g"><span class="i">03</span><div class="k">JOBTOKENS</div><div class="d">a live token is a spendable credential on the model proxy. <b>revoke and delete any whose build is finished.</b></div></div>
+    <div class="g"><span class="i">04</span><div class="k">PAYOUTS</div><div class="d">treasury payouts broadcast but unconfirmed. <b>read the receipt, finalise or flag.</b></div></div>
+    <div class="g"><span class="i">05</span><div class="k">LEDGER</div><div class="d">assert the money invariants. <b>reports, never repairs:</b> an automatic fix would destroy the evidence.</div></div>
+    <div class="g"><span class="i">06</span><div class="k">FEES</div><div class="d">every <b>Claimed</b> the escrow emitted for an app wallet must have a fee event. missing ones are replayed, idempotent on tx hash.</div></div>
+    <div class="g"><span class="i">07</span><div class="k">BURNS</div><div class="d">the ledger's burned total per app is compared with the chain. <b>the ledger can never exceed the chain.</b></div></div>
+    <div class="g tick"><div class="lab">cadence</div><div class="big">5 min</div><div class="d" style="margin-top:6px">one ReconcileRun row per check, per pass.</div></div>
+  </div>`,
+  ftr:"12 / 21" },
+
+{ slug:"security-review", kick:"independent security review", body:`
+  <h1 class="sm">one high. fixed. here is exactly what it was.</h1>
+  <div class="finding">
+    <div class="panel fx">
+      <span class="sev">high · before</span>
+      <div class="t">treasury drain through the launch stake</div>
+      <ul>
+        <li><i>01</i><span>an external-wallet launcher submits a tx hash as their 0.002 ETH stake.</span></li>
+        <li><i>02</i><span>the hash could be <b class="ink">any inbound treasury transaction</b>: a fee sweep, an escrow claim, someone else's stake.</span></li>
+        <li><i>03</i><span>the stake is refunded at the first build. the treasury pays out money that was never staked.</span></li>
+      </ul>
+    </div>
+    <div class="panel fx">
+      <span class="sev ok">fixed · settleStake</span>
+      <div class="t">the tx must prove it is this launcher's stake</div>
+      <ul>
+        <li><i>+</i><span>mined and successful, <code>to</code> = treasury, <code>value ≥ stake</code></span></li>
+        <li><i>+</i><span><code>from</code> = the launcher's proven <code>authWallet</code>, never a platform wallet</span></li>
+        <li><i>+</i><span>one hash settles one launch: <code>App.stakeTx</code> is unique, enforced by the database</span></li>
+        <li><i>+</i><span>overpayment is not refunded beyond the stake</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="cap" style="margin-top:22px">also fixed: five medium findings from the same review. the check lives in apps/api/src/lib/launch.ts, public under mit.</div>`,
+  ftr:"13 / 21" },
+
+{ slug:"numbers", kick:"engineering proof", body:`
+  <h1 class="sm">where the engineering stands, in numbers.</h1>
+  <div class="nums">
+    <div class="num"><div class="v">408</div><div class="l">unit tests</div><div class="n">chain client, economics, api, runner, web. vitest.</div></div>
+    <div class="num"><div class="v">58<small>/68</small></div><div class="l">production feature audit</div><div class="n">6 blocked only on treasury funding. 3 skipped. run against the live deployment.</div></div>
+    <div class="num"><div class="v">27<small>/28</small></div><div class="l">perimeter security check</div><div class="n">the last one clears on deploy. plus an independent review: 1 high and 5 mediums, fixed.</div></div>
+  </div>
+  <div class="cap" style="margin-top:36px">every number here is reproducible from the public repo: apps/api/scripts/feature-audit.mjs · apps/api/scripts/security-check.mjs · npm test</div>`,
+  ftr:"14 / 21" },
+
+{ slug:"design", kick:"design system · obsidian temper", body:`
+  <h1 class="sm">heat, not flame. supply is a <em>kiln</em>.</h1>
+  <div class="ds">
+    <div>
+      <svg viewBox="0 0 136 250" width="420" height="400" style="display:block;margin:-16px auto 0">
+        <g id="kiln"></g>
+      </svg>
+      <div class="cap" style="text-align:center;margin-top:6px"><span class="burn">30.00%</span> burned · each burn hollows a layer</div>
+    </div>
+    <div>
+      <div class="lab">palette</div>
+      <div class="sw">
+        <div style="background:#0A0A0C"><span>canvas</span></div><div style="background:#121215"><span>surface</span></div><div style="background:#18181D"><span>raised</span></div>
+        <div style="background:#9D8CFF"><span style="color:#0A0A0C">accent</span></div><div style="background:#3E8BFF"><span style="color:#0A0A0C">build</span></div><div style="background:#4FD1A6"><span style="color:#0A0A0C">earn</span></div><div style="background:#FF4D6D"><span style="color:#0A0A0C">burn</span></div><div style="background:#E9F1FF"><span style="color:#0A0A0C">white-hot</span></div>
+      </div>
+      <div class="ramp">
+        <div class="r"></div>
+        <div class="type">
+          <div><span class="a">Instrument Serif <em style="color:var(--accent)">italic</em> for one word</span><span class="lab">display</span></div>
+          <div><span class="b">Geist for the interface</span><span class="lab">ui</span></div>
+          <div><span class="c">Geist Mono 0x5059524501 · 4.2 ETH · 85%</span><span class="lab">numbers</span></div>
+          <div><span class="cap">heat ramp, always vertical, always rising from the bottom edge. violet → cobalt → white is hotter than orange.</span></div>
+        </div>
+      </div>
+      <div class="cap" style="margin-top:18px">rejected: orange, lime, flame glyphs, emoji, web3 gradients.</div>
+    </div>
+  </div>`,
+  ftr:"15 / 21" },
+
+{ slug:"launch-trays", kick:"launch flow", body:`
+  <h1 class="sm">launching is three trays.</h1>
+  <div class="trays">
+    <div class="tray"><div class="handle"></div>
+      <div class="rail"><span class="cur"><span class="n">01</span> Coin</span><span><span class="n">02</span> Agent brief</span><span><span class="n">03</span> Review &amp; launch</span></div>
+      <div class="prog"><i style="width:33%"></i></div>
+      <div class="f"><div class="l">name</div><div class="in">Deadlinks</div></div>
+      <div class="f"><div class="l">ticker</div><div class="in mono">$DEAD</div></div>
+      <div class="f"><div class="l">what the agent will build, in one sentence</div><div class="in" style="min-height:96px">Crawls a site weekly and emails a broken-link report.</div></div>
+      <span class="btn">Continue</span>
+    </div>
+    <div class="tray"><div class="handle"></div>
+      <div class="rail"><span><span class="n">01</span> Coin</span><span class="cur"><span class="n">02</span> Agent brief</span><span><span class="n">03</span> Review &amp; launch</span></div>
+      <div class="prog"><i style="width:66%"></i></div>
+      <div class="spec">
+        <div><b>what it does</b> · crawls every page on a domain once a week, lists broken links</div>
+        <div><b>who pays</b> · site owners who want the report in their inbox</div>
+        <div><b>mvp</b> · enter a domain, get the first report in the browser</div>
+        <div><b>price</b> · $9 / month, charged in USDG</div>
+      </div>
+      <div class="cap" style="margin-top:12px">written by the intake agent. you approve it or send it back.</div>
+      <span class="btn">Approve spec</span>
+    </div>
+    <div class="tray"><div class="handle"></div>
+      <div class="rail"><span><span class="n">01</span> Coin</span><span><span class="n">02</span> Agent brief</span><span class="cur"><span class="n">03</span> Review &amp; launch</span></div>
+      <div class="prog"><i style="width:100%"></i></div>
+      <div class="sum">
+        <div>stake<b>0.002 ETH</b></div><div>refunded<b>at the first build</b></div>
+        <div>launches on<b>pons v2</b></div><div>from<b>the app's wallet</b></div>
+        <div>first build at<b>$50 budget</b></div><div>deploys to<b>deadlinks.pyre.fun</b></div>
+      </div>
+      <div class="cap" style="margin-top:16px">the stake is spam control, not a fee. a failed launch refunds it immediately.</div>
+      <span class="btn">Stake and launch</span>
+    </div>
+  </div>
+  <div class="cap" style="margin-top:14px">the example coin is one of the seeded demo apps used to build the platform.</div>`,
+  ftr:"16 / 21" },
+
+{ slug:"verify-burn", kick:"verify a burn", body:`
+  <h1 class="sm">check a burn yourself. it takes four minutes.</h1>
+  <div class="verify">
+    <div class="steps">
+      <div>open <b>pyre.fun/burns</b> and pick a row. each one carries a swap tx, a burn tx and an attestation tx.</div>
+      <div>open the <b>burn tx</b> on robinhoodchain.blockscout.com. the coin's <code>totalSupply()</code> drops by the burned amount. nothing moves to a wallet.</div>
+      <div>open the <b>attestation tx</b>. zero value, treasury to itself. the calldata starts <code>0x5059524501</code>.</div>
+      <div>take the revenue event ids listed on the row, sort them, join with commas, <code>sha256</code>. it must equal the remaining 32 bytes.</div>
+    </div>
+    <div>
+      <div class="shot"><img src="../cap/ledger-crop.png"></div>
+      <div class="cap" style="margin-top:14px">the burn ledger, captured from pyre.fun. rows shown are seeded demo content used to verify the pipeline, not real burns.</div>
+    </div>
+  </div>`,
+  ftr:"17 / 21" },
+
+{ slug:"live-next", kick:"status", body:`
+  <h1 class="sm">what is live. what is next.</h1>
+  <div class="ln2">
+    <div class="live">
+      <div class="h">live <span class="lab">today</span></div>
+      <ul>
+        <li><i></i>pyre.fun and api.pyre.fun on robinhood chain<span class="r">4663</span></li>
+        <li><i></i>launch flow: sentence, spec, stake, pons v2 launch</li>
+        <li><i></i>build pipeline: microvm, build gate, reviewer, &lt;slug&gt;.pyre.fun</li>
+        <li><i></i>usdg payments relayed by the treasury, no user gas</li>
+        <li><i></i>buyback, burn() and attestation every 10 minutes</li>
+        <li><i></i>the public repo, mit<span class="r">github.com/realdoomsman/pyre</span></li>
+      </ul>
+    </div>
+    <div class="next">
+      <div class="h">next <span class="lab">no dates</span></div>
+      <ul>
+        <li><i></i>$PYRE launches soon. no contract address exists yet.</li>
+        <li><i></i>treasury funding, which clears the 6 audit checks waiting on it</li>
+        <li><i></i>the seeded demo apps come down; the board starts at zero</li>
+        <li><i></i>the first real launches</li>
+      </ul>
+      <div class="cap" style="margin-top:22px">anyone posting a $PYRE address before we do is not us.</div>
+    </div>
+  </div>`,
+  ftr:"18 / 21" },
+
+{ slug:"faq", kick:"faq", body:`
+  <div class="faq">
+    <div class="q">is a buyback a payout?</div>
+    <div class="a">no.</div>
+    <div class="more">
+      <div><div class="qq">what actually happens?</div><div class="aa">app revenue buys the coin on the open curve or pool, then burn() destroys what was bought. supply falls. nothing is sent to anyone.</div></div>
+      <div><div class="qq">is it yield, a dividend, revenue share?</div><div class="aa">none of those. no holder acquires a claim against pyre, a launcher or an app by holding a coin. the terms say so because it is true.</div></div>
+      <div><div class="qq">will burns keep happening?</div><div class="aa">only if the app keeps earning. a burn is a record of what happened, never a forecast. apps can fail.</div></div>
+    </div>
+  </div>`,
+  ftr:"19 / 21" },
+
+{ slug:"open-source", kick:"open source", body:`
+  <h1 class="sm">read what runs before you launch on it.</h1>
+  <div class="tree">
+    <div class="frame">
+      <div class="bar"><span>github.com/realdoomsman/pyre</span><span>mit</span></div>
+      <div class="rows">
+        <div class="r"><span><span class="dir">packages/</span>chain</span><b>robinhood chain on viem. hd wallets, pons v2, uniswap v4, usdg eip-3009, burn + attestation</b></div>
+        <div class="r"><span><span class="dir">packages/</span>shared</span><b>economics in wei, splits, schemas</b></div>
+        <div class="r"><span><span class="dir">packages/</span>db</span><b>prisma schema, one squashed migration</b></div>
+        <div class="r"><span><span class="dir">packages/</span>app-sdk</span><b>what generated apps call: auth, charge, kv, fn, holder gate</b></div>
+        <div class="r"><span><span class="dir">apps/</span>api</span><b>express api, sse, rpc read proxy, model proxy with per-job tokens</b></div>
+        <div class="r"><span><span class="dir">apps/</span>runner</span><b>launch, fee sweep, scheduler, build, buyback, reconcile</b></div>
+        <div class="r"><span><span class="dir">apps/</span>web</span><b>react 19, vite, tailwind v4</b></div>
+        <div class="r"><span><span class="dir">docs/</span></span><b>architecture, economics, runbook, legal</b></div>
+        <div class="r"><span>LICENSE</span><b>MIT</b></div>
+      </div>
+    </div>
+    <div class="panel lic">
+      <div class="t">mit, all of it.</div>
+      <p>the chain client, the api, the runner, the web app, the app sdk, the audits and the scripts that produce the numbers we quote.</p>
+      <p>every generated app is public too. launchers assign no ip and get no equity or supply; the coin is the whole relationship.</p>
+      <p class="mono" style="color:var(--ink3);font-size:14px">git clone https://github.com/realdoomsman/pyre</p>
+    </div>
+  </div>`,
+  ftr:"20 / 21" },
+
+{ slug:"founder", kick:"why we built this", body:`
+  <div class="letter">
+    launchpads solved launching and skipped the part where something gets built. a coin would trade for a day and leave nothing behind.<br><br>
+    we wanted the other order. a sentence becomes a spec. fees pay an agent to ship it. people pay for the app, and the app's revenue buys the coin back and <em>burns</em> it, with a hash on chain you can recompute.<br><br>
+    it is small. it is real. it is open.
+    <div class="sig">pyre · robinhood chain · pons v2 · mit</div>
+  </div>`,
+  ftr:"21 / 21" },
+];
+
+/* isometric supply kiln, same geometry as apps/web/src/ui/SupplyKiln.tsx */
+const kiln = (layers, hollow, recent) => {
+  const w = 120, h = 18, pad = 8, cx0 = pad + w/2, half = w/2, q = w/4;
+  let out = "";
+  for (let k = 0; k < layers; k++) {
+    const top = pad + (layers - 1 - k) * h;
+    const isHollow = k >= layers - hollow;
+    const isRecent = k === recent;
+    const stroke = isRecent ? "#9D8CFF" : isHollow ? "#62605B" : "#F3F2EE";
+    const fo = isHollow ? 0 : 1;
+    const left = `${cx0-half},${top+q} ${cx0},${top+half} ${cx0},${top+half+h} ${cx0-half},${top+q+h}`;
+    const right = `${cx0+half},${top+q} ${cx0},${top+half} ${cx0},${top+half+h} ${cx0+half},${top+q+h}`;
+    const topP = `${cx0},${top} ${cx0+half},${top+q} ${cx0},${top+half} ${cx0-half},${top+q}`;
+    out += `<g>
+      <polygon points="${left}" fill="#121215" fill-opacity="${fo}" stroke="${stroke}" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="${right}" fill="#18181D" fill-opacity="${fo}" stroke="${stroke}" stroke-width="1" stroke-linejoin="round"/>
+      <polygon points="${topP}" fill="${isRecent ? '#3B2F7A' : '#1E1E24'}" fill-opacity="${fo}" stroke="${stroke}" stroke-width="1" stroke-linejoin="round" ${isHollow ? 'stroke-dasharray="3 3"' : ''}/>
+    </g>`;
+  }
+  return out;
+};
+
+const q = new URLSearchParams(location.search);
+const idx = Math.max(1, Math.min(CARDS.length, Number(q.get("card") || 1)));
+const card = CARDS[idx - 1];
+document.title = `${String(idx).padStart(2,"0")}-${card.slug}`;
+document.getElementById("kick").innerHTML = `<span>${card.kick}</span><b>${String(idx).padStart(2,"0")}</b>`;
+document.getElementById("b").innerHTML = card.body;
+document.getElementById("ftr").textContent = card.ftr;
+const k = document.getElementById("kiln");
+if (k) k.innerHTML = kiln(10, 3, 6);
+window.CARDS = CARDS;
+</script>
+</body>
+</html>

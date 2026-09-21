@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+:root{
+  --canvas:#0A0A0C;--surface:#121215;--raised:#18181D;--line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.14);
+  --ink:#F3F2EE;--ink2:#9B9891;--ink3:#62605B;
+  --accent:#9D8CFF;--accent2:#7A66F5;--build:#3E8BFF;--earn:#4FD1A6;--burn:#FF4D6D;--warn:#E5C15C;--hot:#E9F1FF;
+}
+html,body{margin:0;background:#000}
+#c{width:1600px;height:900px;background:var(--canvas);position:relative;overflow:hidden;color:var(--ink);font-family:Geist,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+#heat{position:absolute;left:0;right:0;bottom:0;height:260px;pointer-events:none;
+  background:
+    radial-gradient(70% 60% at 50% 100%, rgba(156,210,255,.16), rgba(62,139,255,.11) 30%, rgba(122,102,245,.06) 58%, transparent 80%),
+    linear-gradient(180deg, transparent, rgba(28,27,46,.45) 60%, rgba(59,47,122,.36));}
+#lip{position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg, transparent, #9CD2FF 25%, #E9F1FF 50%, #9CD2FF 75%, transparent)}
+#lockup{position:absolute;left:64px;top:52px;height:40px}
+#eyebrow{position:absolute;right:64px;top:62px;font:400 14px/1 'Geist Mono',monospace;letter-spacing:.06em;color:var(--ink2);text-transform:uppercase}
+h1{position:absolute;left:64px;top:118px;margin:0;font:400 56px/1.04 'Instrument Serif',serif;letter-spacing:-.02em;color:var(--ink)}
+h1 em{font-style:italic;color:var(--accent)}
+.sub{position:absolute;left:64px;top:190px;font:400 18px/1.4 Geist,sans-serif;color:var(--ink2);max-width:900px}
+.mono{font-family:'Geist Mono',monospace}
+.lbl{font:400 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.foot{position:absolute;left:64px;right:64px;bottom:44px;font:400 13px/1.5 'Geist Mono',monospace;color:var(--ink3);letter-spacing:.02em}
+svg text{font-family:Geist,sans-serif}
+svg .m{font-family:'Geist Mono',monospace}
