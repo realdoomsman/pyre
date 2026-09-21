@@ -76,7 +76,7 @@ export const Positions = ({ positions }: { positions: PositionDto[] }) => {
     return (
       <EmptyState
         title="No positions"
-        body="Buy a coin from its page and it appears here with your share of what is left after every burn."
+        body="Buy a coin from its page and it appears here."
         action={
           <Button variant="secondary" size="sm" onClick={() => navigate("/")}>
             Browse coins

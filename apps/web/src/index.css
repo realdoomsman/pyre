@@ -1,10 +1,7 @@
 @import "tailwindcss";
 
-/* `light:` utilities apply inside an Ash Paper subtree. */
-@custom-variant light ([data-theme="light"] &);
-
 /*
- * Pyre — "Obsidian Temper".
+ * Pyre — "Obsidian Temper". Dark only.
  *
  * Heat, not flame. The palette is the oxide scale of tempering steel: straw →
  * bronze → violet → blue → white-hot. The accent lives at the violet/blue end;
@@ -17,8 +14,8 @@
  *   sans     Geist              UI and prose, weights capped at 600
  *   mono     Geist Mono         every number, address, hash, ledger row, label
  *
- * Every semantic token below is a plain custom property so a `[data-theme=light]`
- * ancestor ("Ash Paper") can re-point the same names without touching markup.
+ * Every semantic token below is a plain custom property; charts, canvases and
+ * SVG read them at runtime via getComputedStyle.
  */
 
 @font-face {
@@ -157,9 +154,6 @@
       left: 100%;
     }
   }
-  /* Light mode only: dark surfaces carry no drop shadows. */
-  --shadow-paper: 0 1px 2px rgba(20, 19, 17, 0.06), 0 0 0 1px rgba(20, 19, 17, 0.04);
-
   --animate-fade-in: fade-in var(--duration-ui) var(--ease-ui) both;
   --animate-rise: rise var(--duration-reveal) var(--ease-reveal) both;
   --animate-pulse-dot: pulse-dot 1.8s var(--ease-ui) infinite;
@@ -308,8 +302,8 @@
   }
 }
 
-/* Heat ramp lives outside @theme so the light theme can override it and the
-   `--color-heat-*` utilities follow. */
+/* Heat ramp lives outside @theme so `--color-heat-*` utilities and JS/SVG consumers
+   read the same six stops. */
 :root {
   --heat-0: #1c1b2e;
   --heat-1: #3b2f7a;
@@ -318,52 +312,6 @@
   --heat-4: #9cd2ff;
   --heat-5: #e9f1ff;
   color-scheme: dark;
-}
-
-/*
- * "Ash Paper" — the light theme for the app store and docs. A full theme, not
- * a tint flip: warm paper, one cobalt, carmine burns. The hottest end of the
- * heat ramp is charred ink here, because white-hot cannot show on paper.
- */
-[data-theme="light"] {
-  --color-canvas: #f4f1ea;
-  --color-surface: #fbfaf7;
-  --color-raised: #ffffff;
-  --color-mono-bg: #ece8e0;
-  --color-line: #e3ded4;
-  --color-line-2: #d4cec2;
-  --color-line-3: #bfb8aa;
-  --color-fill: rgba(20, 19, 17, 0.04);
-  --color-fill-2: rgba(20, 19, 17, 0.07);
-  --color-scrim: rgba(42, 38, 34, 0.45);
-  --color-ink: #141311;
-  --color-ink-2: #5c5852;
-  --color-ink-3: #6b665d;
-  --color-accent: #1f3de8;
-  --color-accent-strong: #1731b8;
-  --color-accent-ink: #ffffff;
-  --color-accent-wash: #e4e8fb;
-  --color-build: #5b4bff;
-  --color-earn: #2f7d4a;
-  --color-burn: #c8102e;
-  --color-warn: #b8860b;
-  --color-danger: #a11226;
-  --color-white-hot: #141311;
-  --color-temper-straw: #b8860b;
-  --color-temper-bronze: #9a6a3e;
-  --color-temper-violet: #5b4bff;
-  --color-temper-blue: #1f3de8;
-  --color-tool-read: #3f6ea8;
-  --color-tool-edit: #7a5ab0;
-  --color-tool-search: #3f7f4a;
-  --color-tool-think: #a8613a;
-  --heat-0: #e9e4d8;
-  --heat-1: #c9c4f2;
-  --heat-2: #8b6cf0;
-  --heat-3: #1f3de8;
-  --heat-4: #0f2aa8;
-  --heat-5: #141311;
-  color-scheme: light;
 }
 
 @layer base {

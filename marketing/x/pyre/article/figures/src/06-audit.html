@@ -26,25 +26,25 @@
   <img id="lockup" src="../../../../../brand/pyre/lockup.svg">
   <div id="eyebrow">figure 6 · engineering proof</div>
   <h1>what passes, what is blocked, and <em>why</em>.</h1>
-  <div class="sub">the numbers from the production feature audit, the perimeter check and the unit suite, as they stand before the treasury is funded.</div>
+  <div class="sub">the numbers from the production feature audit, the unit suite and the independent review, as they stand before the treasury is funded.</div>
 
   <div id="g">
     <div class="card">
       <h2>production feature audit · 68 features</h2>
-      <div class="n">58<small>pass</small></div>
+      <div class="n">62<small>pass</small></div>
       <div id="cells">
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="p"></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i>
       </div>
-      <div class="leg"><span>58 pass</span><span class="b">6 blocked on treasury funding</span><span class="s">3 skipped</span><span class="p">1 pending redeploy</span></div>
-      <div class="cap">the 6 blocked checks need ETH in the treasury and nothing else. the 1 pending check (reconcile reports 0 drift) failed against a stale runner build that has since been redeployed; the fixed check returns 0 drift.</div>
+      <div class="leg"><span>62 pass</span><span class="b">6 blocked on treasury funding</span></div>
+      <div class="cap">the 6 blocked checks need ETH in the treasury and nothing else: custodial stake, bounty escrow and payout, top-up, usdg checkout and per-call payment each reach their funding gate and refuse cleanly.</div>
     </div>
     <div class="side">
       <div class="row">
         <div class="card"><h2>unit tests</h2><div class="n">408</div><div class="cap">no network, db, redis, rpc or model access in the suite.</div></div>
-        <div class="card"><h2>perimeter security check</h2><div class="n">27<small>of 28</small></div><div class="bar"><b style="width:96.4%"></b></div><div class="cap">csrf, csp and cookie flags, cors, webhook hmac, rpc proxy, wallet auth, model proxy, rate limits. the last item clears on deploy.</div></div>
+        <div class="card"><h2>perimeter security check</h2><div class="n" style="font-size:40px">passes<small>without a hosted app</small></div><div class="cap">csrf, csp and cookie flags, cors, webhook hmac, rpc proxy, wallet auth, model proxy, rate limits. the app-origin checks run again when the first app deploys.</div></div>
       </div>
       <div class="card"><h2>independent security review</h2>
         <div class="n" style="font-size:40px">1 high · 5 medium<small>all fixed</small></div>

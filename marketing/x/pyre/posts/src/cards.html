@@ -427,18 +427,19 @@ const CARDS = [
     </div>
     <div><div class="tile ash"></div><div class="sname ink2">dormant</div><div class="sdesc">the app stays up, keeps earning.<br>only the build loop stops.</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:820px 1fr;gap:28px;margin-top:16px;align-items:end">
-    <div class="shot"><img src="../cap/ash-crop.png"></div>
-    <div class="cap">the app store's "ash" section, live today. the app shown is seeded demo content used to build the platform.</div>
-  </div>`,
+  <div class="cap" style="margin-top:36px">a dormant app keeps its subdomain and its coin. any new fee claim, or a top-up in ETH, funds the next build. no vote, no button.</div>`,
   ftr:"08 / 21" },
 
 { slug:"ranked", kick:"ranking", body:`
   <h1 class="sm">ranked by dollars <em>earned</em>, not volume.</h1>
   <div class="rank">
     <div>
-      <div class="shot"><img src="../cap/ranked-crop.png"></div>
-      <div class="cap" style="margin-top:14px">app store, sorted by revenue, captured from pyre.fun. the apps shown are seeded demo content; their numbers are not real revenue.</div>
+      <div class="lab" style="margin-bottom:12px">a worked example, two apps</div>
+      <div class="kv">
+        <div><span>app a · earned $12 · traded $300</span><span class="earn">#1</span></div>
+        <div><span>app b · earned $0 · traded $40,000</span><span class="ink3">#2</span></div>
+      </div>
+      <div class="cap" style="margin-top:16px">the app store sorts by usdg revenue. what the coin traded does not enter the sort.</div>
     </div>
     <div>
       <div class="lab" style="margin-bottom:12px">what moves an app up</div>
@@ -533,10 +534,10 @@ const CARDS = [
   <h1 class="sm">where the engineering stands, in numbers.</h1>
   <div class="nums">
     <div class="num"><div class="v">408</div><div class="l">unit tests</div><div class="n">chain client, economics, api, runner, web. vitest.</div></div>
-    <div class="num"><div class="v">58<small>/68</small></div><div class="l">production feature audit</div><div class="n">6 blocked only on treasury funding. 3 skipped. run against the live deployment.</div></div>
-    <div class="num"><div class="v">27<small>/28</small></div><div class="l">perimeter security check</div><div class="n">the last one clears on deploy. plus an independent review: 1 high and 5 mediums, fixed.</div></div>
+    <div class="num"><div class="v">62<small>/68</small></div><div class="l">production feature audit</div><div class="n">the other 6 wait only on treasury funding. run against the live deployment.</div></div>
+    <div class="num"><div class="v">6</div><div class="l">review findings, all fixed</div><div class="n">one high and five medium, from an independent security review of the codebase.</div></div>
   </div>
-  <div class="cap" style="margin-top:36px">every number here is reproducible from the public repo: apps/api/scripts/feature-audit.mjs · apps/api/scripts/security-check.mjs · npm test</div>`,
+  <div class="cap" style="margin-top:36px">every number here is reproducible from the public repo: npm test · apps/api/scripts/feature-audit.mjs · the fixes in apps/api/src/lib/launch.ts</div>`,
   ftr:"14 / 21" },
 
 { slug:"design", kick:"design system · obsidian temper", body:`
@@ -574,19 +575,19 @@ const CARDS = [
     <div class="tray"><div class="handle"></div>
       <div class="rail"><span class="cur"><span class="n">01</span> Coin</span><span><span class="n">02</span> Agent brief</span><span><span class="n">03</span> Review &amp; launch</span></div>
       <div class="prog"><i style="width:33%"></i></div>
-      <div class="f"><div class="l">name</div><div class="in">Deadlinks</div></div>
-      <div class="f"><div class="l">ticker</div><div class="in mono">$DEAD</div></div>
-      <div class="f"><div class="l">what the agent will build, in one sentence</div><div class="in" style="min-height:96px">Crawls a site weekly and emails a broken-link report.</div></div>
+      <div class="f"><div class="l">name</div><div class="in" style="color:var(--ink3)">2–32 characters</div></div>
+      <div class="f"><div class="l">ticker</div><div class="in mono" style="color:var(--ink3)">2–10 letters</div></div>
+      <div class="f"><div class="l">what the agent will build, in one sentence</div><div class="in" style="min-height:96px;color:var(--ink3)">one or two sentences. the intake agent turns this into a brief.</div></div>
       <span class="btn">Continue</span>
     </div>
     <div class="tray"><div class="handle"></div>
       <div class="rail"><span><span class="n">01</span> Coin</span><span class="cur"><span class="n">02</span> Agent brief</span><span><span class="n">03</span> Review &amp; launch</span></div>
       <div class="prog"><i style="width:66%"></i></div>
       <div class="spec">
-        <div><b>what it does</b> · crawls every page on a domain once a week, lists broken links</div>
-        <div><b>who pays</b> · site owners who want the report in their inbox</div>
-        <div><b>mvp</b> · enter a domain, get the first report in the browser</div>
-        <div><b>price</b> · $9 / month, charged in USDG</div>
+        <div><b>what it does</b> · one line, in the app's own words</div>
+        <div><b>who pays</b> · the person the app is worth money to</div>
+        <div><b>mvp</b> · the smallest version worth paying for</div>
+        <div><b>price</b> · in USD, charged in USDG</div>
       </div>
       <div class="cap" style="margin-top:12px">written by the intake agent. you approve it or send it back.</div>
       <span class="btn">Approve spec</span>
@@ -597,13 +598,12 @@ const CARDS = [
       <div class="sum">
         <div>stake<b>0.002 ETH</b></div><div>refunded<b>at the first build</b></div>
         <div>launches on<b>pons v2</b></div><div>from<b>the app's wallet</b></div>
-        <div>first build at<b>$50 budget</b></div><div>deploys to<b>deadlinks.pyre.fun</b></div>
+        <div>first build at<b>$50 budget</b></div><div>deploys to<b>&lt;slug&gt;.pyre.fun</b></div>
       </div>
       <div class="cap" style="margin-top:16px">the stake is spam control, not a fee. a failed launch refunds it immediately.</div>
       <span class="btn">Stake and launch</span>
     </div>
-  </div>
-  <div class="cap" style="margin-top:14px">the example coin is one of the seeded demo apps used to build the platform.</div>`,
+  </div>`,
   ftr:"16 / 21" },
 
 { slug:"verify-burn", kick:"verify a burn", body:`
@@ -616,8 +616,12 @@ const CARDS = [
       <div>take the revenue event ids listed on the row, sort them, join with commas, <code>sha256</code>. it must equal the remaining 32 bytes.</div>
     </div>
     <div>
-      <div class="shot"><img src="../cap/ledger-crop.png"></div>
-      <div class="cap" style="margin-top:14px">the burn ledger, captured from pyre.fun. rows shown are seeded demo content used to verify the pipeline, not real burns.</div>
+      <div class="lab" style="margin-bottom:12px">the attestation calldata, 37 bytes</div>
+      <div class="frame"><div class="bar"><span>calldata</span><span>zero value · treasury → treasury</span></div>
+        <div style="padding:22px 18px;font:400 22px/1.5 'Geist Mono',monospace;color:var(--ink)">0x<span style="color:var(--accent)">50595245</span> <span style="color:var(--build)">01</span><br><span style="color:var(--ink2)">&lt;32-byte sha256&gt;</span></div>
+        <div style="padding:0 18px 22px;font:400 15px/1.5 'Geist Mono',monospace;color:var(--ink2)">"PYRE" · version 1 · sha256(sorted revenue event ids, comma-joined)</div>
+      </div>
+      <div class="cap" style="margin-top:14px">no part of the check needs pyre. the ledger row gives the ids; blockscout gives the bytes.</div>
     </div>
   </div>`,
   ftr:"17 / 21" },
@@ -641,7 +645,7 @@ const CARDS = [
       <ul>
         <li><i></i>$PYRE launches soon. no contract address exists yet.</li>
         <li><i></i>treasury funding, which clears the 6 audit checks waiting on it</li>
-        <li><i></i>the seeded demo apps come down; the board starts at zero</li>
+        <li><i></i>the board starts at zero: no number appears until a real coin earns it</li>
         <li><i></i>the first real launches</li>
       </ul>
       <div class="cap" style="margin-top:22px">anyone posting a $PYRE address before we do is not us.</div>

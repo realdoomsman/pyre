@@ -69,8 +69,8 @@ class Reverb {
   }
 }
 
-export function buildMusic() {
-  const tl = readJson(join(BUILD, "timeline.json"));
+/** `tl` = a timeline ({duration, events:{burn}}); defaults to this film's build/timeline.json. */
+export function buildMusic({ tl = readJson(join(BUILD, "timeline.json")), out = join(BUILD, "music.wav") } = {}) {
   const DUR = tl.duration + 0.5;
   const N = Math.ceil(DUR * SR);
   const L = new Float32Array(N), R = new Float32Array(N);
@@ -138,8 +138,8 @@ export function buildMusic() {
     L[i] = Math.tanh(oL * g * 1.4);
     R[i] = Math.tanh(oR * g * 1.4);
   }
-  writeWav(join(BUILD, "music.wav"), [L, R]);
-  console.log(`[music] build/music.wav ${DUR.toFixed(1)}s · ${BPM} bpm · A minor`);
+  writeWav(out, [L, R]);
+  console.log(`[music] ${out} ${DUR.toFixed(1)}s · ${BPM} bpm · A minor`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) buildMusic();

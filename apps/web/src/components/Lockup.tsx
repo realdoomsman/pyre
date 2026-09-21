@@ -78,8 +78,7 @@ export const Mark = ({ size = 24, className }: { size?: number; className?: stri
 
 /**
  * Mark + wordmark, horizontal. `height` is the cap height of the lockup box
- * (mark ≈ 0.8 × height). The wordmark is `currentColor`, so it follows the
- * theme's `--color-ink` on Ash Paper pages without a prop.
+ * (mark ≈ 0.8 × height). The wordmark is `currentColor`.
  */
 export const Lockup = ({ height = 22, className }: { height?: number; className?: string }) => {
   const id = useId().replace(/:/g, "");

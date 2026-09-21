@@ -42,7 +42,7 @@ docs/               architecture, economics, legal posture, runbook, go-live
 npm ci
 npm run db:generate
 npm run build            # shared → db → chain → app-sdk → api → runner → web
-npm test                 # 349 tests, no network
+npm test                 # 408 tests, no network
 npm run dev:api          # also: dev:runner, dev:web
 ```
 
@@ -55,7 +55,7 @@ node apps/web/scripts/audit.mjs                     # perf + accessibility gate
 railway ssh --service api "node apps/api/scripts/feature-audit.mjs"    # feature matrix
 railway ssh --service api "node apps/api/scripts/security-check.mjs"   # perimeter
 railway ssh --service api "node apps/api/scripts/probe-intake.mjs"     # push one app through intake
-railway ssh --service api "node apps/api/scripts/seed-demo-data.mjs --remove"   # purge demo content
+railway ssh --service api "node apps/api/scripts/seed-demo-data.mjs --remove"   # purge seeded fixtures (production is already clean)
 ```
 
 `PlatformSetting.pause_builds = true` is the global kill switch for building; `pauseFeeSweep` and `pauseBuyback` stop money movement. The reconcile worker runs every 5 minutes and reports drift across jobs, sandboxes, job tokens, the ledger, unrecorded escrow claims and burned supply.

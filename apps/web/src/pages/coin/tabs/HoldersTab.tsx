@@ -80,7 +80,7 @@ export const HoldersTab = ({ app, data }: Props) => {
       </div>
     );
   }
-  if (rows.length === 0) return <EmptyState title="No holders indexed yet" body="Holder balances are indexed from Blockscout a few minutes after launch." />;
+  if (rows.length === 0) return <EmptyState title="No holders indexed yet" body="Holder balances are indexed from the chain a few minutes after launch." />;
 
   return (
     <div className="flex flex-col gap-4">

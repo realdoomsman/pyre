@@ -35,7 +35,7 @@ You must be 18 or older and legally able to enter a contract. Do not use Pyre if
 
 - Every app repository is public and licensed under the **MIT License**. By launching you agree that the code the agent generates is released under MIT.
 - **No intellectual property is assigned to Pyre and none is assigned to you.** You keep whatever rights you already hold in your prompt and materials; Pyre keeps its rights in the platform, template, and SDK. You grant Pyre a perpetual, worldwide, royalty-free licence to use your prompt, spec, name, ticker, and image to build, host, and promote the app.
-- Contributors who open pull requests contribute under the repository's MIT licence and may be paid bounties or a contributor share of fees as shown on the app page.
+- Contributors who open pull requests contribute under the repository's MIT licence and may be paid bounties, escrowed in ETH and released on merge, as shown on the app page.
 - Forking a Pyre app is allowed and sends a permanent royalty to the app you forked.
 
 ## 6. Paying inside apps
@@ -85,7 +85,7 @@ You will indemnify Pyre against claims, damages, and costs (including reasonable
 
 ## 14. Governing law and disputes
 
-**Placeholder — pending counsel.** The governing law, the venue, and whether disputes go to arbitration or to court are **not yet settled** and will be filled in on the advice of qualified counsel before Pyre handles payments at scale. Until this section names a jurisdiction, treat it as unresolved: nothing here waives any right you have under the mandatory consumer law of your own country, and no forum, class-action waiver, or arbitration clause is being asserted against you.
+**Not yet settled.** The governing law, the venue, and whether disputes go to arbitration or to court will be filled in on the advice of qualified counsel before Pyre handles payments at scale. Until this section names a jurisdiction, treat it as unresolved: nothing here waives any right you have under the mandatory consumer law of your own country, and no forum, class-action waiver, or arbitration clause is being asserted against you.
 
 ## 15. Changes, termination, and contact
 

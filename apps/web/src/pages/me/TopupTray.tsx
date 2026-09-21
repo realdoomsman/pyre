@@ -7,7 +7,7 @@ import { Button, Chip, Field, Input, Sheet, toast } from "../../ui/index.js";
 import { useTopup } from "./hooks.js";
 
 /**
- * Top up / relight: ETH from the custodial balance, 100% to the app's build budget. A dormant
+ * Top up / relight — ETH from the custodial balance, 100% to the app's build budget. A dormant
  * app relights on the first dollar.
  *
  * Loaded lazily by `Launched`: it is the only sheet on the account page's launched tab, and the

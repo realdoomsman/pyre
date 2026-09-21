@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import type { AppSort } from "@pyre/shared";
+import { LAUNCH_STAKE_WEI, type AppSort } from "@pyre/shared";
 import { flatPages, useApps, useStats } from "../../api/queries.js";
 import { CoinCard } from "../../components/CoinCard.js";
+import { IconArrowRight } from "../../components/icons.js";
+import { formatEth } from "../../lib/format.js";
 import { Button, EmptyState, Skeleton, Tabs, panelId, type TabItem } from "../../ui/index.js";
 
 const PAGE_STEP = 12;
@@ -27,6 +29,24 @@ const EMPTY_COPY: Record<AppSort, { title: string; body: string }> = {
   burning: { title: "nothing burning", body: "app revenue buys the coin back and burns it. the first burn lands here." },
   revenue: { title: "no revenue yet", body: "apps that earn land here." },
 };
+
+/** Before the first launch: one empty state for the whole feed, no tabs of zeros. */
+export const FeedEmpty = () => (
+  <section aria-label="Ranked feed" className="flex min-h-[60svh] flex-col items-center justify-center rounded-card border border-dashed border-line px-6 py-16 text-center">
+    <div className="eyebrow text-ink-3">the feed</div>
+    <h2 className="display mt-3 text-36 sm:text-48">
+      nothing has launched <em>yet</em>. be first.
+    </h2>
+    <p className="body mx-auto mt-3 max-w-lg text-ink-2">
+      describe an app in a paragraph and stake {formatEth(LAUNCH_STAKE_WEI)}. the coin's trading fees pay an agent to build the app; the app's revenue buys the coin back and burns it.
+    </p>
+    <div className="mt-6 flex justify-center">
+      <Button variant="primary" size="lg" href="/launch" iconRight={<IconArrowRight size={16} />}>
+        Launch
+      </Button>
+    </div>
+  </section>
+);
 
 /** Tabs by ranking, then the cards. Sort lives in the URL so a tab survives a refresh and a share. */
 export const Feed = () => {

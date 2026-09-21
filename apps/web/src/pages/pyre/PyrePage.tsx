@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { PyreBurnDto, PyrePageDto } from "@pyre/shared";
 import { LAUNCH_PHASE, explorerTxUrl } from "@pyre/shared";
+import { env } from "../../env.js";
 import { formatBps, formatEth, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
 import { Address, Button, Card, CardHeader, Chip, EmptyState, GraduationRing, NumberFlow, Skeleton, SupplyKiln, Table, UsdFlow, type Column } from "../../ui/index.js";
 import { usePyre } from "./hooks.js";
@@ -15,15 +16,22 @@ export const PyrePage = () => {
   }, []);
 
   if (q.isPending) {
+    // Viewport-tall so the footer never paints in view and jumps away when the page lands; the top mirrors the header grid.
     return (
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <Skeleton className="h-16 w-72" />
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Skeleton className="h-24" rounded="card" />
-          <Skeleton className="h-24" rounded="card" />
-          <Skeleton className="h-24" rounded="card" />
+      <div className="mx-auto min-h-dvh w-full max-w-6xl space-y-10" aria-busy>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <div className="space-y-5">
+            <Skeleton className="h-16 w-56" />
+            <Skeleton className="h-6 w-32" rounded="pill" />
+            <Skeleton lines={4} />
+            <Skeleton className="h-24 w-full max-w-md" />
+          </div>
+          <Skeleton className="h-44" rounded="card" />
         </div>
-        <Skeleton className="h-72" rounded="card" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-64" rounded="card" />
+          <Skeleton className="h-64" rounded="card" />
+        </div>
       </div>
     );
   }
@@ -115,6 +123,16 @@ const PreLaunch = ({ page }: { page: PyrePageDto }) => (
         on-chain yet, so there is no price, no market cap and no burn to show. What already exists is the ledger below — the share of every fee and every dollar of revenue
         that is earmarked for buying and burning it the moment it launches.
       </p>
+      <dl className="grid max-w-md grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 border-y border-line py-3 text-13">
+        <dt className="eyebrow">Contract</dt>
+        <dd className="num text-ink-3">not launched yet</dd>
+        <dt className="eyebrow">Chain</dt>
+        <dd className="num text-ink">
+          {env.chainName} · {env.chainId}
+        </dd>
+        <dt className="eyebrow">Venue</dt>
+        <dd className="num text-ink">PONS v2 curve, then Uniswap v4</dd>
+      </dl>
       <p className="small text-ink-3">No pre-sale, no allocation, no whitelist. When it launches, the address appears here and on the feed.</p>
     </div>
     <Card tone="inset">

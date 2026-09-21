@@ -83,7 +83,7 @@ export function buildVoice(opts) {
     "burn-mg": "supply stack hollows from the top; buy → burn() → totalSupply falls; attestation calldata types out",
     "burn-cap": "real capture: pyre.fun/burns ledger, chart tilting into the table · demo data",
     "dormant-mg": "the mark cools to ash at $0 budget; a fee arrives and the heat rises again",
-    proof: "408 unit tests · 58/68 production audit · 27/28 perimeter · independent security review",
+    proof: "408 unit tests · 62/68 production audit · 1 high + 5 medium review findings fixed",
     close: "lockup; pyre.fun · Robinhood Chain · @PyreFun; $PYRE launching soon · buybacks are burns, never distributions",
   };
   for (const s of tl.shots) lines.push(`| ${clock(s.start)} | ${s.dur.toFixed(1)}s | ${s.id} | ${PICTURE[s.id] ?? ""} |`);

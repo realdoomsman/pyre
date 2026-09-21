@@ -5,7 +5,6 @@ import { flatPages, useApps, useStats } from "../../api/queries.js";
 import { AppCard } from "../../components/AppCard.js";
 import { AppPreview, useLatestScreenshot } from "../../components/AppPreview.js";
 import { appUrl } from "../../env.js";
-import { useTheme } from "../../lib/theme.js";
 import { formatEth, formatUsd, timeAgo } from "../../lib/format.js";
 import { Avatar, Button, Chip, EmptyState, HeatGauge, ProofStrip, Skeleton, Tabs, cx } from "../../ui/index.js";
 
@@ -31,7 +30,6 @@ export const AppStore = () => {
   const stats = useStats();
   const apps = useApps(sort);
   const navigate = useNavigate();
-  useTheme("light");
 
   useEffect(() => {
     document.title = "Apps that pay to burn — Pyre";
@@ -93,10 +91,14 @@ export const AppStore = () => {
           </ul>
         ) : live.length === 0 ? (
           <EmptyState
-            title={all.length === 0 ? "No apps are live yet" : "Nothing in this category yet"}
-            body={all.length === 0 ? "The first coin to accrue $50 of fees gets the first agent. Launch one." : "Try another category, or launch the first one."}
+            title={all.length === 0 ? "no apps yet" : "nothing in this category yet"}
+            body={
+              all.length === 0
+                ? "the first coin to accrue $50 of trading fees gets the first agent, and its app lands here. be first."
+                : "try another category, or launch the first one."
+            }
             action={
-              <Button variant="secondary" size="sm" onClick={() => navigate("/launch")}>
+              <Button variant="primary" size="sm" onClick={() => navigate("/launch")}>
                 Launch a coin
               </Button>
             }
@@ -195,7 +197,7 @@ const Featured = ({ app }: { app: AppSummaryDto }) => {
 };
 
 /**
- * Ash & Relight: a dormant app, desaturated. The relight itself — funding the agent again by
+ * Ash & Relight — a dormant app, desaturated. The relight itself — funding the agent again by
  * buying or topping up — happens on the coin page.
  */
 const AshCard = ({ app, onRelight }: { app: AppSummaryDto; onRelight: () => void }) => (

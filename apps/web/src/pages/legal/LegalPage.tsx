@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { NavLink, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useTheme } from "../../lib/theme.js";
 import { Button, EmptyState, Skeleton, cx } from "../../ui/index.js";
 import { Markdown, headingsOf } from "./markdown.js";
 
@@ -16,7 +15,6 @@ const ORDER = ["terms", "privacy", "content-policy"] as const;
 const LAST_UPDATED = /^_Last updated:\s*(.+?)_\s*$/m;
 
 export const LegalPage = () => {
-  useTheme("light");
   const { doc } = useParams<{ doc: string }>();
   const key = doc && DOCS[doc] ? doc : null;
 

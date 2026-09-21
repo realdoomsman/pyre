@@ -44,8 +44,8 @@ import {
 
 /*
  * /_ui — the visual acceptance surface for the design system. Every primitive
- * in every state, in both themes. Not linked from the product; page agents use
- * it as the reference while they build.
+ * in every state, on synthetic data. Dev builds only, never linked from the
+ * product; page agents use it as the reference while they build.
  */
 
 const TREASURY = "0x84F8E5a324466Deb7447048C014CF0245ce04afA";
@@ -98,13 +98,9 @@ const useTicking = (every: number) => {
 };
 
 export const UiGallery = () => {
-  const [theme, setTheme] = useState<"dark" | "light">(() =>
-    new URLSearchParams(window.location.search).get("theme") === "light" || document.documentElement.dataset.theme === "light" ? "light" : "dark",
-  );
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
     document.title = "UI — Pyre";
-  }, [theme]);
+  }, []);
   // The page mounts after the hash is applied; honour `#section` links ourselves.
   useEffect(() => {
     const id = window.location.hash.slice(1);
@@ -222,17 +218,6 @@ export const UiGallery = () => {
               { id: "burned", label: "ETH burned", value: Number(ethBurnedWei) / 1e18, format: { minimumFractionDigits: 3, maximumFractionDigits: 3 } },
               { id: "apps", label: "apps live", value: appsLive },
               { id: "hours", label: "agent-hours", value: agentHours },
-            ]}
-          />
-          <Tabs
-            name="theme"
-            size="sm"
-            variant="pill"
-            value={theme}
-            onChange={(v) => setTheme(v)}
-            items={[
-              { id: "dark", label: "Obsidian" },
-              { id: "light", label: "Ash Paper" },
             ]}
           />
         </div>

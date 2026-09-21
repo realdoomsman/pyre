@@ -60,7 +60,7 @@ export const RoadmapTab = ({ app }: { app: AppDetailDto }) => {
         {roadmap.isPending ? (
           <Skeleton lines={6} />
         ) : items.length === 0 ? (
-          <EmptyState title="Nothing proposed yet" body="Holders steer the agent. Propose the next feature and vote with your tokens." />
+          <EmptyState title="Nothing proposed yet" body="Holders steer the agent. Propose the next feature and vote with your coins." />
         ) : (
           <ol className="divide-y divide-line rounded-card border border-line">
             {items.map((it) => (

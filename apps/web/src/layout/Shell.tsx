@@ -24,7 +24,7 @@ const NAV: ReadonlyArray<{ to: string; label: string; icon: (p: { size?: number;
 const MOBILE_NAV = [...NAV.slice(0, 3), { to: "/me", label: "Me", icon: IconUser }] as const;
 
 const GITHUB_URL = "https://github.com/realdoomsman/pyre";
-const X_URL = "https://x.com/pyredotfun";
+const X_URL = "https://x.com/PyreFun";
 
 const RouteError = () => {
   const err = useRouteError();

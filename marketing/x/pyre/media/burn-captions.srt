@@ -1,0 +1,16 @@
+1
+00:00:00,800 --> 00:00:02,087
+how a burn is verified.
+
+2
+00:00:03,187 --> 00:00:10,038
+every burn ends with an attestation tx. its calldata: the word PYRE, a version byte, a hash.
+
+3
+00:00:11,038 --> 00:00:17,541
+the hash is sha256 of the revenue event ids behind the burn. recompute it from the coin page.
+
+4
+00:00:18,741 --> 00:00:23,153
+on blockscout, the burn call lowers totalSupply. nothing moves to a wallet.
+

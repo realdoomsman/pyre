@@ -42,7 +42,7 @@ export const Tooltip = ({ content, side = "top", children, className }: TooltipP
         role="tooltip"
         id={id}
         className={cx(
-          "pointer-events-none absolute left-1/2 z-40 w-max max-w-64 -translate-x-1/2 rounded-control border border-line-2 bg-raised px-2.5 py-1.5 text-12 leading-4 text-ink transition-[opacity,transform] duration-(--duration-ui) ease-(--ease-ui) light:shadow-paper",
+          "pointer-events-none absolute left-1/2 z-40 w-max max-w-64 -translate-x-1/2 rounded-control border border-line-2 bg-raised px-2.5 py-1.5 text-12 leading-4 text-ink transition-[opacity,transform] duration-(--duration-ui) ease-(--ease-ui)",
           side === "top" ? "bottom-full mb-2" : "top-full mt-2",
           open ? "opacity-100" : cx("opacity-0", side === "top" ? "translate-y-1" : "-translate-y-1"),
         )}

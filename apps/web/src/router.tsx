@@ -24,7 +24,8 @@ const LegalPage = lazy(async () => ({ default: (await import("./pages/legal/Lega
 const NotFound = lazy(async () => ({ default: (await import("./pages/NotFound.js")).NotFound }));
 const ShareBoard = lazy(async () => ({ default: (await import("./pages/share/ShareBoard.js")).ShareBoard }));
 const ShareCoin = lazy(async () => ({ default: (await import("./pages/share/ShareCoin.js")).ShareCoin }));
-const UiGallery = lazy(async () => ({ default: (await import("./pages/ui/UiGallery.js")).UiGallery }));
+/** Component gallery on synthetic data: dev only, never in the shipped bundle. */
+const UiGallery = import.meta.env.DEV ? lazy(async () => ({ default: (await import("./pages/ui/UiGallery.js")).UiGallery })) : null;
 
 type Shape = "feed" | "detail" | "list" | "form" | "short";
 
@@ -129,5 +130,5 @@ export const router = createBrowserRouter([
   // rather than a skeleton that could be captured mid-load.
   { path: "/card", element: <Suspense fallback={null}>{<ShareBoard />}</Suspense> },
   { path: "/c/:slug/card", element: <Suspense fallback={null}>{<ShareCoin />}</Suspense> },
-  { path: "/_ui", element: <Suspense fallback={null}>{<UiGallery />}</Suspense> },
+  ...(UiGallery ? [{ path: "/_ui", element: <Suspense fallback={null}>{<UiGallery />}</Suspense> }] : []),
 ]);

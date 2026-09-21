@@ -180,7 +180,7 @@ const FAQ: ReadonlyArray<{ q: string; a: ReactNode }> = [
 const Faq = () => (
   <section aria-labelledby="faq-title" className="mx-auto max-w-3xl">
     <h2 id="faq-title" className="display text-28 sm:text-36">
-      questions people <em>actually</em> ask
+      the questions that <em>matter</em>
     </h2>
     <div className="mt-6 divide-y divide-line border-y border-line">
       {FAQ.map((f) => (

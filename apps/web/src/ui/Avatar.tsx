@@ -12,7 +12,6 @@ export interface AvatarProps {
 
 /* Six quiet tints for initials. Not a rainbow, never a role colour. */
 const TINTS = ["#2a2740", "#1f2f3f", "#2f2a26", "#1f3330", "#33262f", "#26303a"];
-const LIGHT_TINTS = ["#e4e8fb", "#dfe9f3", "#f0e9dc", "#dfeee8", "#f3e2ea", "#e6ebef"];
 
 const hashOf = (s: string): number => {
   let h = 2166136261;
@@ -51,8 +50,8 @@ export const Avatar = ({ src, name, size = 40, shape = "circle", className }: Av
     <span
       role="img"
       aria-label={name}
-      className={cx("inline-flex shrink-0 items-center justify-center border border-line bg-(--tint) font-medium text-ink-2 light:bg-(--tint-light)", radius, className)}
-      style={{ ...style, "--tint": TINTS[i], "--tint-light": LIGHT_TINTS[i] } as CSSProperties}
+      className={cx("inline-flex shrink-0 items-center justify-center border border-line bg-(--tint) font-medium text-ink-2", radius, className)}
+      style={{ ...style, "--tint": TINTS[i] } as CSSProperties}
     >
       {initialsOf(name)}
     </span>

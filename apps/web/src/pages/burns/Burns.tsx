@@ -120,6 +120,8 @@ export const Burns = () => {
     ],
     [],
   );
+  // Before the first burn there is nothing to chart or filter; the ledger is one empty state.
+  const empty = burns.isSuccess && all.length === 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -161,63 +163,67 @@ export const Burns = () => {
         )}
       </header>
 
-      <Card padding="md">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <div className="eyebrow">Cumulative ETH burned</div>
-            <div className="num text-13 text-ink-2">
-              {formatEth(viewEth)} {filtered ? "in this view" : "all time"} {totals && <span className="text-ink-3">· {formatUsd(totals.revenueMicros)} of revenue</span>}
+      {!empty && (
+        <Card padding="md">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <div className="eyebrow">Cumulative ETH burned</div>
+              <div className="num text-13 text-ink-2">
+                {formatEth(viewEth)} {filtered ? "in this view" : "all time"} {totals && <span className="text-ink-3">· {formatUsd(totals.revenueMicros)} of revenue</span>}
+              </div>
             </div>
+            {filtered && (
+              <Chip tone="accent" size="sm" mono>
+                {rows.length} of {all.length} rows
+              </Chip>
+            )}
           </div>
-          {filtered && (
-            <Chip tone="accent" size="sm" mono>
-              {rows.length} of {all.length} rows
-            </Chip>
-          )}
-        </div>
-        {burns.isPending ? <Skeleton className="h-[220px] w-full" rounded="card" /> : <AreaChart points={series} tone="burn" height={220} formatValue={(v) => `${v.toFixed(4)} ETH`} label="Cumulative ETH spent on buybacks over time" />}
-      </Card>
+          {burns.isPending ? <Skeleton className="h-[220px] w-full" rounded="card" /> : <AreaChart points={series} tone="burn" height={220} formatValue={(v) => `${v.toFixed(4)} ETH`} label="Cumulative ETH spent on buybacks over time" />}
+        </Card>
+      )}
 
       <section className="flex flex-col gap-3" aria-label="Burns">
-        <div className="flex flex-wrap items-end gap-3">
-          <Field label="Coin" className="w-40">
-            <Select value={coin} onChange={(e) => setCoin(e.target.value)}>
-              <option value="">All coins</option>
-              {tickers.map(([slug, ticker]) => (
-                <option key={slug} value={slug}>
-                  ${ticker}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="From" className="w-40">
-            <Input type="date" mono value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
-          </Field>
-          <Field label="To" className="w-40">
-            <Input type="date" mono value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
-          </Field>
-          {filtered && (
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={() => {
-                setCoin("");
-                setFrom("");
-                setTo("");
-              }}
-            >
-              Clear
+        {!empty && (
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Coin" className="w-40">
+              <Select value={coin} onChange={(e) => setCoin(e.target.value)}>
+                <option value="">All coins</option>
+                {tickers.map(([slug, ticker]) => (
+                  <option key={slug} value={slug}>
+                    ${ticker}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="From" className="w-40">
+              <Input type="date" mono value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+            </Field>
+            <Field label="To" className="w-40">
+              <Input type="date" mono value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+            </Field>
+            {filtered && (
+              <Button
+                variant="ghost"
+                size="md"
+                onClick={() => {
+                  setCoin("");
+                  setFrom("");
+                  setTo("");
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <Button variant="secondary" size="md" className="ml-auto" disabled={rows.length === 0} onClick={() => downloadText(`pyre-burns-${new Date().toISOString().slice(0, 10)}.csv`, burnsCsv(rows))}>
+              Export CSV
             </Button>
-          )}
-          <Button variant="secondary" size="md" className="ml-auto" disabled={rows.length === 0} onClick={() => downloadText(`pyre-burns-${new Date().toISOString().slice(0, 10)}.csv`, burnsCsv(rows))}>
-            Export CSV
-          </Button>
-        </div>
+          </div>
+        )}
 
         {burns.isPending ? (
           <Skeleton lines={10} />
-        ) : all.length === 0 ? (
-          <EmptyState title="No burns yet" body="The first fires when any app on Pyre has earned $5. Watch this page cool as they land." />
+        ) : empty ? (
+          <EmptyState className="min-h-[50svh]" title="No burns yet" body="The first buyback fires once any app on Pyre has earned $5. It will appear here with its swap, burn and attestation transactions." />
         ) : rows.length === 0 ? (
           <EmptyState title="Nothing in this range" body="Widen the dates or pick another coin." />
         ) : (
@@ -232,14 +238,16 @@ export const Burns = () => {
             />
           </Card>
         )}
-        <div className="flex items-center justify-between text-12 text-ink-3">
-          <span className="num">{all.length.toLocaleString("en-US")} loaded{burns.hasNextPage ? " · more available" : ""}</span>
-          {burns.hasNextPage && (
-            <Button variant="ghost" size="sm" onClick={() => void burns.fetchNextPage()} loading={burns.isFetchingNextPage}>
-              Load older
-            </Button>
-          )}
-        </div>
+        {!empty && (
+          <div className="flex items-center justify-between text-12 text-ink-3">
+            <span className="num">{all.length.toLocaleString("en-US")} loaded{burns.hasNextPage ? " · more available" : ""}</span>
+            {burns.hasNextPage && (
+              <Button variant="ghost" size="sm" onClick={() => void burns.fetchNextPage()} loading={burns.isFetchingNextPage}>
+                Load older
+              </Button>
+            )}
+          </div>
+        )}
       </section>
 
       <footer className="small max-w-3xl text-ink-3">

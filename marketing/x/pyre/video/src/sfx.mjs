@@ -54,15 +54,15 @@ function thump(L, R, at, { amp = 0.9 } = {}) {
   }
 }
 
-export function buildSfx() {
-  const tl = readJson(join(BUILD, "timeline.json"));
+/** `tl` = a timeline ({duration, events:{wipes,burn}}); defaults to this film's build/timeline.json. */
+export function buildSfx({ tl = readJson(join(BUILD, "timeline.json")), out = join(BUILD, "sfx.wav") } = {}) {
   const N = Math.ceil((tl.duration + 0.5) * SR);
   const L = new Float32Array(N), R = new Float32Array(N);
   const peak = (buf) => 20 * Math.log10(buf.reduce((m, v) => Math.max(m, Math.abs(v)), 1e-9));
   tl.events.wipes.forEach((t, i) => whoosh(L, R, Math.max(0, t - 0.08), { seed: 7 + i * 13, amp: 0.42 }));
   const whooshPeak = peak(L);
   thump(L, R, tl.events.burn, { amp: 0.55 });
-  writeWav(join(BUILD, "sfx.wav"), [L, R]);
+  writeWav(out, [L, R]);
   console.log(`[sfx] ${tl.events.wipes.length} whooshes (peak ${whooshPeak.toFixed(1)} dBFS), thump at ${tl.events.burn}s (peak ${peak(L).toFixed(1)} dBFS)`);
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) buildSfx();

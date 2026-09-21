@@ -425,7 +425,7 @@ async function launchChecks() {
   let second = null;
 
   await check("create_draft", async () => {
-    first = await createLaunch(launcher, { name, ticker: "AUDIT", imageUrl: "https://example.com/i.png", prompt: `${TAG} launch lifecycle probe, at least twenty characters long.` }, null);
+    first = await createLaunch(launcher, { name, ticker: "AUDIT", imageUrl: "https://pyre.fun/icon-192.png", prompt: `${TAG} launch lifecycle probe, at least twenty characters long.` }, null);
     registerLaunch(first);
     const derived = deriveAppWallet(first.keypairIndex).address;
     return expect()
@@ -443,7 +443,7 @@ async function launchChecks() {
   });
 
   await check("slug_collision", async () => {
-    second = await createLaunch(launcher, { name, ticker: "AUDIT", imageUrl: "https://example.com/i.png", prompt: `${TAG} second launch with a colliding name, twenty plus characters.` }, null);
+    second = await createLaunch(launcher, { name, ticker: "AUDIT", imageUrl: "https://pyre.fun/icon-192.png", prompt: `${TAG} second launch with a colliding name, twenty plus characters.` }, null);
     registerLaunch(second);
     return expect()
       .eq(second.slug, `${slugify(name)}-2`, "collision slug")
@@ -466,7 +466,7 @@ async function launchChecks() {
     const limit = LAUNCH_RATE_LIMIT_PER_DAY.NEW;
     let thrown = null;
     try {
-      const extra = await createLaunch(launcher, { name: `Audit Over ${RUN}`, ticker: "AUDIT", imageUrl: "https://example.com/i.png", prompt: `${TAG} this launch must be refused by the tier cap, twenty chars.` }, null);
+      const extra = await createLaunch(launcher, { name: `Audit Over ${RUN}`, ticker: "AUDIT", imageUrl: "https://pyre.fun/icon-192.png", prompt: `${TAG} this launch must be refused by the tier cap, twenty chars.` }, null);
       registerLaunch(extra);
     } catch (err) {
       thrown = err;
@@ -591,7 +591,7 @@ async function launchChecks() {
     const own = await call(local(`/v1/launches/${second.id}`), { headers: authHeader(launcher) });
     e.eq(own.status, 200, "own launch status").eq(own.json?.launch?.id, second.id, "own launch dto").eq(own.json?.launch?.status, "AWAITING_STAKE", "own launch status field");
 
-    const forkDraft = await call(local(`/v1/apps/${first.slug}/fork`), { method: "POST", headers: jsonHeaders(launcher), body: JSON.stringify({ name: `Fork ${RUN}`, ticker: "FORKD", imageUrl: "https://example.com/i.png" }) });
+    const forkDraft = await call(local(`/v1/apps/${first.slug}/fork`), { method: "POST", headers: jsonHeaders(launcher), body: JSON.stringify({ name: `Fork ${RUN}`, ticker: "FORKD", imageUrl: "https://pyre.fun/icon-192.png" }) });
     e.eq(forkDraft.status, 409, "fork of a non-LIVE parent").eq(forkDraft.json?.error, "fork_parent_not_live", "fork code");
 
     const missing = await call(local(`/v1/launches/does-not-exist-${RUN}`), { headers: authHeader(launcher) });
@@ -1207,7 +1207,7 @@ async function governanceChecks() {
     e.eq(noPr.status, 404, "claim without a PR").eq(noPr.json?.error, "pr_not_found", "missing-PR code");
 
     const pr = await prisma.pullRequest.create({
-      data: { appId: app.id, number: 4242, authorLogin: "audit", authorWallet: state.users.holder.wallet, title: `${TAG} pr`, url: "https://example.com/pr/4242", status: "OPEN" },
+      data: { appId: app.id, number: 4242, authorLogin: "audit", authorWallet: state.users.holder.wallet, title: `${TAG} pr`, url: "https://github.com/realdoomsman/pyre/pull/4242", status: "OPEN" },
     });
     onExit("pull request", async () => { await prisma.pullRequest.delete({ where: { id: pr.id } }).catch(() => {}); });
     const openPr = await call(local(`/v1/bounties/${bounty.id}/claim`), { method: "POST", headers: jsonHeaders(state.users.holder), body: JSON.stringify({ prNumber: 4242 }) });
@@ -1800,7 +1800,7 @@ async function hostingChecks() {
     // rather than this fixture: the bookkeeping is asserted for whichever campaign was served, and
     // a live campaign's counters are put back afterwards — the audit's traffic is not real reach.
     const campaign = await prisma.adCampaign.create({
-      data: { advertiserAppId: state.apps.feeParent.id, headline: `${TAG} ad`, body: "audit fixture campaign", targetUrl: "https://example.com/audit", cpmMicros: 2_000n, budgetMicros: 1_000_000n, status: "ACTIVE" },
+      data: { advertiserAppId: state.apps.feeParent.id, headline: `${TAG} ad`, body: "audit fixture campaign", targetUrl: "https://pyre.fun/apps", cpmMicros: 2_000n, budgetMicros: 1_000_000n, status: "ACTIVE" },
     });
     onExit("ad campaign", async () => {
       await prisma.adImpression.deleteMany({ where: { advertiserAppId: campaign.advertiserAppId } });

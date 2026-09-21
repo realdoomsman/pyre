@@ -39,7 +39,7 @@ export default function App() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{env.name ?? "Pyre Starter"}</h1>
           <p className="mt-1 text-sm text-white/60">
-            {env.ticker ? `$${env.ticker} · ` : ""}built and owned by its token holders
+            {env.ticker ? `$${env.ticker} · ` : ""}built by an agent, funded by its coin
           </p>
         </div>
         <LoginButton className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold hover:bg-white/10">
@@ -106,7 +106,7 @@ export default function App() {
         <HolderGate
           fallback={
             <p className="mt-2 text-sm text-white/60" data-testid="holder-locked">
-              Hold at least {holder.minHold} {env.ticker ? `$${env.ticker}` : "tokens"} to see this section.
+              Hold at least {holder.minHold} {env.ticker ? `$${env.ticker}` : "coins"} to see this section.
             </p>
           }
         >

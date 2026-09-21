@@ -51,7 +51,7 @@ export const Toaster = () => {
         duration: 4200,
         classNames: {
           toast:
-            "flex w-[356px] max-w-[calc(100vw-32px)] items-start gap-3 rounded-card border border-line-2 bg-raised px-4 py-3 text-14 text-ink light:shadow-paper",
+            "flex w-[356px] max-w-[calc(100vw-32px)] items-start gap-3 rounded-card border border-line-2 bg-raised px-4 py-3 text-14 text-ink",
           title: "font-medium leading-5",
           description: "small text-ink-2",
           icon: "mt-0.5 grid h-5 w-5 shrink-0 place-items-center",

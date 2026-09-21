@@ -44,6 +44,6 @@ the line we found that matters: the agent never writes auth, wallet or payment c
 
 - Reply within the first hour of a thread or not at all; late replies read as promotion.
 - One reply per thread. Do not reply to replies unless asked a direct question.
-- If asked "when $PYRE": `launching soon. no contract address exists yet; anything posted before we do is not us.`
-- If asked for numbers: quote only what is on pyre.fun/burns or in the repo, and say the current apps are seeded demo content.
+- If asked "when PYRE": `launching soon. no contract address exists yet; anything posted before we do is not us.`
+- If asked for numbers: quote only what is on pyre.fun/burns or in the repo. Until the first real launch the honest number is zero: no apps, no burns. Say so; never quote a figure from a screenshot or a demo.
 - Never argue about price, never compare to another launchpad by name, never say "partner" about pons or robinhood.

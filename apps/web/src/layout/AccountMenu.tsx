@@ -77,7 +77,7 @@ export const AccountMenu = () => {
           ref={list}
           role="menu"
           aria-label="Account"
-          className="absolute right-0 top-[calc(100%+6px)] z-50 w-64 rounded-card border border-line-2 bg-raised p-1.5 animate-rise light:shadow-paper"
+          className="absolute right-0 top-[calc(100%+6px)] z-50 w-64 rounded-card border border-line-2 bg-raised p-1.5 animate-rise"
         >
           <div className="px-2.5 pb-2 pt-1.5">
             <div className="eyebrow">balances</div>

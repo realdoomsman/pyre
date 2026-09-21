@@ -34,7 +34,7 @@ Explicitly rejected: orange/ember palettes, lime, flame glyphs, emoji, wide grot
 
 ## 2. Palette
 
-Dark is the default. Light ("Ash Paper") is for the app store and docs only.
+One theme: dark, "Obsidian Temper". There is no light mode — the app store, the docs and the legal pages sit on the same canvas as everything else.
 
 | Token | Hex | Use |
 |---|---|---|
@@ -55,9 +55,7 @@ Dark is the default. Light ("Ash Paper") is for the app store and docs only.
 
 **Heat ramp** (cold → hot): `#1C1B2E → #3B2F7A → #7A66F5 → #3E8BFF → #9CD2FF → #E9F1FF`. Always vertical, always rising from the bottom edge of the thing it heats. Never horizontal, never as a text fill.
 
-**Ash Paper (light)**: paper `#F4F1EA`, ink `#141311`, cobalt `#1F3DE8`. Use `mark-mono-dark.svg` or the colour mark; the colour mark's tile is dark enough to sit on paper.
-
-Contrast on `canvas`: `ink` 17.7:1, `accent` 7.2:1, `ink-2` 6.9:1, `ink-3` 5.5:1 (4.9:1 on `raised` — still AA at 12px). On Ash Paper `ink-3` is `#6B665D` (5.1:1 on paper).
+Contrast on `canvas`: `ink` 17.7:1, `accent` 7.2:1, `ink-2` 6.9:1, `ink-3` 5.5:1 (4.9:1 on `raised` — still AA at 12px).
 
 ## 3. Type
 
@@ -83,7 +81,7 @@ Never: bold Instrument Serif (it doesn't exist; don't fake it), all-caps serif, 
 
 **Minimum size.** Mark 16px (favicon; the ramp reads as a lit base). Lockup 20px tall. Wordmark alone 14px. Mono marks 12px.
 
-**Backgrounds.** Colour mark on `canvas`, `surface`, `raised`, photography darker than 20% luminance, or Ash Paper. On mid-tone or busy backgrounds use a mono mark.
+**Backgrounds.** Colour mark on `canvas`, `surface`, `raised`, or photography darker than 20% luminance. On paper, mid-tone or busy backgrounds use a mono mark.
 
 **Don't.**
 - Don't rotate it, tilt it, or put the heat anywhere but the bottom edge.

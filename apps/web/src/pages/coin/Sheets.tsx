@@ -52,7 +52,7 @@ export const ReportSheet = ({ app, open, onClose }: { app: AppDetailDto; open: b
     >
       <form id="report-form" onSubmit={submit} className="flex flex-col gap-4">
         <Field label="Your contact" hint="Email or X handle, so we can follow up.">
-          <Input value={reporter} onChange={(e) => setReporter(e.target.value)} placeholder="you@example.com" maxLength={120} autoComplete="email" />
+          <Input value={reporter} onChange={(e) => setReporter(e.target.value)} placeholder="email or @handle" maxLength={120} autoComplete="email" />
         </Field>
         <Field label="Reason">
           <Select value={kind} onChange={(e) => setKind(e.target.value as ReportBody["kind"])}>
@@ -82,7 +82,7 @@ const copy = async (text: string, label: string) => {
 
 export const ShareSheet = ({ app, open, onClose }: { app: AppDetailDto; open: boolean; onClose: () => void }) => {
   const url = `${env.siteUrl}/c/${app.slug}`;
-  const line = `$${app.ticker} on Pyre — ${formatUsdCompact(BigInt(Math.round(app.mcapUsd * 1e6)))} mcap, ${formatPct(app.burnedPct / 100, 2)} of supply burned by app revenue.`;
+  const line = `$${app.ticker} on Pyre — ${formatUsdCompact(BigInt(Math.round(app.mcapUsd * 1e6)))} mcap, ${formatPct(app.burnedPct / 100, 2)} of supply burned by app revenue. not financial advice.`;
   const intent = `https://x.com/intent/post?${new URLSearchParams({ text: line, url }).toString()}`;
   const card = `/c/${app.slug}/card`;
   return (

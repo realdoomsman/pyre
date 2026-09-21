@@ -32,7 +32,7 @@ export const AttestationCell = ({ row }: { row: BuybackDto }) => {
         <span
           role="dialog"
           aria-label="How to verify this burn"
-          className="absolute right-0 top-full z-20 mt-1 w-72 rounded-card border border-line-2 bg-raised p-3 text-left text-12 leading-4 text-ink-2 animate-rise light:shadow-paper"
+          className="absolute right-0 top-full z-20 mt-1 w-72 rounded-card border border-line-2 bg-raised p-3 text-left text-12 leading-4 text-ink-2 animate-rise"
         >
           <span className="eyebrow block text-ink-3">Verify on Blockscout</span>
           <span className="mt-1 block">

@@ -40,26 +40,19 @@ Production configuration:
 - **Perimeter smoke** (observed): `GET /v1/me` without a token → 401; `POST /v1/rpc` with `eth_sendRawTransaction` → 403 `rpc_method_not_allowed`; `GET /metrics` without the internal secret → 401; `GET /v1/apps` lists and paginates.
 - **Runner** (observed in logs): fee sweep, buyback scan, price refresh, holders, growth daily and reconcile passes all tick; reconcile `JOBS`, `SANDBOXES`, `JOBTOKENS`, `LEDGER` (6 checked), `FEES` (3 checked) report clean; an ITERATE build on a demo app ran through sandbox bootstrap on the prebuilt 4 GB `pyre-builder` VM, the agent stage and the reviewer model, which rejected it for spec drift — the pipeline reaches the model and back.
 - **Feature matrix** — `railway ssh --service api "node apps/api/scripts/feature-audit.mjs"` (run 2026-09-21 in the api container): **62 passed · 0 failed · 6 blocked on funding · 0 skipped** of 68 features. The six blocked rows are the custodial stake, bounty escrow/payout, top-up, USDG checkout and per-call payment — each reaches its funding gate and refuses cleanly (400/402/502) because the treasury and fixture wallets hold nothing.
-- **Perimeter** — `node apps/api/scripts/security-check.mjs https://api.pyre.fun`: **28 passed · 0 failed · 2 skipped** (the two skips need `PYRE_GITHUB_SECRET` / `PYRE_PROXY_TOKEN` in the caller's env; both paths are covered by the feature matrix).
-- **Web audit** — `node apps/web/scripts/audit.mjs --seed-slug=inboxzero` against `https://api.pyre.fun`: **all budgets met** — perf 93–100, a11y 100 and 0 console errors on `/`, `/launch`, `/apps`, `/burns`, `/pyre`, `/c/:slug`, `/me`, `/legal/terms`, `/card`; initial JS 160–326 kB; no wallet chunk in any initial graph.
+- **Perimeter** — `node apps/api/scripts/security-check.mjs https://api.pyre.fun`: **28 passed · 0 failed · 2 skipped** while the `demo` app was hosted (the two skips need `PYRE_GITHUB_SECRET` / `PYRE_PROXY_TOKEN` in the caller's env; both paths are covered by the feature matrix). Since the purge the script's app-origin rows (CSRF on `/_pyre/*`, app cookie flags, app-function rate class) report `404 unknown app` because it targets `/a/demo`; they pass again once any app is hosted. Do not quote a perimeter pass count publicly until then.
+- **Web audit** — `node apps/web/scripts/audit.mjs --seed-slug=inboxzero` against `https://api.pyre.fun` (run before the purge; the seed slug no longer exists, so run without `--seed-slug` or point the coin route at `.tmp/mock-api.mjs` on :8787): **all budgets met** — perf 93–100, a11y 100 and 0 console errors on `/`, `/launch`, `/apps`, `/burns`, `/pyre`, `/c/:slug`, `/me`, `/legal/terms`, `/card`; initial JS 160–326 kB; no wallet chunk in any initial graph.
 - **Route smoke** — every route on `https://pyre.fun` and the dev build at 1440 and 390 with live data, `scrollWidth === 390` on mobile everywhere, keyboard order and reduced-motion checked (screenshots in `.tmp/real/`, `.tmp/polish/`).
 - **Independent reviews** — security review: 1 High (treasury drain via arbitrary stake tx), 5 Medium, 5 Low — all fixed with regression tests; code review: 13 findings (nonce serialisation, $PYRE buyback state machine, market cursor, holders batching, payout confirmation, …) — all fixed.
-- **Reconcile in prod** — `JOBS`, `SANDBOXES`, `JOBTOKENS`, `LEDGER`, `FEES`, `PAYOUTS` clean; `BURNS` reports `BURN_TOKEN_NOT_A_CONTRACT` (a note, not drift) for the three seeded demo tokens until they are purged.
+- **Reconcile in prod** — `JOBS`, `SANDBOXES`, `JOBTOKENS`, `LEDGER`, `FEES`, `PAYOUTS`, `BURNS` clean (the `BURN_TOKEN_NOT_A_CONTRACT` notes went away with the seeded demo tokens).
 - **On-chain dry run** (real PONS v2 launch → sweep → buy → burn → attest, hashes recorded here): **pending**, blocked on treasury ETH. Every write path is unit-tested and simulated (`eth_estimateGas` / `simulateContract`) against the live factory; `apps/runner/scripts/launch-pyre.mjs` refuses to run until the treasury is funded.
 - **Tests** — `npm test`: 408 passed, 5 skipped (live-chain tests, opt-in with `CHAIN_LIVE_TESTS=1`), ~6 s, no network/DB/Redis/RPC/model access.
 - **Build** — `npm run build` green for every package; CI (`.github/workflows/ci.yml`) runs the same sequence on Node 24 plus a migration-drift check.
 - **X** — article, pinned post with the launch video, day-1 post and 20 scheduled posts (Sep 22 → Oct 11, 15:00 daily), profile assets and five replies are live under `@PyreFun`; the log is in `marketing/x/pyre/posts/posts.md`.
 
-## Demo content — remove before public launch
+## Demo content — purged
 
-Three seeded apps (`inboxzero`, `shotcaller`, `deadlinks`) carry **fake revenue, buybacks and feed events** so the UI could be built and verified against realistic content. They are on the public feed right now and their wallets were seeded under a different seed, so every fee-sweep pass logs `derived wallet … does not match App.walletAddress` for them and every buyback pass fails on the empty treasury. Purge before you show the site to anyone:
-
-```
-railway ssh --service api "node apps/api/scripts/seed-demo-data.mjs --remove"
-railway ssh --service api "node apps/api/scripts/seed-demo-app.mjs demo --remove"
-```
-
-Re-seed at any time with the same scripts minus `--remove`. `apps/api/scripts/probe-intake.mjs` pushes one real app through the intake queue and reports what the runner did with it.
+Production was purged on 2026-09-21: `seed-demo-data.mjs --remove` and `seed-demo-app.mjs demo --remove` were run against the api service, so the public feed, app store, burn ledger and `/v1/stats` show zeros. Nothing on the site is seeded, sampled or projected; the first number to appear will be a real one. The seeding scripts still exist for local and staging work — never run them without `--remove` against production again. `apps/api/scripts/probe-intake.mjs` pushes one real app through the intake queue and reports what the runner did with it.
 
 ## Blocked on you
 
@@ -71,7 +64,7 @@ Re-seed at any time with the same scripts minus `--remove`. `apps/api/scripts/pr
 ## First real launch
 
 1. Fund the treasury and confirm Anthropic credits.
-2. Purge the demo content.
+2. Confirm `/v1/stats` still reports zeros (nothing seeded since the purge).
 3. Sign in on `https://pyre.fun` with Google (a custodial wallet is derived) or an external wallet (EIP-191 challenge).
 4. `/launch`: name, ticker, image, prompt → the intake agent writes a spec → approve it → stake 0.002 ETH (one click from the custodial balance, or send it to the treasury and submit the tx hash).
 5. The `launch` worker pre-funds the app wallet, launches on PONS v2 and flips the app to `LIVE` (`LAUNCH_GATED` with a 10-minute retry if PONS refuses the sender).

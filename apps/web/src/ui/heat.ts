@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
 
 /*
- * The heat ramp as data. CSS owns the colours (`--heat-0..5`, themed); this
- * reads them once per theme so SVG/JS consumers (gauges, kilns, canvases)
- * can interpolate a colour for a value in 0–1.
+ * The heat ramp as data. CSS owns the colours (`--heat-0..5`); this reads them
+ * once so SVG/JS consumers (gauges, kilns, canvases) can interpolate a colour
+ * for a value in 0–1.
  */
 
 export const HEAT_STEPS = 6;
@@ -11,14 +11,11 @@ export const HEAT_STEPS = 6;
 const FALLBACK = ["#1c1b2e", "#3b2f7a", "#7a66f5", "#3e8bff", "#9cd2ff", "#e9f1ff"];
 
 let cached: string[] | null = null;
-const listeners = new Set<() => void>();
-let observer: MutationObserver | null = null;
 
 const readRamp = (): string[] => {
   if (typeof document === "undefined") return FALLBACK;
   const style = getComputedStyle(document.documentElement);
-  const ramp = Array.from({ length: HEAT_STEPS }, (_, i) => style.getPropertyValue(`--heat-${i}`).trim() || FALLBACK[i]);
-  return ramp;
+  return Array.from({ length: HEAT_STEPS }, (_, i) => style.getPropertyValue(`--heat-${i}`).trim() || FALLBACK[i]);
 };
 
 const snapshot = (): string[] => {
@@ -26,25 +23,9 @@ const snapshot = (): string[] => {
   return cached;
 };
 
-const subscribe = (cb: () => void) => {
-  listeners.add(cb);
-  if (!observer && typeof document !== "undefined") {
-    observer = new MutationObserver(() => {
-      cached = null;
-      for (const l of listeners) l();
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  }
-  return () => {
-    listeners.delete(cb);
-    if (listeners.size === 0 && observer) {
-      observer.disconnect();
-      observer = null;
-    }
-  };
-};
+const subscribe = () => () => {};
 
-/** The six current heat colours (re-reads when `data-theme` changes). */
+/** The six heat colours. */
 export const useHeatRamp = (): string[] => useSyncExternalStore(subscribe, snapshot, () => FALLBACK);
 
 const hex = (c: string): [number, number, number] => {

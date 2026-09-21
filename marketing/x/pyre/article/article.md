@@ -24,7 +24,7 @@ Pyre is an attempt to close all three at once with one loop, and to make each st
 
 **Launch.** You write one sentence: what the app does. An intake agent turns it into a spec with four fields: what it does, who pays, the MVP, the price. You edit or approve it. You stake 0.002 ETH; the stake is spam control, refunded in full when the app first reaches its build threshold, or immediately if the launch fails. The coin is launched on pons v2 from the app's own derived wallet, so pons records that wallet as creator and fee recipient. There is no team allocation, no pre-mine and no launcher supply. Every coin is bought on the curve or in the pool like anyone else's.
 
-**Fees.** pons v2 charges 1% on every trade, on the bonding curve and, after graduation, in the Uniswap v4 pool. 70% of that 1% goes to the creator wallet, which is the app. Pyre pull-claims it from the pons FeeEscrow every five minutes and splits it three ways: 60% to the build, 25% to a $PYRE buyback, 15% to the person who launched the coin.
+**Fees.** pons v2 charges 1% on every trade, on the bonding curve and, after graduation, in the Uniswap v4 pool. 70% of that 1% goes to the creator wallet, which is the app. Pyre pull-claims it from the pons FeeEscrow every five minutes and splits it three ways: 60% to the build, 25% to a PYRE buyback, 15% to the person who launched the coin.
 
 **Build.** When the spendable build budget reaches $50, the scheduler starts the first build. An E2B microVM boots from a fixed template and runs the Claude Agent SDK against the spec. The agent can write product code. It cannot write auth, wallet or payment code; those come from `@pyre/app-sdk` and are hard-blocked at review.
 
@@ -32,7 +32,7 @@ Pyre is an attempt to close all three at once with one loop, and to make each st
 
 **Earn.** The app charges in USDG, the Robinhood Chain stablecoin. A custodial user signs an EIP-3009 `transferWithAuthorization`; the treasury relays it and pays the gas, so users never need ETH. Charges are capped at $250 each and $1,000 per user, per app, per day. Each verified payment becomes a revenue event with an id.
 
-**Burn.** Every ten minutes, if at least $5 of revenue is pending, the treasury buys the coin with 85% of it, on the curve before graduation or through Uniswap v4 after, and calls `burn()`. pons v2 coins are `ERC20Burnable`, so `totalSupply()` actually falls; Pyre reads the supply before and after and stores the difference. Then it sends the attestation transaction described below. The remaining 15% is 10% to a $PYRE buyback and 5% to operations.
+**Burn.** Every ten minutes, if at least $5 of revenue is pending, the treasury buys the coin with 85% of it, on the curve before graduation or through Uniswap v4 after, and calls `burn()`. pons v2 coins are `ERC20Burnable`, so `totalSupply()` actually falls; Pyre reads the supply before and after and stores the difference. Then it sends the attestation transaction described below. The remaining 15% is 10% to a PYRE buyback and 5% to operations.
 
 If the build budget hits $0 and there is no revenue, the app goes dormant. Pyre calls this "ash". The page is still served, and any new fee, from a single trade, relights it.
 
@@ -44,7 +44,7 @@ The front page ranks coins by dollars earned, not by trading volume. The app is 
 
 The two inflows never mix. Trading fees fund the build. App revenue funds the burn. Pyre takes nothing from trades at all; its only cut is 5% of app revenue, for operations.
 
-A worked example from the repo's economics doc: $10,000 of trading volume sends $70 of ETH to the app wallet. $42 goes to the build cut (half as spendable budget, half funding the model credits that pay for the agent's compute), $17.50 to the $PYRE buyback, $10.50 to the launcher. At that rate the first build starts after roughly $24,000 of volume. On the revenue side, an app that sells a $20 product queues $17 for its own buyback, $2 for $PYRE and $1 for ops. Each build job spends up to $25 by default and never more than $50, debited by the job's actual metered cost, not the cap.
+A worked example from the repo's economics doc: $10,000 of trading volume sends $70 of ETH to the app wallet. $42 goes to the build cut (half as spendable budget, half funding the model credits that pay for the agent's compute), $17.50 to the PYRE buyback, $10.50 to the launcher. At that rate the first build starts after roughly $24,000 of volume. On the revenue side, an app that sells a $20 product queues $17 for its own buyback, $2 for PYRE and $1 for ops. Each build job spends up to $25 by default and never more than $50, debited by the job's actual metered cost, not the cap.
 
 ## why robinhood chain and pons v2
 
@@ -88,9 +88,9 @@ The burn ledger publishes, for every buyback, the revenue-event ids, the swap tx
 |---|---|
 | trade fee (pons v2, curve and pool) | 1% |
 | of that, to the creator wallet (the app) | 70% |
-| app's share → build / $PYRE buyback / launcher | 60% / 25% / 15% |
+| app's share → build / PYRE buyback / launcher | 60% / 25% / 15% |
 | fee claim cadence | every 5 min |
-| app revenue → coin buyback and burn / $PYRE buyback / ops | 85% / 10% / 5% |
+| app revenue → coin buyback and burn / PYRE buyback / ops | 85% / 10% / 5% |
 | buyback cadence, minimum pending | every 10 min, $5 |
 | per-charge cap, per user per app per day | $250, $1,000 |
 | launch stake (refundable) | 0.002 ETH |
@@ -112,31 +112,23 @@ An independent security review of the codebase found one High and five Medium is
 
 ## engineering proof
 
-![Audit card: 58 of 68 production features pass, 6 blocked on treasury funding, 3 skipped, 1 pending redeploy; 408 unit tests; perimeter check 27 of 28; 1 high and 5 medium review findings fixed](figures/06-audit.png)
+![Audit card: 62 of 68 production features pass, 6 blocked on treasury funding; 408 unit tests; 1 high and 5 medium review findings fixed](figures/06-audit.png)
 
 The unit suite is 408 tests across the API, runner, web, chain and shared packages, with no network, database, Redis, RPC or model access, so it runs in CI on every push.
 
-The production feature audit exercises the deployed system end to end: real HTTP against the public origin, a throwaway wallet signing the SIWE-style challenge, the rate limiter, auth and routes running unmodified. Of 68 features, 58 pass. 6 are blocked on treasury funding and nothing else. 3 are skipped. 1 (reconcile reports zero drift) failed against a stale runner build that has since been redeployed; the fixed check returns zero drift.
+The production feature audit exercises the deployed system end to end: real HTTP against the public origin, a throwaway wallet signing the SIWE-style challenge, the rate limiter, auth and routes running unmodified. Of 68 features, 62 pass. The other 6 are blocked on treasury funding and nothing else: each reaches its funding gate and refuses cleanly.
 
-The perimeter security check covers CSRF on app endpoints, CSP and cookie flags, CORS, webhook HMAC, the RPC proxy, wallet auth, the model proxy and rate limits: 27 of 28 pass, and the last clears on deploy.
+The perimeter security check covers CSRF on app endpoints, CSP and cookie flags, CORS, webhook HMAC, the RPC proxy, wallet auth, the model proxy and rate limits. Every check that can run without a hosted app passes; the app-origin checks run again the moment the first app deploys.
 
 ## what is live today, and what launches next
 
-![The pyre.fun home page: coin grid ranked by revenue and the live burn feed. The three coins shown are seeded demo content used to build and verify the platform; the revenue and burn figures are not real](figures/07-home.png)
-
 Everything above is deployed: the web app, the API, the runner with all thirteen queues, the E2B build template, custodial wallets, USDG charges, the burn ledger and the reconcile pass, all against Robinhood Chain mainnet.
 
-Two things are not yet true, and the screenshots here reflect that. The treasury at `0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54` is unfunded, which is why the six on-chain audit checks are blocked and why no real coin has been through the loop yet. And $PYRE has not launched. Until it does, the 25% and 10% $PYRE slices accrue on the ledger and the $PYRE page shows its pre-launch state. It is launching soon; there is no contract address until it exists, and anyone offering one is not us.
+Two things are not yet true. The treasury at `0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54` is unfunded, which is why the six on-chain audit checks are blocked and why no real coin has been through the loop yet. And PYRE has not launched. Until it does, the 25% and 10% PYRE slices accrue on the ledger and the PYRE page shows its pre-launch state. It is launching soon; there is no contract address until it exists, and anyone offering one is not us.
 
-The three coins on the site right now, Inbox Zero, Shotcaller and Deadlinks, are seeded demo content used to build and verify the platform. Their market caps, revenue and burns are placeholders and will be removed before the first real launch.
+The site shows zeros today: no apps, no revenue, no burns. The demo rows used to build and verify the platform have been removed, and no figure appears on pyre.fun until a real coin earns it.
 
-![A coin page on pyre.fun (demo content): ticker, market cap, holders, burned percentage, graduation progress and the trade panel. The figures are seeded demo values, not real activity](figures/08-coin.png)
-
-![The burn ledger on pyre.fun (demo content): every buyback with its coins burned, percentage of supply, ETH spent, revenue source, burn tx and attestation tx. Rows shown are seeded demo data](figures/10-burns.png)
-
-![The app store on pyre.fun (demo content), the light "ash paper" surface, ranked by revenue rather than volume. The listed apps and figures are seeded demo data](figures/11-apps.png)
-
-What launches next, in order: treasury funding, an on-chain dry run of the full loop with a throwaway coin (launch, sweep, buy, burn, attest, with the hashes published), removal of the demo rows, $PYRE, then the first coins.
+What launches next, in order: treasury funding, an on-chain dry run of the full loop with a throwaway coin (launch, sweep, buy, burn, attest, with the hashes published), PYRE, then the first coins.
 
 ## how to launch
 
@@ -189,7 +181,7 @@ Pyre depends on third parties it does not control: pons v2 contracts, Robinhood 
 
 Custodial wallets are custodial, derived from one platform seed. If you would rather hold your own key, sign in with an external wallet and pay from it.
 
-The demo content on the site today is not real. Any number on pyre.fun before the first real launch is a placeholder used to build the product, and it will be gone.
+Every number on pyre.fun is zero until a real coin earns it. Nothing there is seeded, sampled or projected.
 
 Not financial advice.
 

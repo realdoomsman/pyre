@@ -133,7 +133,7 @@ export const AreaChart = ({ points, markers = [], tone = "burn", height = 200, f
           </>
         )}
       </svg>
-      <div className="pointer-events-none absolute right-3 top-2 rounded-control border border-line-2 bg-raised px-2.5 py-1.5 text-12 leading-4 text-ink light:shadow-paper">
+      <div className="pointer-events-none absolute right-3 top-2 rounded-control border border-line-2 bg-raised px-2.5 py-1.5 text-12 leading-4 text-ink">
         <div className="num font-medium">{formatValue(hp ? hp.v : geo.last.v)}</div>
         <div className="num text-ink-3">{hp ? fmtStamp(hp.t) : "now"}</div>
       </div>

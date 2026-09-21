@@ -106,7 +106,7 @@ describe("rewriteHtml", () => {
     '<script type="module" src="./assets/index-def.js"></script>',
     '<link rel="icon" href="/favicon.svg">',
     "</head><body>",
-    '<img src="//cdn.example.com/logo.png">',
+    '<img src="//cdn.pyre.fun/logo.png">',
     '<a href="https://ship.fun/docs">docs</a>',
     '<a href="mailto:hi@ship.fun">mail</a>',
     '<a href="#section">anchor</a>',
@@ -149,7 +149,7 @@ describe("rewriteHtml", () => {
 
   it("leaves external, protocol-relative, scheme and anchor URLs alone", () => {
     const out = rewriteHtml(html, "/a/inboxzero");
-    expect(out).toContain('src="//cdn.example.com/logo.png"');
+    expect(out).toContain('src="//cdn.pyre.fun/logo.png"');
     expect(out).toContain('href="https://ship.fun/docs"');
     expect(out).toContain('href="mailto:hi@ship.fun"');
     expect(out).toContain('href="#section"');

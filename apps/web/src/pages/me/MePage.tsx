@@ -71,7 +71,7 @@ export const MePage = () => {
           <h1 className="h1">
             Your <em>account</em>.
           </h1>
-          <p className="body text-ink-2">Balances, positions, the coins you launched, and the share of every coin's remaining supply that grows with each burn.</p>
+          <p className="body text-ink-2">Balances, positions and the coins you launched.</p>
           <div>
             <Button size="lg" onClick={auth.signIn}>
               Sign in

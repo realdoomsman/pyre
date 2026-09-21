@@ -29,7 +29,7 @@ export const Card = ({ tone = "surface", padding = "md", interactive, ash, as: T
   <Tag
     {...rest}
     className={cx(
-      "rounded-card border light:shadow-paper",
+      "rounded-card border",
       TONE[tone],
       PAD[padding],
       interactive &&

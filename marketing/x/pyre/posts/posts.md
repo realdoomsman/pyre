@@ -6,8 +6,8 @@ Posting notes:
 - One post per day after the pinned post (day 0). Days are suggestions; keep at least 20 h between posts. Skip weekends if reach drops.
 - Attach the visual as a single image (1600×900). Alt text is given per post; paste it into X's alt field.
 - Put links in the first reply unless the row says otherwise; X downranks link posts.
-- Posts 08, 09, 16 and 17 show seeded demo content and say so in the copy or the visual caption. Do not strip that line.
-- Post 18 is the only place that talks about the $PYRE launch. Never add a contract address or a date.
+- Visuals 08, 09, 16 and 17 are diagrams only; nothing on the site is captured while the board is empty. Never attach a screenshot that shows numbers the site does not show today.
+- Post 18 is the only place that talks about the PYRE launch. Never add a contract address or a date. Never write `$PYRE` with the dollar sign in a post or in alt text: X auto-links the cashtag to an unrelated asset.
 - The 21st post (founder voice) can be dropped if exactly 20 are wanted; the rest do not depend on it.
 
 | # | day | purpose | visual |
@@ -54,7 +54,7 @@ supply falls because the app earned.
 - purpose: creator fee split with numbers
 - day: 4
 - visual: `visuals/02-fee-split.png`
-- alt text: proportional bars: the 1 percent trade fee, 70 percent to the app wallet, then split 60 build, 25 $PYRE buyback, 15 launcher
+- alt text: proportional bars: the 1 percent trade fee, 70 percent to the app wallet, then split 60 build, 25 PYRE buyback, 15 launcher
 - link: none; first reply: https://pyre.fun/burns (escrow address is in the visual)
 - count: 273 / 280
 
@@ -63,7 +63,7 @@ where a trade fee goes on pyre.
 
 every pons v2 trade pays 1%. 70% of that lands in the app's own wallet, claimed from the fee escrow every 5 minutes.
 
-each claim splits: 60% build budget · 25% $PYRE buyback · 15% to whoever launched it.
+each claim splits: 60% build budget · 25% PYRE buyback · 15% to whoever launched it.
 
 nothing on the fee side goes to us.
 ```
@@ -78,7 +78,7 @@ nothing on the fee side goes to us.
 - count: 276 / 280
 
 ```
-app revenue, in USDG, splits three ways: 85% buys the coin back and burns it · 10% $PYRE · 5% ops.
+app revenue, in USDG, splits three ways: 85% buys the coin back and burns it · 10% PYRE · 5% ops.
 
 the buyback runs every 10 minutes once $5 is pending. burn() is called on the coin itself, so totalSupply actually falls.
 
@@ -156,7 +156,7 @@ any gate fails, nothing ships. the live version stays.
 - purpose: dormant and relight
 - day: 12
 - visual: `visuals/08-ash.png`
-- alt text: a heated tile marked live and an unlit tile marked dormant with the transitions between them; app store ash section screenshot, seeded demo content
+- alt text: a heated tile marked live and an unlit tile marked dormant with the transitions between them
 - link: none; first reply: https://pyre.fun/apps
 - count: 274 / 280
 
@@ -173,16 +173,14 @@ the next fee claim that lifts the budget back over the $10 iteration minimum rel
 - purpose: ranking by dollars earned
 - day: 13
 - visual: `visuals/09-ranked.png`
-- alt text: app store screenshot sorted by revenue (seeded demo content) and a table of what ranks and what does not
+- alt text: a table of what ranks and what does not: dollars earned, burned supply and fees claimed rank; trading volume and market cap do not
 - link: none; first reply: https://pyre.fun/apps
-- count: 272 / 280
+- count: 176 / 280
 
 ```
-the app store ranks by dollars earned, not volume. an app that earned $0 sits under one that earned $12, whatever traded.
+the app store ranks by dollars earned, not volume. an app that earns $0 sits under one that earns $12, whatever traded.
 
 the coin is the consequence. the app is the point.
-
-(the three apps on the site today are seeded demo content used to build and verify the platform.)
 ```
 
 ## 10 · wallets
@@ -254,16 +252,16 @@ fixed: the tx must be mined, to the treasury, worth the stake, from the launcher
 - purpose: test and audit numbers
 - day: 15
 - visual: `visuals/14-numbers.png`
-- alt text: three large numbers: 408 unit tests, 58 of 68 feature audit, 27 of 28 perimeter check
+- alt text: three large numbers: 408 unit tests, 62 of 68 production features passing, 1 high and 5 medium review findings fixed
 - link: none; first reply: https://github.com/realdoomsman/pyre
-- count: 249 / 280
+- count: 258 / 280
 
 ```
 where the engineering stands.
 
-408 unit tests.
-production feature audit: 58 of 68 pass, 6 blocked only on treasury funding, 3 skipped.
-perimeter security check: 27 of 28, the last clears on deploy.
+408 unit tests, no network.
+production feature audit: 62 of 68 pass; the other 6 wait only on treasury funding.
+independent security review: 1 high, 5 medium, all fixed.
 
 every number is reproducible from the public repo.
 ```
@@ -288,7 +286,7 @@ every coin's supply is a kiln: blocks that hollow out as burns land. instrument 
 - purpose: the launch flow in three trays
 - day: 9
 - visual: `visuals/16-launch-trays.png`
-- alt text: three tray mockups: coin, agent brief, review and launch, filled with a seeded demo coin
+- alt text: three tray mockups: coin, agent brief, review and launch, with the fields labelled and empty
 - link: none; first reply: https://pyre.fun/launch
 - count: 272 / 280
 
@@ -307,7 +305,7 @@ then pons v2.
 - purpose: how to verify a burn on blockscout
 - day: 8
 - visual: `visuals/17-verify-burn.png`
-- alt text: four numbered steps to verify a burn and a burn ledger screenshot marked as seeded demo rows
+- alt text: four numbered steps to verify a burn: open the ledger row, check totalSupply on the burn tx, read the attestation calldata, recompute the hash
 - link: none; first reply: https://pyre.fun/burns
 - count: 279 / 280
 
@@ -322,14 +320,14 @@ open the burn ledger, pick a row. burn tx: on blockscout the coin's totalSupply 
 - purpose: what is live vs what is next
 - day: 20
 - visual: `visuals/18-live-next.png`
-- alt text: two lists, live and next; the next list says $PYRE launches soon with no contract address yet
+- alt text: two lists, live and next; the next list says PYRE launches soon with no contract address yet
 - link: none
-- count: 277 / 280
+- count: 276 / 280
 
 ```
 live: the site, the api, the launch flow, the build pipeline, the burn ledger and attestation, the public repo.
 
-next: $PYRE launches soon. the treasury gets funded, which clears the six audit checks waiting on it.
+next: PYRE launches soon. the treasury gets funded, which clears the six audit checks waiting on it.
 
 no contract address exists yet. anyone posting one is not us.
 ```
@@ -340,7 +338,7 @@ no contract address exists yet. anyone posting one is not us.
 - day: 3
 - visual: `visuals/19-faq.png`
 - alt text: large serif question, is a buyback a payout, answered no, with three shorter questions below
-- link: none; first reply: https://pyre.fun/terms
+- link: none; first reply: https://pyre.fun/legal/terms
 - count: 261 / 280
 
 ```
@@ -393,5 +391,7 @@ we wanted a coin whose supply falls because its app earned, with receipts on cha
 - Days 2–21 scheduled in X's native scheduler, one per day at 15:00 local, Sep 22 → Oct 11 (order per the table above). Manage at x.com/compose/post/unsent/scheduled.
 - Profile set: avatar `pfp.png`, header `banner.png`, bio/location/website per profile.md.
 - Replies posted (5): to @Captainweb01, @PaydRH, @portgost, @MIOnMinara, @lemondotfun (see replies.md for the voice rules).
+
+**Stale scheduled posts (production purged 2026-09-21).** The scheduled copies of posts 08, 09, 14, 16 and 17 were uploaded with visuals or lines that showed the seeded demo apps or the earlier audit numbers. Replace them in the scheduler with the copy and the re-rendered visuals in this file before their day: 17 (day 8, Sep 29), 16 (day 9, Sep 30), 08 (day 12, Oct 3), 09 (day 13, Oct 4), 14 (day 15, Oct 6).
 
 **Cashtag warning.** X's composer auto-resolves the `$PYRE` cashtag to an unrelated asset (`robinhood:0x0d11e308e40c15e1181aed4f4bbfc4744e9deeed`) and shows that in the post. Until our coin is live and X maps the cashtag to it, write `PYRE` (no `$`) in posts; posts 02, 03 and 18 were scheduled that way.

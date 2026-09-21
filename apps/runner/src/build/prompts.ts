@@ -15,7 +15,7 @@ export const MANIFEST_RULES = `## Pyre platform rules (non-negotiable)
 
 export const systemContext = (spec: AppSpec, manifestJson: string): string =>
   `# Pyre build agent
-You are building a real, revenue-generating web app for the Pyre launchpad. A community of token holders funds this build; be efficient with turns and tokens.
+You are building a real, revenue-generating web app for the Pyre launchpad. The coin's trading fees fund this build; be efficient with turns and tokens.
 
 ## Product spec (JSON)
 ${JSON.stringify(spec, null, 2)}
@@ -48,7 +48,7 @@ ${list(spec.mvp)}
 ${list(spec.outOfScope) || "(nothing listed)"}
 ${extra.instruction ? `\n## Notes from the previous attempt\n${extra.instruction}\n` : ""}
 ## Deliverables
-- Replace the template placeholder UI in \`src/\` with the real product. Polished, responsive, Tailwind v4, no lorem ipsum.
+- Replace the template starter UI in \`src/\` with the real product. Polished, responsive, Tailwind v4, no filler copy.
 - Ship production quality, not a demo: the UI MUST be fully responsive (usable down to 375px wide), keyboard-accessible (semantic HTML, labelled controls, visible focus, sensible \`aria-*\` only where needed), and legible with adequate contrast.
 - Handle every async action's loading, empty, and error states explicitly — show progress, a friendly recoverable message on failure, and never leave a blank screen or an unhandled promise rejection.
 - Put any server-side logic (persistence via \`ship.kv\`, LLM calls via \`ship.llm\`, paid endpoints) in \`functions/*.js\` and wire them through \`ship.fn\`.

@@ -10,11 +10,7 @@ export interface AppCardProps {
   className?: string;
 }
 
-/**
- * App-store card: the app is the point, the coin is the consequence. Works on
- * Ash Paper (the store is light) and on the dark canvas alike — every colour
- * is a semantic token.
- */
+/** App-store card: the app is the point, the coin is the consequence. */
 export const AppCard = ({ app, className }: AppCardProps) => {
   const dormant = app.agentState === "dormant" || app.status === "DORMANT";
   const agent = AGENT_CHIP[app.agentState];

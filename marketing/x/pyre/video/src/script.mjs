@@ -90,7 +90,7 @@ export const BEATS = [
     id: "proof",
     shots: [{ id: "proof", base: 6.0 }],
     sentences: [
-      { shot: "proof", text: "408 tests, 58 of 68 production features, an independent security review.", say: "Four hundred and eight tests, fifty-eight of sixty-eight production features, an independent security review." },
+      { shot: "proof", text: "408 tests, 62 of 68 production features, an independent security review.", say: "Four hundred and eight tests, sixty-two of sixty-eight production features, an independent security review." },
     ],
   },
   {

@@ -142,7 +142,7 @@ export const CommandK = ({ open, onClose, items, placeholder = "Search coins, ap
             exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: -6 }}
             transition={{ duration: duration.ui, ease: ease.ui }}
             onKeyDown={onKeyDown}
-            className="relative flex w-full max-w-[560px] flex-col overflow-hidden rounded-card border border-line-2 bg-raised light:shadow-paper"
+            className="relative flex w-full max-w-[560px] flex-col overflow-hidden rounded-card border border-line-2 bg-raised"
           >
             <div className="flex items-center gap-3 border-b border-line px-4">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 text-ink-3" aria-hidden>

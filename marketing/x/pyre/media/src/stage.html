@@ -1,0 +1,116 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>pyre media stage</title>
+<link rel="stylesheet" href="stage.css">
+<body>
+<div id="stage">
+
+  <!-- ══ loop ══ -->
+  <section class="scene title" id="s-loop-open">
+    <div class="heat"></div>
+    <img class="mark" src="../../video/src/brand/mark.svg" alt="">
+    <div class="h1 serif"><div class="l1">the <i>loop</i>.</div><div class="l2">in twenty seconds.</div></div>
+    <div class="sub label">pyre.fun · robinhood chain</div>
+  </section>
+  <section class="scene title" id="s-loop-close">
+    <div class="heat"></div>
+    <div class="line serif">supply falls because the app <i>earned</i>.</div>
+    <div class="lockup rise"><img src="../../video/src/brand/lockup.svg" alt="Pyre"></div>
+    <div class="foot"><b>pyre.fun</b><span class="sep">·</span>Robinhood Chain<span class="sep">·</span><b>@PyreFun</b></div>
+  </section>
+
+  <!-- ══ burn ══ -->
+  <section class="scene title" id="s-burn-open">
+    <div class="heat"></div>
+    <img class="mark" src="../../video/src/brand/mark.svg" alt="">
+    <div class="h1 serif"><div class="l1">how a burn is <i>verified</i>.</div></div>
+    <div class="sub label">attestation calldata · blockscout</div>
+  </section>
+
+  <section class="scene" id="s-burn-bytes">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="label">the attestation tx · calldata, 37 bytes</div>
+      <div class="h2 serif">"PYRE" · a version byte · a <i>hash</i>.</div>
+      <div class="bytes"></div>
+      <div class="legend">
+        <div class="p"><b>50 59 52 45</b><span>"PYRE", ascii</span></div>
+        <div class="v"><b>01</b><span>version byte</span></div>
+        <div class="h"><b>32 bytes</b><span>sha256 of the revenue event ids</span></div>
+      </div>
+      <div class="foot">a zero-value transaction from the treasury wallet to itself. no token moves; the calldata is the receipt.</div>
+    </div>
+  </section>
+
+  <section class="scene" id="s-burn-hash">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="h2 serif">recompute it from the coin page.</div>
+      <div class="ids card">
+        <div class="k">revenue event ids · example</div>
+        <div class="idlist"></div>
+      </div>
+      <div class="steps">
+        <span class="chip">sort</span>
+        <span class="chip">join ","</span>
+        <span class="chip accent">sha256</span>
+      </div>
+      <div class="out card">
+        <div class="k">calldata</div>
+        <div class="hash"></div>
+        <div class="match"><span class="st">✓</span><span>matches the attestation tx</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="s-burn-explorer">
+    <div class="heat"></div>
+    <div class="browser">
+      <div class="bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">robinhoodchain.blockscout.com · what the two transactions will look like</span></div>
+      <div class="page">
+        <div class="tx card" id="tx-burn">
+          <div class="hd"><span class="t">burn tx</span><span class="chip">ERC20Burnable</span></div>
+          <div class="r"><span class="k">method</span><span class="v acc">burn(uint256 amount)</span></div>
+          <div class="r"><span class="k">from</span><span class="v">treasury wallet</span></div>
+          <div class="r"><span class="k">to</span><span class="v">the coin's contract</span></div>
+          <div class="r"><span class="k">token transfer</span><span class="v burn">→ 0x0000…0000 <small>(burn)</small></span></div>
+          <div class="r"><span class="k">status</span><span class="v ok">success</span></div>
+          <div class="supply"><span>totalSupply</span><span class="before">1,000,000,000</span><span class="arrow">→</span><span class="after">lower</span><small>read it before and after</small></div>
+        </div>
+        <div class="tx card" id="tx-attest">
+          <div class="hd"><span class="t">attestation tx</span><span class="chip accent">0x5059524501…</span></div>
+          <div class="r"><span class="k">from</span><span class="v">treasury wallet</span></div>
+          <div class="r"><span class="k">to</span><span class="v">treasury wallet <small>(itself)</small></span></div>
+          <div class="r"><span class="k">value</span><span class="v">0 ETH</span></div>
+          <div class="r"><span class="k">input data</span><span class="v"><span class="acc">0x5059524501</span><span class="hashv"></span></span></div>
+          <div class="r"><span class="k">status</span><span class="v ok">success</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene title" id="s-burn-close">
+    <div class="heat"></div>
+    <div class="line serif">no burn has happened <i>yet</i>.</div>
+    <div class="lockup rise"><img src="../../video/src/brand/lockup.svg" alt="Pyre"></div>
+    <div class="foot"><b>pyre.fun/burns</b><span class="sep">·</span>the ledger, when it starts<span class="sep">·</span><b>@PyreFun</b></div>
+  </section>
+
+  <!-- ══ design ══ -->
+  <section class="scene title" id="s-design-open">
+    <div class="heat"></div>
+    <img class="mark" src="../../video/src/brand/mark.svg" alt="">
+    <div class="h1 serif"><div class="l1">the design <i>system</i>.</div><div class="l2">heat, not flame.</div></div>
+    <div class="sub label">obsidian temper · instrument serif · geist · geist mono</div>
+  </section>
+  <section class="scene title" id="s-design-close">
+    <div class="heat"></div>
+    <div class="line serif">fire, shown only through its <i>consequence</i>.</div>
+    <div class="lockup rise"><img src="../../video/src/brand/lockup.svg" alt="Pyre"></div>
+    <div class="foot"><b>pyre.fun/_ui</b><span class="sep">·</span>open source, MIT<span class="sep">·</span><b>@PyreFun</b></div>
+  </section>
+
+  <div id="wipe"></div>
+</div>
+<script src="stage.js"></script>
+</body>
