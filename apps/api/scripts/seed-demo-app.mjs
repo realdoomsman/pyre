@@ -96,6 +96,13 @@ async function main() {
       return;
     }
     await prisma.app.delete({ where: { slug } });
+    // The synthetic owner exists only for fixtures; drop it once it owns nothing else, so a
+    // production audit leaves no admin user behind.
+    const owner = await prisma.user.findUnique({ where: { googleSub: "seed:ops" }, include: { _count: { select: { launches: true } } } });
+    if (owner && owner._count.launches === 0) {
+      await prisma.ledgerEntry.deleteMany({ where: { account: `LAUNCHER:${owner.id}` } });
+      await prisma.user.delete({ where: { id: owner.id } });
+    }
     console.log(`removed app ${slug}`);
     return;
   }

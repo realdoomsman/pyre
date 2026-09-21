@@ -37,6 +37,8 @@
  * be made because RPC_URL / the ETH price oracle is unreachable from here. Everything up to that
  * step is still asserted, and a BLOCKED row never masks a failure: the exit code only reacts to FAIL.
  */
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
@@ -2436,6 +2438,16 @@ async function setup() {
     await deployRig(state.apps.rig, RIG_MANIFEST, RIG_FILES);
     state.apps.rig = await prisma.app.findUnique({ where: { id: state.apps.rig.id } });
     state.demo = await prisma.app.findUnique({ where: { slug: DEMO_SLUG } });
+    if (!state.demo) {
+      // Production carries no hosting fixture any more; seed one for this run and tear it down with
+      // the rest. It has no token address, so it never appears on the public feed.
+      const seed = fileURLToPath(new URL("./seed-demo-app.mjs", import.meta.url));
+      execFileSync(process.execPath, [seed, DEMO_SLUG], { stdio: "ignore", env: process.env });
+      state.demo = await prisma.app.findUnique({ where: { slug: DEMO_SLUG } });
+      onExit("hosting probe app", async () => {
+        execFileSync(process.execPath, [seed, DEMO_SLUG, "--remove"], { stdio: "ignore", env: process.env });
+      });
+    }
 
     // A live-looking job + token for the proxy checks, plus the daily-spend restore point.
     const jobsApp = state.apps.jobs;
