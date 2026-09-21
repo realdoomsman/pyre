@@ -92,7 +92,8 @@ export const LegalPage = () => {
             }
           />
         ) : q.isPending ? (
-          <div className="max-w-[68ch] space-y-4">
+          // Viewport-tall on purpose: the document is long, and a short skeleton would let the site footer paint in view and then jump off-screen (a large layout shift).
+          <div className="min-h-dvh max-w-[68ch] space-y-4">
             <Skeleton className="h-14 w-72" />
             <Skeleton className="h-4 w-40" />
             <Skeleton lines={6} />
