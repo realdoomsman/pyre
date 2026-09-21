@@ -18,7 +18,7 @@ export const CAPTION = {
   mock: "mock data · no coin has launched yet",
   example: "example input · nothing is launched",
   illustration: "illustration · no burn tx exists yet",
-  sample: "design system · /_ui · sample values",
+  sample: "component gallery · dev build · sample values",
   live: "live · pyre.fun",
 };
 
@@ -31,7 +31,7 @@ export const FILMS = {
       { id: "open", base: 2.6, lead: 0.9, sentences: [{ text: "pyre. the loop, in twenty seconds.", say: "Pyre. The loop, in twenty seconds." }] },
       { id: "home-cap", base: 4.6, cap: "home", focal: [0.5, 0.42], sqfocal: [0.5, 0.4], zoom: [1.18, 1.1], caption: CAPTION.live,
         sentences: [{ text: "launch a coin: a name, a ticker, one sentence on the app it should build.", say: "Launch a coin: a name, a ticker, one sentence on the app it should build." }] },
-      { id: "launch-cap", base: 5.6, cap: "launch", focal: [0.38, 0.5], sqfocal: [0.37, 0.52], zoom: [1.2, 1.3], caption: CAPTION.example,
+      { id: "launch-cap", base: 5.6, cap: "launch", focal: [0.4, 0.46], sqfocal: [0.36, 0.5], zoom: [1.1, 1.2], caption: CAPTION.example,
         sentences: [{ text: "the coin launches on PONS v2. its trading fees pay an agent to build the app.", say: "The coin launches on pons v2. Its trading fees pay an agent to build the app." }] },
       { id: "coin-cap", base: 5.8, cap: "coin", focal: [0.5, 0.5], sqfocal: [0.42, 0.5], zoom: [1.12, 1.22], caption: CAPTION.mock,
         sentences: [{ text: "the app earns. 85% of that revenue buys the coin back and burns it.", say: "The app earns. Eighty-five percent of that revenue buys the coin back and burns it." }] },
@@ -63,7 +63,7 @@ export const FILMS = {
     shots: [
       { id: "open", base: 3.2 },
       { id: "hero-cap", base: 3.4, cap: "ui-hero", focal: [0.42, 0.42], sqfocal: [0.34, 0.42], zoom: [1.12, 1.2], overlay: "heat, not flame." },
-      { id: "color-cap", base: 4.4, cap: "ui-color", focal: [0.5, 0.55], sqfocal: [0.5, 0.55], zoom: [1.15, 1.22], overlay: "one accent. the heat ramp: violet, cobalt, white." },
+      { id: "color-cap", base: 4.4, cap: "ui-color", focal: [0.5, 0.42], sqfocal: [0.5, 0.42], zoom: [1.15, 1.22], overlay: "one accent. the heat ramp: violet, cobalt, white." },
       { id: "type-cap", base: 4.2, cap: "ui-type", focal: [0.4, 0.5], sqfocal: [0.33, 0.5], zoom: [1.14, 1.2], overlay: "instrument serif · geist · geist mono" },
       { id: "kiln-cap", base: 5.4, cap: "ui-kiln", focal: [0.42, 0.55], sqfocal: [0.36, 0.55], zoom: [1.2, 1.32], overlay: "the supply kiln. each burn hollows a layer.", caption: CAPTION.sample },
       { id: "motion-cap", base: 4.6, cap: "ui-motion", focal: [0.5, 0.52], sqfocal: [0.4, 0.52], zoom: [1.14, 1.22], overlay: "digits roll in 300 ms. heat is a value axis.", caption: CAPTION.sample },

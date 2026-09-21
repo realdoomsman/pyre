@@ -6,7 +6,8 @@
 // Sources: prod (https://pyre.fun) for everything real; the coin page comes from
 // the local vite + mock API (PYRE_MOCK_SITE, default http://localhost:5181) because
 // no coin has launched — the stage stamps those frames "mock data".
-// PYRE_SESSION (or build/session.json {token}) signs the launch capture in.
+// PYRE_SESSION (or build/session.json {token}) signs the launch capture in; sign in with a throwaway
+// external wallet against the API (challenge → personal_sign → verify) and drop the token there.
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -135,20 +136,21 @@ const SEGMENTS = {
       return { scroll: (u) => Math.round(lerp(0, s1, span(u, 0.3, 0.8))), mouse: () => ({ x: 1600, y: 1000 }) };
     },
   },
-  // /_ui — design system sections. The kiln segment clicks "Burn 10%" three times so layers hollow on camera.
-  "ui-hero": { url: "/_ui", seconds: 5, async plan() { return { scroll: (u) => Math.round(lerp(0, 60, span(u, 0, 1))), mouse: () => ({ x: 1700, y: 1000 }) }; } },
+  // /_ui — the component gallery is dev-only (not in the shipped bundle), so it is captured from the local vite dev server.
+  // The kiln segment clicks "Burn 10%" three times so layers hollow on camera.
+  "ui-hero": { site: MOCK, url: "/_ui", seconds: 5, async plan() { return { scroll: (u) => Math.round(lerp(0, 60, span(u, 0, 1))), mouse: () => ({ x: 1700, y: 1000 }) }; } },
   "ui-color": {
-    url: "/_ui", seconds: 6,
+    site: MOCK, url: "/_ui", seconds: 6,
     async plan(page) {
       const sec = (await page.evaluate(rectJs("#color"))) ?? { top: 900, h: 600 };
-      const s0 = Math.max(0, Math.round(sec.top - 60)), s1 = s0 + Math.max(0, Math.round(sec.h - 700));
+      const s0 = Math.max(0, Math.round(sec.top - 70)), s1 = s0 + 40;
       const scroll = (u) => Math.round(lerp(s0, s1, span(u, 0.15, 0.9)));
       const ramp = (await page.evaluate(rectByTextJs("#color *", "heat ramp"))) ?? { top: sec.top + sec.h - 160 };
       return { scroll, mouse: (u) => ({ x: lerp(500, 1300, span(u, 0.5, 0.95)), y: ramp.top - scroll(u) + 80 }) };
     },
   },
   "ui-type": {
-    url: "/_ui", seconds: 6,
+    site: MOCK, url: "/_ui", seconds: 6,
     async plan(page) {
       const sec = (await page.evaluate(rectJs("#type"))) ?? { top: 1600, h: 700 };
       const s0 = Math.max(0, Math.round(sec.top - 60));
@@ -156,7 +158,7 @@ const SEGMENTS = {
     },
   },
   "ui-kiln": {
-    url: "/_ui", seconds: 7,
+    site: MOCK, url: "/_ui", seconds: 7,
     async plan(page) {
       const sec = (await page.evaluate(rectJs("#kiln"))) ?? { top: 4600, h: 500 };
       const s0 = Math.max(0, Math.round(sec.top - 80));
@@ -180,7 +182,7 @@ const SEGMENTS = {
     },
   },
   "ui-motion": {
-    url: "/_ui", seconds: 6,
+    site: MOCK, url: "/_ui", seconds: 6,
     async plan(page) {
       const num = (await page.evaluate(rectJs("#numbers"))) ?? { top: 3600, h: 500 };
       const heat = (await page.evaluate(rectJs("#heat"))) ?? { top: num.top + 520, h: 500 };

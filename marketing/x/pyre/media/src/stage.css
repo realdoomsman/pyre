@@ -67,7 +67,7 @@ body { overflow: hidden; }
 /* ── captures ── */
 .capwrap { position: absolute; inset: 0; overflow: hidden; background: var(--canvas); }
 .cap { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform: translate(-50%, -50%); will-change: transform; }
-.capfade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(10,10,12,.72) 100%); pointer-events: none; }
+.capfade { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 36%, rgba(10,10,12,.5) 66%, rgba(10,10,12,.94) 100%); pointer-events: none; }
 .caption { position: absolute; left: 48px; bottom: 40px; display: flex; gap: 14px; align-items: center; opacity: 0; z-index: 3; }
 .sq .caption { left: 36px; bottom: 36px; }
 .caption .chip { height: 32px; font-size: 13px; }

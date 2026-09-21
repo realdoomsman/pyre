@@ -10,6 +10,10 @@ import { launch, sleep } from "./cdp.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "build", "cap");
 const SITE = process.env.PYRE_SITE ?? "https://pyre.fun";
+// No coin has launched on prod, so coin-page segments come from the local vite + mock API
+// (start `node .tmp/mock-api.mjs` and `VITE_API_ORIGIN=http://localhost:8787 npx vite --port 5181` in apps/web).
+// scenes.html stamps those shots "mock data · no coin has launched yet".
+const MOCK = process.env.PYRE_MOCK_SITE ?? "http://localhost:5181";
 const FPS = 30;
 const W = 1920;
 const H = 1080;
@@ -63,9 +67,9 @@ const SEGMENTS = {
       };
     },
   },
-  // Coin page, "The loop" panel: pointer walks the six cells.
+  // Coin page (mock), "The loop" panel: pointer walks the six cells.
   loop: {
-    url: "/c/inboxzero",
+    site: MOCK, url: "/c/inbox-zero",
     seconds: 4.5,
     async plan(page) {
       const panel = (await page.evaluate(centerJs('[aria-label="Loop status"]'))) ?? { top: 820, h: 220 };
@@ -83,9 +87,9 @@ const SEGMENTS = {
       };
     },
   },
-  // Coin page, supply kiln: hover the top layers so the burn tooltip appears.
+  // Coin page (mock), supply kiln: hover the top layers so the burn tooltip appears.
   kiln: {
-    url: "/c/inboxzero",
+    site: MOCK, url: "/c/inbox-zero",
     seconds: 4,
     async plan(page) {
       const card = (await page.evaluate(centerJs('[aria-label="Supply kiln"]'))) ?? { top: 1000, h: 430 };
@@ -103,9 +107,9 @@ const SEGMENTS = {
       };
     },
   },
-  // Coin page, fee transparency table (right column, below the stats card).
+  // Coin page (mock), fee transparency table (right column, below the stats card).
   fees: {
-    url: "/c/inboxzero",
+    site: MOCK, url: "/c/inbox-zero",
     seconds: 4,
     async plan(page) {
       const card = (await page.evaluate(centerJs('[aria-label="Fee transparency"], section:has(> * > [class*=eyebrow]):last-of-type'))) ?? { top: 1740, h: 440, x: 1120 };
@@ -142,7 +146,7 @@ export async function capture(names = Object.keys(SEGMENTS)) {
       const dir = join(OUT, name);
       rmSync(dir, { recursive: true, force: true });
       mkdirSync(dir, { recursive: true });
-      await page.goto(SITE + seg.url, 6500);
+      await page.goto((seg.site ?? SITE) + seg.url, 6500);
       await page.evaluate(`document.documentElement.style.scrollBehavior='auto';document.body.style.cursor='none';1`);
       const plan = await seg.plan(page);
       const n = Math.round(seg.seconds * FPS);
@@ -157,7 +161,7 @@ export async function capture(names = Object.keys(SEGMENTS)) {
         await page.evaluate("new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))");
         writeFileSync(join(dir, `f${String(i).padStart(4, "0")}.png`), await page.screenshot());
       }
-      writeFileSync(join(dir, "meta.json"), JSON.stringify({ frames: n, fps: FPS, width: W, height: H, url: seg.url, seconds: seg.seconds }));
+      writeFileSync(join(dir, "meta.json"), JSON.stringify({ frames: n, fps: FPS, width: W, height: H, site: seg.site ?? SITE, url: seg.url, seconds: seg.seconds }));
       console.log(`[capture] ${name}: ${n} frames in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
     }
     if (page.logs.length) console.log(page.logs.slice(0, 10).join("\n"));

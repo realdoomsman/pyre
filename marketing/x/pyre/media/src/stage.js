@@ -115,7 +115,7 @@
         });
         $$(".legend > div", el).forEach((d, i) => fadeUp(d, seg(t, [1.5, 2.1, 3.2][i], 0.5), 10));
         fadeUp($(".foot", el), seg(t, 5.0, 0.6), 8);
-        heat(el, 0.14, lerp(0.25, 0.55, seg(t, 4.5, 1.5)));
+        heat(el, 0.1, lerp(0.2, 0.45, seg(t, 4.5, 1.5)));
       },
     };
   };
@@ -137,7 +137,7 @@
         const p = seg(t, 3.0, 1.8, lin);
         $(".hash .h", el).textContent = h.slice(0, Math.round(p * h.length));
         fadeUp($(".match", el), seg(t, 5.1, 0.6, expo), 8);
-        heat(el, 0.14, lerp(0.25, 0.55, seg(t, 4.8, 1.2)));
+        heat(el, 0.1, lerp(0.2, 0.45, seg(t, 4.8, 1.2)));
       },
     };
   };

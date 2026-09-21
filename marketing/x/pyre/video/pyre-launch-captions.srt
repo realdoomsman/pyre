@@ -1,5 +1,5 @@
 1
-00:00:01,100 --> 00:00:02,913
+00:00:01,100 --> 00:00:02,912
 Pyre. Coins that build apps.
 
 2
@@ -7,50 +7,50 @@ Pyre. Coins that build apps.
 Write one sentence. An agent writes the spec.
 
 3
-00:00:07,838 --> 00:00:12,151
+00:00:07,838 --> 00:00:12,291
 Stake 0.002 ETH, refundable, and it launches on pons.
 
 4
-00:00:15,551 --> 00:00:18,825
+00:00:15,691 --> 00:00:18,965
 70% of every trade fee comes back:
 
 5
-00:00:19,045 --> 00:00:24,074
+00:00:19,185 --> 00:00:24,214
 60 to the build budget, 25 to a $PYRE buyback, 15 to the launcher.
 
 6
-00:00:27,674 --> 00:00:30,668
+00:00:27,814 --> 00:00:30,808
 At $50, an agent builds in a sandbox.
 
 7
-00:00:30,888 --> 00:00:34,899
+00:00:31,028 --> 00:00:35,039
 Nothing deploys until the build, Lighthouse and a reviewer pass.
 
 8
-00:00:35,699 --> 00:00:40,103
+00:00:35,839 --> 00:00:40,243
 It goes live on its own subdomain and charges in stablecoin. No gas.
 
 9
-00:00:40,903 --> 00:00:43,516
+00:00:41,043 --> 00:00:43,656
 85% of revenue buys the coin back.
 
 10
-00:00:47,116 --> 00:00:49,146
+00:00:47,256 --> 00:00:49,286
 Then it burns. Supply falls.
 
 11
-00:00:49,366 --> 00:00:52,674
+00:00:49,506 --> 00:00:52,814
 Every burn carries an attestation anyone can reproduce.
 
 12
-00:00:57,116 --> 00:01:00,364
+00:00:57,256 --> 00:01:00,504
 No budget, no agent. Any new fee relights it.
 
 13
-00:01:01,316 --> 00:01:06,698
-408 tests, 58 of 68 production features, an independent security review.
+00:01:01,456 --> 00:01:07,211
+408 tests, 62 of 68 production features, an independent security review.
 
 14
-00:01:07,748 --> 00:01:10,312
+00:01:08,261 --> 00:01:10,825
 Pyre. Launching soon on Robinhood Chain.
 

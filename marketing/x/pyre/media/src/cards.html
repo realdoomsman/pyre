@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pyre — media diagram cards</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+  :root{
+    --canvas:#0A0A0C;--surface:#121215;--raised:#18181D;--line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.12);
+    --ink:#F3F2EE;--ink2:#9B9891;--ink3:#62605B;--accent:#9D8CFF;--accent2:#7A66F5;--build:#3E8BFF;--earn:#4FD1A6;--burn:#FF4D6D;--warn:#E5C15C;--hot:#E9F1FF;
+  }
+  html,body{margin:0;background:#000}
+  *{box-sizing:border-box}
+  #c{width:1600px;height:900px;background:var(--canvas);position:relative;overflow:hidden;color:var(--ink);font-family:Geist,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+  #heat{position:absolute;left:0;right:0;bottom:0;height:260px;pointer-events:none;
+    background:radial-gradient(60% 55% at 50% 100%, rgba(156,210,255,.14), rgba(62,139,255,.10) 30%, rgba(122,102,245,.05) 58%, transparent 80%),
+               linear-gradient(180deg, transparent, rgba(28,27,46,.35) 60%, rgba(59,47,122,.28));}
+  #lip{position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg, transparent, #9CD2FF 25%, #E9F1FF 50%, #9CD2FF 75%, transparent)}
+  #hd{position:absolute;left:72px;right:72px;top:56px;display:flex;align-items:center;justify-content:space-between;z-index:3}
+  #hd img{height:54px;display:block}
+  #hd .k{font:400 15px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);display:flex;gap:28px}
+  #hd .k b{font-weight:500;color:var(--ink)}
+  #ft{position:absolute;left:72px;right:72px;bottom:44px;display:flex;justify-content:space-between;z-index:3;font:400 14px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+  #b{position:absolute;left:72px;right:72px;top:150px;bottom:100px;z-index:2}
+  h1{font:400 56px/1.04 'Instrument Serif',serif;letter-spacing:-.02em;margin:0;color:var(--ink)}
+  h1 em{font-style:italic;color:var(--accent)}
+  .mono{font-family:'Geist Mono',monospace}
+  .lab{font:500 13px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+
+  /* wallets: two lanes, shared floor */
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:26px}
+  .lane{padding:22px 26px 18px}
+  .lane .t{font:400 30px/1.05 'Instrument Serif',serif;letter-spacing:-.02em}
+  .lane .t small{display:block;font:500 12px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+  .steps{list-style:none;margin:18px 0 0;padding:0}
+  .steps li{display:grid;grid-template-columns:34px 1fr;gap:14px;align-items:baseline;padding:11px 0;border-top:1px solid var(--line);font:400 18px/1.35 Geist,sans-serif}
+  .steps li i{font:400 13px/1 'Geist Mono',monospace;color:var(--ink3)}
+  .steps li code{font:400 15px/1 'Geist Mono',monospace;color:var(--accent)}
+  .steps li .who{display:block;font:400 13px/1.3 'Geist Mono',monospace;color:var(--ink3);margin-top:4px}
+  .floor{margin-top:26px;padding:20px 26px;display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center;border-color:rgba(157,140,255,.3)}
+  .floor .t{font:400 26px/1.1 'Instrument Serif',serif;letter-spacing:-.02em;white-space:nowrap}
+  .floor .m{font:400 16px/1.4 Geist,sans-serif;color:var(--ink2)}
+  .floor .m b{color:var(--ink);font-weight:500}
+  .floor .chip{font:400 13px/1 'Geist Mono',monospace;color:var(--earn);border:1px solid rgba(79,209,166,.35);border-radius:999px;padding:9px 14px;white-space:nowrap}
+
+  /* budget: a horizontal ledger of thresholds */
+  .ladder{position:relative;margin-top:34px;height:470px}
+  .rail{position:absolute;left:0;right:0;top:214px;height:2px;background:var(--line2)}
+  .tick{position:absolute;top:150px;width:300px}
+  .tick .n{font:400 64px/1 'Instrument Serif',serif;letter-spacing:-.02em}
+  .tick .n small{font-size:22px;color:var(--ink2);margin-left:6px;font-family:'Geist Mono',monospace}
+  .tick .dot{position:absolute;left:0;top:58px;width:14px;height:14px;border-radius:50%;background:var(--ink3);border:2px solid var(--canvas);transform:translate(-2px,-1px)}
+  .tick.on .dot{background:var(--accent);box-shadow:0 0 0 6px rgba(157,140,255,.18)}
+  .tick.burn .dot{background:var(--burn)}
+  .tick .l{font:500 12px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-top:34px}
+  .tick .d{font:400 17px/1.4 Geist,sans-serif;color:var(--ink);margin-top:8px;padding-right:20px}
+  .tick .d b{color:var(--accent);font-weight:500}
+  .tick .d .b{color:var(--build)}
+  .tick .d .e{color:var(--earn)}
+  .tick .d .r{color:var(--burn)}
+  .before{position:absolute;left:0;top:0;width:100%;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:20px}
+  .before .panel{padding:16px 20px}
+  .before .panel .k{font:500 12px/1 'Geist Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+  .before .panel .v{font:400 22px/1.2 Geist,sans-serif;margin-top:8px}
+  .before .panel .v code{font:400 18px/1 'Geist Mono',monospace}
+  .gates{position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:center;font:400 14px/1 'Geist Mono',monospace;color:var(--ink2)}
+  .gates span{padding:10px 14px;border:1px solid var(--line2);border-radius:999px}
+  .gates span.ok{color:var(--earn);border-color:rgba(79,209,166,.35)}
+  .gates i{color:var(--ink3);font-style:normal}
+</style>
+</head>
+<body>
+<div id="c">
+  <div id="heat"></div>
+  <div id="hd"><img src="../../../../brand/pyre/lockup.svg" alt="Pyre"><div class="k" id="kick"></div></div>
+  <div id="b"></div>
+  <div id="ft"><span id="ftl">pyre.fun · robinhood chain · 4663</span><span id="ftr"></span></div>
+  <div id="lip"></div>
+</div>
+<script>
+const CARDS = [
+{ slug:"wallet-flows", kick:"custodial vs external", ftr:"nothing on this card is a promise of returns", body:`
+  <h1>two ways in. same rules, <em>different</em> signer.</h1>
+  <div class="lanes">
+    <div class="panel lane">
+      <div class="t"><small>custodial</small>sign in with google</div>
+      <ol class="steps">
+        <li><i>01</i><span>google identity token → <code>POST /v1/auth/google</code><span class="who">pyre verifies it, upserts you</span></span></li>
+        <li><i>02</i><span>pyre derives a robinhood chain wallet for you<span class="who">hd path m/44'/60'/… · the key never leaves the server</span></span></li>
+        <li><i>03</i><span>you deposit ETH or USDG to that address<span class="who">/me → deposit shows the address and a qr</span></span></li>
+        <li><i>04</i><span>stakes, trades, withdrawals: one click<span class="who">pyre signs on your behalf · withdraw any time</span></span></li>
+      </ol>
+    </div>
+    <div class="panel lane">
+      <div class="t"><small>external</small>sign in with your own wallet</div>
+      <ol class="steps">
+        <li><i>01</i><span><code>POST /v1/auth/wallet/challenge</code> → one message<span class="who">eip-4361 fields: domain, chain 4663, nonce, expiry</span></span></li>
+        <li><i>02</i><span>you <code>personal_sign</code> it → <code>/verify</code> → session<span class="who">eip-191 · single-use nonce · pyre never holds a key</span></span></li>
+        <li><i>03</i><span>the launch stake is a tx from your wallet<span class="who">checked: mined, to the treasury, worth the stake, from you</span></span></li>
+        <li><i>04</i><span>you sign every trade yourself, in your wallet<span class="who">you still get a custodial balance for app purchases if you want one</span></span></li>
+      </ol>
+    </div>
+  </div>
+  <div class="panel floor">
+    <div class="t">paying an app: no gas, either way</div>
+    <div class="m">the wallet signs an <b>eip-3009</b> USDG authorization; the treasury relays it on chain and pays the gas. cap <b>$250</b> per charge · <b>$1,000</b> per user per app per day.</div>
+    <div class="chip">USDG · robinhood chain</div>
+  </div>` },
+
+{ slug:"budget-50", kick:"what happens at $50", ftr:"thresholds are constants in the public repo", body:`
+  <h1>nothing builds until the coin has <em>earned</em> $50 of budget.</h1>
+  <div class="ladder">
+    <div class="before">
+      <div class="panel"><div class="k">where budget comes from</div><div class="v">60% of claimed creator fees</div></div>
+      <div class="panel"><div class="k">claim cadence</div><div class="v">every <code>5 min</code> from the fee escrow</div></div>
+      <div class="panel"><div class="k">the other 40%</div><div class="v">25% PYRE buyback · 15% launcher</div></div>
+      <div class="panel"><div class="k">counted in</div><div class="v">USD at the ETH price of the moment</div></div>
+    </div>
+    <div class="rail"></div>
+    <div class="tick" style="left:0"><div class="n">$0<small>launch</small></div><div class="dot"></div><div class="l">idle</div><div class="d">the coin trades on PONS v2. fees accrue to the app's own wallet. no agent yet.</div></div>
+    <div class="tick" style="left:370px"><div class="n">$10<small>iteration</small></div><div class="dot"></div><div class="l">minimum per build</div><div class="d">after the first build, each further iteration needs <b>$10</b> of budget. under it, the coin goes <span class="r">dormant</span>; the app keeps serving. the next claim over $10 <b>relights</b> it.</div></div>
+    <div class="tick on" style="left:740px"><div class="n">$50<small>first build</small></div><div class="dot"></div><div class="l">the agent starts</div><div class="d">a sandbox, the approved brief, a budget cap. every tool call streams to the coin's build log. the <span class="b">0.002 ETH stake is refunded</span> here.</div></div>
+    <div class="tick burn" style="left:1110px"><div class="n">$5<small>revenue</small></div><div class="dot"></div><div class="l">separate stream</div><div class="d">once the app has <span class="e">earned $5</span> in USDG, the buyback runs: 85% buys the coin and <span class="r">burn()</span> destroys it. budget and revenue never mix.</div></div>
+    <div class="gates"><i>nothing deploys unless every gate passes:</i><span class="ok">npm run build</span><span class="ok">playwright smoke</span><span class="ok">screenshots</span><span class="ok">lighthouse</span><span class="ok">reviewer vs the brief</span><i>→ live on its own subdomain</i></div>
+  </div>` },
+];
+
+const q = new URLSearchParams(location.search);
+const idx = Math.max(1, Math.min(CARDS.length, Number(q.get("card") || 1)));
+const card = CARDS[idx - 1];
+document.title = `${String(idx).padStart(2,"0")}-${card.slug}`;
+document.getElementById("kick").innerHTML = `<span>${card.kick}</span><b>media ${String(idx).padStart(2,"0")}</b>`;
+document.getElementById("b").innerHTML = card.body;
+document.getElementById("ftr").textContent = card.ftr;
+</script>
+</body>
+</html>
