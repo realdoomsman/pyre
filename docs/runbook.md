@@ -90,7 +90,7 @@ Builds server-side (no Docker), ~2 min, needs `E2B_API_KEY`. The stock `base` te
 $PYRE is an ordinary PONS v2 launch whose creator is the treasury, so its creator fees flow to the treasury and `feeSweep` claims them as platform fees (`sweepPlatformFees`).
 
 1. Fund the treasury (≥ 0.01 ETH above the floor: the launch fee is 0.0005 ETH plus gas).
-2. From a shell with the production env (`railway ssh --service runner`), launch with the treasury account:
+2. One command from the production env: `railway ssh --service runner -- node apps/runner/scripts/launch-pyre.mjs` (it prints the token/curve and the three env changes). The manual equivalent:
 
    ```
    node -e "import('@pyre/chain').then(async c => {

@@ -39,14 +39,16 @@ Production configuration:
 
 - **Perimeter smoke** (observed): `GET /v1/me` without a token → 401; `POST /v1/rpc` with `eth_sendRawTransaction` → 403 `rpc_method_not_allowed`; `GET /metrics` without the internal secret → 401; `GET /v1/apps` lists and paginates.
 - **Runner** (observed in logs): fee sweep, buyback scan, price refresh, holders, growth daily and reconcile passes all tick; reconcile `JOBS`, `SANDBOXES`, `JOBTOKENS`, `LEDGER` (6 checked), `FEES` (3 checked) report clean; an ITERATE build on a demo app ran through sandbox bootstrap on the prebuilt 4 GB `pyre-builder` VM, the agent stage and the reviewer model, which rejected it for spec drift — the pipeline reaches the model and back.
-- **Feature matrix** — `railway ssh --service api "node apps/api/scripts/feature-audit.mjs"`: **pending**.
-- **Perimeter** — `apps/api/scripts/security-check.mjs https://api.pyre.fun`: **pending**.
-- **Web audit** — `node apps/web/scripts/audit.mjs` against `https://api.pyre.fun` (perf, a11y 100, no console errors, 1440 and 390): **pending**.
-- **Route smoke** — every route on `https://pyre.fun` at 1440 and 390 with live data: **pending**.
-- **Reconcile 0 drift in prod** — blocked on purging the demo rows (below): `BURNS` currently reports `BURN_SUPPLY_UNREADABLE` because the three seeded token addresses are not contracts on this chain.
-- **On-chain dry run** (real PONS v2 launch of a throwaway coin → sweep → buy → burn → attest, hashes recorded here): **pending**, blocked on treasury ETH.
-- **Tests** — `npm test`: 349 passed, 5 skipped, ~6 s, no network/DB/Redis/RPC/model access.
+- **Feature matrix** — `railway ssh --service api "node apps/api/scripts/feature-audit.mjs"` (run 2026-09-21 in the api container): **62 passed · 0 failed · 6 blocked on funding · 0 skipped** of 68 features. The six blocked rows are the custodial stake, bounty escrow/payout, top-up, USDG checkout and per-call payment — each reaches its funding gate and refuses cleanly (400/402/502) because the treasury and fixture wallets hold nothing.
+- **Perimeter** — `node apps/api/scripts/security-check.mjs https://api.pyre.fun`: **28 passed · 0 failed · 2 skipped** (the two skips need `PYRE_GITHUB_SECRET` / `PYRE_PROXY_TOKEN` in the caller's env; both paths are covered by the feature matrix).
+- **Web audit** — `node apps/web/scripts/audit.mjs --seed-slug=inboxzero` against `https://api.pyre.fun`: **all budgets met** — perf 93–100, a11y 100 and 0 console errors on `/`, `/launch`, `/apps`, `/burns`, `/pyre`, `/c/:slug`, `/me`, `/legal/terms`, `/card`; initial JS 160–326 kB; no wallet chunk in any initial graph.
+- **Route smoke** — every route on `https://pyre.fun` and the dev build at 1440 and 390 with live data, `scrollWidth === 390` on mobile everywhere, keyboard order and reduced-motion checked (screenshots in `.tmp/real/`, `.tmp/polish/`).
+- **Independent reviews** — security review: 1 High (treasury drain via arbitrary stake tx), 5 Medium, 5 Low — all fixed with regression tests; code review: 13 findings (nonce serialisation, $PYRE buyback state machine, market cursor, holders batching, payout confirmation, …) — all fixed.
+- **Reconcile in prod** — `JOBS`, `SANDBOXES`, `JOBTOKENS`, `LEDGER`, `FEES`, `PAYOUTS` clean; `BURNS` reports `BURN_TOKEN_NOT_A_CONTRACT` (a note, not drift) for the three seeded demo tokens until they are purged.
+- **On-chain dry run** (real PONS v2 launch → sweep → buy → burn → attest, hashes recorded here): **pending**, blocked on treasury ETH. Every write path is unit-tested and simulated (`eth_estimateGas` / `simulateContract`) against the live factory; `apps/runner/scripts/launch-pyre.mjs` refuses to run until the treasury is funded.
+- **Tests** — `npm test`: 408 passed, 5 skipped (live-chain tests, opt-in with `CHAIN_LIVE_TESTS=1`), ~6 s, no network/DB/Redis/RPC/model access.
 - **Build** — `npm run build` green for every package; CI (`.github/workflows/ci.yml`) runs the same sequence on Node 24 plus a migration-drift check.
+- **X** — article, pinned post with the launch video, day-1 post and 20 scheduled posts (Sep 22 → Oct 11, 15:00 daily), profile assets and five replies are live under `@PyreFun`; the log is in `marketing/x/pyre/posts/posts.md`.
 
 ## Demo content — remove before public launch
 
