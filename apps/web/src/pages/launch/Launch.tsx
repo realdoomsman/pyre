@@ -63,7 +63,21 @@ const StepRail = ({ step, reachable, onJump }: { step: Step; reachable: Step; on
   </nav>
 );
 
-const errorText = (e: unknown): string | null => (e == null ? null : isHttpError(e) ? e.message : e instanceof Error ? e.message : "Something went wrong.");
+/** Human copy for the launch-create refusals a person can actually act on; raw codes otherwise. */
+const LAUNCH_ERRORS: Record<string, (body: Record<string, unknown> | null) => string> = {
+  launch_rate_limited: (b) => `You have reached today's launch limit${typeof b?.limitPerDay === "number" ? ` (${b.limitPerDay} in 24 hours)` : ""}. It resets a day after your earliest launch; the limit rises with reputation.`,
+  rate_limited: () => "Too many requests in a minute. Wait a moment and try again.",
+  wallet_required: () => "Sign in first so a wallet exists to launch from.",
+};
+const errorText = (e: unknown): string | null => {
+  if (e == null) return null;
+  if (isHttpError(e)) {
+    const body = typeof e.body === "object" && e.body !== null ? (e.body as Record<string, unknown>) : null;
+    const code = typeof body?.error === "string" ? body.error : e.message;
+    return LAUNCH_ERRORS[code]?.(body) ?? e.message;
+  }
+  return e instanceof Error ? e.message : "Something went wrong.";
+};
 
 export const Launch = () => {
   const auth = useAuth();

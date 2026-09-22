@@ -105,7 +105,7 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
         <div role="alert" className="rounded-card border border-[color-mix(in_oklab,var(--color-danger)_40%,transparent)] bg-[color-mix(in_oklab,var(--color-danger)_8%,transparent)] px-4 py-3 text-14">
           <div className="eyebrow mb-1 text-danger">Launch refused</div>
           <p className="text-ink">{rejection}</p>
-          <p className="small mt-1 text-ink-2">Nothing was created and nothing was charged. Change the idea and try again.</p>
+          <p className="small mt-1 text-ink-2">Nothing was created and nothing was charged.</p>
         </div>
       )}
       {forking && (
