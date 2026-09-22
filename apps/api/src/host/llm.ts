@@ -65,6 +65,8 @@ export async function appLlm(appId: string, prompt: string, maxTokens = DEFAULT_
         }),
         // A concurrent call can overshoot the remaining budget; never let it go negative.
         prisma.app.updateMany({ where: { id: appId, budgetMicros: { lt: 0n } }, data: { budgetMicros: 0n } }),
+        // Same row the build engine writes, so the LEDGER reconcile check sees every debit.
+        prisma.ledgerEntry.create({ data: { account: `BUILD:${appId}`, deltaMicros: -cost, refType: "AppLlm", refId: appId, memo: "ship.llm call" } }),
         prisma.dailyComputeSpend.upsert({
           where: { day },
           create: { day, micros: cost },

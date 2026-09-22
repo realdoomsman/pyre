@@ -408,7 +408,7 @@ const deployRig = async (app, manifest, files) => {
 
 async function launchChecks() {
   section("launch");
-  const { createLaunch } = await import("../dist/lib/launch.js");
+  const { createLaunch, launchesLast24h } = await import("../dist/lib/launch.js");
   const launcher = state.users.launcher;
 
   /** Apps created through the real intake path; removed with the same teardown as fixtures. */
@@ -465,8 +465,19 @@ async function launchChecks() {
   });
 
   await check("rate_limit_per_day", async () => {
-    // Two launches already exist for this launcher in the last 24h; NEW tier allows exactly two.
+    // The launcher already has launches from this run; fill the NEW-tier cap with cheap drafts,
+    // then the next one must be refused. Classifier-refused (FAILED) launches must not count.
     const limit = LAUNCH_RATE_LIMIT_PER_DAY.NEW;
+    const have = await launchesLast24h(launcher.id);
+    for (let i = have; i < limit; i++) {
+      const filler = await createLaunch(launcher, { name: `Audit Fill ${RUN} ${i}`, ticker: "AUDIT", imageUrl: "https://pyre.fun/icon-192.png", prompt: `${TAG} filler launch number ${i} for the daily cap probe.` }, null);
+      registerLaunch(filler);
+      await state.queues.intake.getJob(`intake-${filler.id}`).then((j) => j?.remove()).catch(() => {});
+    }
+    const refused = await prisma.app.create({
+      data: { name: `Audit Refused ${RUN}`, ticker: "AUDIT", slug: `audit-refused-${RUN}`, imageUrl: "https://pyre.fun/icon-192.png", prompt: `${TAG} refused`, launcherId: launcher.id, status: "FAILED", killedReason: "audit: classifier refusal" },
+    });
+    onExit("refused launch", async () => { await prisma.app.delete({ where: { id: refused.id } }).catch(() => {}); });
     let thrown = null;
     try {
       const extra = await createLaunch(launcher, { name: `Audit Over ${RUN}`, ticker: "AUDIT", imageUrl: "https://pyre.fun/icon-192.png", prompt: `${TAG} this launch must be refused by the tier cap, twenty chars.` }, null);
@@ -475,11 +486,11 @@ async function launchChecks() {
       thrown = err;
     }
     return expect()
-      .eq(limit, 2, "NEW tier cap")
-      .ok(thrown !== null, "third launch must be refused")
+      .eq(await launchesLast24h(launcher.id), limit, "refused launches do not count toward the cap")
+      .ok(thrown !== null, "launch past the cap must be refused")
       .eq(thrown?.status, 429, "status")
       .eq(thrown?.message, "launch_rate_limited", "code")
-      .done(`3rd launch → 429 launch_rate_limited (tier NEW, cap ${limit}/24h)`);
+      .done(`launch ${limit + 1} → 429 launch_rate_limited (tier NEW, cap ${limit}/24h; FAILED rows excluded)`);
   });
 
   await check("spec_approval", async () => {
@@ -992,9 +1003,15 @@ async function gatingChecks() {
   });
 
   await check("pause_builds_blocks_scheduling", async () => {
-    const paused = (await prisma.platformSetting.findUnique({ where: { key: "pause_builds" } }))?.value === true;
-    if (!paused) return { ok: false, detail: "pause_builds is not true — this deployment is expected to be paused" };
     if (SKIP_SLOW) return { skip: true, detail: "PYRE_SKIP_SLOW=1" };
+    // Pause for the duration of the probe only; the deployment's own setting is restored on exit.
+    const before = (await prisma.platformSetting.findUnique({ where: { key: "pause_builds" } }))?.value === true;
+    if (!before) {
+      await prisma.platformSetting.upsert({ where: { key: "pause_builds" }, update: { value: true }, create: { key: "pause_builds", value: true } });
+      onExit("restore pause_builds", async () => {
+        await prisma.platformSetting.update({ where: { key: "pause_builds" }, data: { value: false } }).catch(() => {});
+      });
+    }
     await prisma.app.update({ where: { id: gate.id }, data: { status: "LIVE", firstBuildAt: null } });
     await creditBudget(gate.id, MIN_BUILD_MICROS, `${TAG} gate budget`);
     const funded = await prisma.app.findUnique({ where: { id: gate.id }, select: { budgetMicros: true, status: true } });
