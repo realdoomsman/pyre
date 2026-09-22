@@ -14,6 +14,8 @@ const SchedulerJob = z.object({ appId: z.string().optional(), kind: z.string().o
 
 const ITERATE_EVERY_MS = 6 * 60 * 60_000;
 const MVP_RETRY_AFTER_MS = 60 * 60_000;
+/** Infrastructure failures (sandbox, git, deploy) are not the agent's doing: retry soon, not in an hour. */
+const MVP_INFRA_RETRY_AFTER_MS = 5 * 60_000;
 const MICROS = 1_000_000n;
 const MIN_ITER = BigInt(ITERATION_BUDGET_USD.MIN) * MICROS;
 const MAX_ITER = BigInt(ITERATION_BUDGET_USD.MAX) * MICROS;
@@ -118,9 +120,10 @@ export const nextBuildDecision = (input: DecisionInput): BuildDecision => {
 
   if (app.liveVersion === 0) {
     // MVP attempted but never deployed: retry hourly while there is budget, feeding back the last error.
+    const retryAfterMs = input.lastJobError?.startsWith("internal error:") ? MVP_INFRA_RETRY_AFTER_MS : MVP_RETRY_AFTER_MS;
     const retryDue =
       !input.hasPriorJob ||
-      (input.lastJobFinishedAt !== null && input.now - input.lastJobFinishedAt.getTime() > MVP_RETRY_AFTER_MS);
+      (input.lastJobFinishedAt !== null && input.now - input.lastJobFinishedAt.getTime() > retryAfterMs);
     if (retryDue && app.budgetMicros >= MIN_ITER && input.computeOk) {
       return {
         kind: "build",
