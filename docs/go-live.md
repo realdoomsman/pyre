@@ -66,7 +66,7 @@ Production was purged on 2026-09-21: `seed-demo-data.mjs --remove` and `seed-dem
 1. Fund the treasury and confirm Anthropic credits.
 2. Confirm `/v1/stats` still reports zeros (nothing seeded since the purge).
 3. Sign in on `https://pyre.fun` with Google (a custodial wallet is derived) or an external wallet (EIP-191 challenge).
-4. `/launch`: name, ticker, image, prompt → the intake agent writes a spec → approve it → stake 0.002 ETH (one click from the custodial balance, or send it to the treasury and submit the tx hash).
+4. `/launch`: name, ticker, image, prompt → the intake agent writes a spec → approve it → stake 0.05 ETH (one click from the custodial balance, or send it to the treasury and submit the tx hash).
 5. The `launch` worker pre-funds the app wallet, launches on PONS v2 and flips the app to `LIVE` (`LAUNCH_GATED` with a 10-minute retry if PONS refuses the sender).
 6. `feeSweep` claims creator fees every 5 minutes and credits 60% to the build budget (half of it as the credits slice).
 7. At $50 of accrued budget the scheduler starts the first build; watch it stream on the coin page.

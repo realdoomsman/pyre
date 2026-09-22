@@ -22,7 +22,7 @@ Pyre is an attempt to close all three at once with one loop, and to make each st
 
 ![The Pyre loop: launch, fees, build, ship, earn, burn, with a return arc showing that any new fee relights a dormant app](figures/01-loop.png)
 
-**Launch.** You write one sentence: what the app does. An intake agent turns it into a spec with four fields: what it does, who pays, the MVP, the price. You edit or approve it. You stake 0.002 ETH; the stake is spam control, refunded in full when the app first reaches its build threshold, or immediately if the launch fails. The coin is launched on pons v2 from the app's own derived wallet, so pons records that wallet as creator and fee recipient. There is no team allocation, no pre-mine and no launcher supply. Every coin is bought on the curve or in the pool like anyone else's.
+**Launch.** You write one sentence: what the app does. An intake agent turns it into a spec with four fields: what it does, who pays, the MVP, the price. You edit or approve it. You stake 0.05 ETH; the stake is spam control, refunded in full when the app first reaches its build threshold, or immediately if the launch fails. The coin is launched on pons v2 from the app's own derived wallet, so pons records that wallet as creator and fee recipient. There is no team allocation, no pre-mine and no launcher supply. Every coin is bought on the curve or in the pool like anyone else's.
 
 **Fees.** pons v2 charges 1% on every trade, on the bonding curve and, after graduation, in the Uniswap v4 pool. 70% of that 1% goes to the creator wallet, which is the app. Pyre pull-claims it from the pons FeeEscrow every five minutes and splits it three ways: 60% to the build, 25% to a PYRE buyback, 15% to the person who launched the coin.
 
@@ -93,7 +93,7 @@ The burn ledger publishes, for every buyback, the revenue-event ids, the swap tx
 | app revenue → coin buyback and burn / PYRE buyback / ops | 85% / 10% / 5% |
 | buyback cadence, minimum pending | every 10 min, $5 |
 | per-charge cap, per user per app per day | $250, $1,000 |
-| launch stake (refundable) | 0.002 ETH |
+| launch stake (refundable) | 0.05 ETH |
 | first build starts at | $50 spendable budget |
 | graduation from curve to Uniswap v4 | 4.2 ETH |
 | dormant at | $0 budget; relit by any new fee |
@@ -132,12 +132,12 @@ What launches next, in order: treasury funding, an on-chain dry run of the full 
 
 ## how to launch
 
-![The launch page on pyre.fun: name the coin, describe the app in one sentence, stake 0.002 ETH](figures/09-launch.png)
+![The launch page on pyre.fun: name the coin, describe the app in one sentence, stake 0.05 ETH](figures/09-launch.png)
 
 1. Sign in at [pyre.fun/launch](https://pyre.fun/launch). Google sign-in gives you a custodial Pyre wallet on Robinhood Chain; or sign in with your own wallet.
 2. Name the coin and write one sentence describing the app.
 3. Read the spec the intake agent produces: what it does, who pays, the MVP, the price. Edit it or approve it.
-4. Stake 0.002 ETH, one click from a custodial balance, or send it to the treasury from your own wallet and submit the hash.
+4. Stake 0.05 ETH, one click from a custodial balance, or send it to the treasury from your own wallet and submit the hash.
 5. The coin launches on pons v2 from the app's own wallet. From then on the loop runs itself: fees are claimed, the build starts at $50, the app deploys when it passes review, and revenue burns the coin. You can read every tool call on the coin's build tab, queue tasks as a holder, and see every burn with its attestation on the burn tab.
 
 ## verify it yourself

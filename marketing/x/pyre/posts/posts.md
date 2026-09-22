@@ -44,7 +44,7 @@ Posting notes:
 - count: 274 / 280
 
 ```
-the loop: write one sentence. an intake agent writes the spec. stake 0.002 ETH, refundable. the coin launches on pons v2. its creator fees pay an agent to build the app. users pay in USDG. 85% of revenue buys the coin back and burns it.
+the loop: write one sentence. an intake agent writes the spec. stake 0.05 ETH, refundable. the coin launches on pons v2. its creator fees pay an agent to build the app. users pay in USDG. 85% of revenue buys the coin back and burns it.
 
 supply falls because the app earned.
 ```
@@ -295,7 +295,7 @@ launching is three trays.
 
 01 coin: name, ticker, one sentence on what to build.
 02 agent brief: an intake agent writes the spec: what it does, who pays, the mvp, the price. you approve it.
-03 review and launch: stake 0.002 ETH, refunded at the first build.
+03 review and launch: stake 0.05 ETH, refunded at the first build.
 
 then pons v2.
 ```

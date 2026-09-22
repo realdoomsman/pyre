@@ -106,7 +106,7 @@ describe("AppChainDto", () => {
     curveAddress: "0x6Db0F5651E1C3Ab406eE9214C7E13d601504D847",
     poolId: null,
     phase: LAUNCH_PHASE.CURVE,
-    stakeEth: 0.002,
+    stakeEth: 0.05,
     feesEth: 0.361944,
     buybackEth: 0,
     progress: 0.023,

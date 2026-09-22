@@ -62,7 +62,7 @@ stateDiagram-v2
   DRAFT --> SPEC_READY: intake (moderation + spec)
   DRAFT --> FAILED: intake exhausted retries
   SPEC_READY --> AWAITING_STAKE: launcher approves spec
-  AWAITING_STAKE --> LAUNCHING: 0.002 ETH stake verified
+  AWAITING_STAKE --> LAUNCHING: 0.05 ETH stake verified
   LAUNCHING --> LIVE: PONS v2 token launched
   LAUNCHING --> LAUNCH_GATED: factory.canLaunch() false
   LAUNCH_GATED --> LAUNCHING: retryGated (every 10 min)

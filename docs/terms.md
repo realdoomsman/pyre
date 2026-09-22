@@ -24,7 +24,7 @@ You must be 18 or older and legally able to enter a contract. Do not use Pyre if
 
 ## 4. Launching an app
 
-- You put down a **refundable stake of 0.002 ETH**. It is a spam control, not a fee: the platform pays the coin-creation transaction itself. The stake is returned once the app reaches its first build threshold, or promptly if the launch fails. It is **not** returned if the app is killed for breaking these terms or the [Content Policy](/legal/content-policy).
+- You put down a **refundable stake of 0.05 ETH**. It is a spam control, not a fee: the platform pays the coin-creation transaction itself. The stake is returned once the app reaches its first build threshold, or promptly if the launch fails. It is **not** returned if the app is killed for breaking these terms or the [Content Policy](/legal/content-policy).
 - The coin is created from a wallet the platform derives for the app, so that wallet — not you — is the creator of record on PONS and the recipient of creator fees. You never hold that wallet's key.
 - Your prompt, name, ticker, and image must comply with the Content Policy, must not infringe anyone's rights, and must not impersonate anyone. Coin details are written to the chain at creation and cannot be changed afterwards.
 - Launchers receive a share of their coin's creator fees for launching and specifying the app. That share is paid in the platform's accounting to the wallet on your account and is published on the site; we may change it prospectively with notice.

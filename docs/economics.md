@@ -41,7 +41,7 @@ Second example, revenue side: an app sells a $20 one-time product. `RevenueEvent
 
 ## Launch stake
 
-Launching requires `LAUNCH_STAKE_WEI` (**0.002 ETH**, ≈$5). It is spam control, nothing else: it does not pay for the launch (the treasury does) and it is refunded in full to the launcher's wallet (`App.stakeRefundTx`) when the app first reaches the $50 build threshold, or immediately if the launch fails. Custodial users stake with one click from their Pyre balance; external-wallet users send 0.002 ETH to the treasury and submit the transaction hash, which the API verifies on-chain (`verifyEthTransfer`) before accepting it. A stake is not refunded for an app killed under the content policy.
+Launching requires `LAUNCH_STAKE_WEI` (**0.05 ETH**, ≈$135). It is spam control, nothing else: it does not pay for the launch (the treasury does) and it is refunded in full to the launcher's wallet (`App.stakeRefundTx`) when the app first reaches the $50 build threshold, or immediately if the launch fails. Custodial users stake with one click from their Pyre balance; external-wallet users send 0.05 ETH to the treasury and submit the transaction hash, which the API verifies on-chain (`verifyEthTransfer`) before accepting it. A stake is not refunded for an app killed under the content policy.
 
 ## What the budget pays for
 

@@ -12,7 +12,7 @@ Publishing order in X Articles: insert each figure at the position given, with t
 | 4 | `figures/03-attestation.png` | the attestation | Attestation calldata layout: 0x, four magic bytes 50 59 52 45, version byte 01, then a 32-byte sha256 of the sorted, comma-joined revenue-event ids, with a worked example | 37 bytes that tie a burn to the revenue that paid for it. the example ids are illustrative; the hash is real. | `src/03-attestation.html` |
 | 5 | `figures/05-economics.png` | the numbers | Economics card: the trade-fee split, the revenue split and every threshold the loop runs on | the constants, from packages/shared in the public repo. | `src/05-economics.html` |
 | 6 | `figures/06-audit.png` | engineering proof | Audit card: 62 of 68 production features pass, 6 blocked on treasury funding; 408 unit tests; 1 high and 5 medium review findings fixed | what passes, what is blocked, and why. | `src/06-audit.html` |
-| 7 | `figures/09-launch.png` | how to launch | The launch page on pyre.fun: name the coin, describe the app in one sentence, stake 0.002 ETH | pyre.fun/launch | `https://pyre.fun/launch` |
+| 7 | `figures/09-launch.png` | how to launch | The launch page on pyre.fun: name the coin, describe the app in one sentence, stake 0.05 ETH | pyre.fun/launch | `https://pyre.fun/launch` |
 
 ## notes for the publisher
 

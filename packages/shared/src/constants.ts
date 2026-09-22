@@ -47,8 +47,8 @@ export const ITERATION_BUDGET_USD = { MIN: 10, DEFAULT: 25, MAX: 50 } as const;
 /** Global daily platform compute ceiling (USD). Runner refuses new jobs past this. */
 export const GLOBAL_DAILY_COMPUTE_CEILING_USD = 2000;
 
-/** Refundable launch stake in wei (0.002 ETH, ≈$5). Spam control only; returned at first build threshold. */
-export const LAUNCH_STAKE_WEI = 2_000_000_000_000_000n;
+/** Refundable launch stake in wei (0.05 ETH, ≈$135). Spam control only; returned at first build threshold. */
+export const LAUNCH_STAKE_WEI = 50_000_000_000_000_000n;
 
 /** Tiny budget used for the intake spec generation before any coin exists. Paid by platform. */
 export const SPEC_INTAKE_BUDGET_USD = 0.5;

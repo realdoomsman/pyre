@@ -6,7 +6,7 @@ Voice: edge-tts `en-US-AndrewMultilingualNeural` (rate +10%). 120 words · 72.1 
 |---|---|---|---|---|
 | 00:01.1 | 00:02.9 | open | open | Pyre. Coins that build apps. |
 | 00:05.0 | 00:07.6 | launch | launch-mg | Write one sentence. An agent writes the spec. |
-| 00:07.8 | 00:12.3 | launch | launch-mg | Stake 0.002 ETH, refundable, and it launches on pons. |
+| 00:07.8 | 00:12.3 | launch | launch-mg | Stake 0.05 ETH, refundable, and it launches on pons. |
 | 00:15.7 | 00:19.0 | fees | fees-mg | 70% of every trade fee comes back: |
 | 00:19.2 | 00:24.2 | fees | fees-mg | 60 to the build budget, 25 to a $PYRE buyback, 15 to the launcher. |
 | 00:27.8 | 00:30.8 | agent | agent-mg | At $50, an agent builds in a sandbox. |
@@ -42,7 +42,7 @@ Voice: edge-tts `en-US-AndrewMultilingualNeural` (rate +10%). 120 words · 72.1 
 
 Where the caption and the spoken text differ (numbers, tickers), the spoken form is:
 
-- “Stake 0.002 ETH, refundable, and it launches on pons.” → *Stake point zero zero two ETH, refundable, and it launches on pons.*
+- “Stake 0.05 ETH, refundable, and it launches on pons.” → *Stake point zero five ETH, refundable, and it launches on pons.*
 - “70% of every trade fee comes back:” → *Seventy percent of every trade fee comes back:*
 - “60 to the build budget, 25 to a $PYRE buyback, 15 to the launcher.” → *Sixty to the build budget, twenty-five to a Pyre buyback, fifteen to the launcher.*
 - “At $50, an agent builds in a sandbox.” → *At fifty dollars, an agent builds in a sandbox.*

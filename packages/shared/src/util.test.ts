@@ -30,7 +30,7 @@ describe("ETH conversions", () => {
   it("does not leak float error into wei", () => {
     // 0.1 is 0.1000000000000000055… in IEEE-754; naive `round(eth * 1e18)` yields 100000000000000006n.
     expect(ethToWei(0.1)).toBe(100_000_000_000_000_000n);
-    expect(ethToWei(0.002)).toBe(2_000_000_000_000_000n);
+    expect(ethToWei(0.05)).toBe(50_000_000_000_000_000n);
     expect(ethToWei(0.0005)).toBe(500_000_000_000_000n);
     expect(ethToWei(1.000000001)).toBe(1_000_000_001_000_000_000n);
     expect(ethToWei(4.2)).toBe(4_200_000_000_000_000_000n);
@@ -66,7 +66,7 @@ describe("ETH conversions", () => {
 
   it("prices wei in USD at the given ETH price", () => {
     expect(usdFromWei(WEI_PER_ETH, 2703.89)).toBeCloseTo(2703.89, 9);
-    expect(usdFromWei(2_000_000_000_000_000n, 2703.89)).toBeCloseTo(5.40778, 9);
+    expect(usdFromWei(50_000_000_000_000_000n, 2703.89)).toBeCloseTo(135.1945, 9);
     expect(usdFromWei(0n, 2703.89)).toBe(0);
     // A zero price must not produce NaN/Infinity: fee sweeps run before the price feed warms up.
     expect(usdFromWei(WEI_PER_ETH, 0)).toBe(0);
@@ -192,7 +192,7 @@ describe("display helpers", () => {
   it("formats ETH grouped with bounded decimals and no trailing zeros", () => {
     expect(formatEth(0n)).toBe("0 ETH");
     expect(formatEth(WEI_PER_ETH)).toBe("1 ETH");
-    expect(formatEth(2_000_000_000_000_000n)).toBe("0.002 ETH");
+    expect(formatEth(50_000_000_000_000_000n)).toBe("0.05 ETH");
     expect(formatEth(1_234_567_800_000_000_000_000n)).toBe("1,234.5678 ETH");
     expect(formatEth(123_456_789_000_000_000n)).toBe("0.1235 ETH");
     expect(formatEth(500_000_000_000_000n, 6)).toBe("0.0005 ETH");

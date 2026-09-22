@@ -162,8 +162,8 @@ describe("usdMicrosFromWei", () => {
   });
 
   it("prices the launch stake and fee at a few dollars, as designed", () => {
-    // 0.002 ETH at $2,703.89 = $5.40778 → 5_407_780 micros.
-    expect(usdMicrosFromWei(LAUNCH_STAKE_WEI, 2703.89)).toBe(5_407_780n);
+    // 0.05 ETH at $2,703.89 = $135.1945 → 135_194_500 micros.
+    expect(usdMicrosFromWei(LAUNCH_STAKE_WEI, 2703.89)).toBe(135_194_500n);
     // 0.0005 ETH launch fee = $1.351945 → floored to the micro.
     expect(usdMicrosFromWei(PONS_LAUNCH_FEE_WEI, 2703.89)).toBe(1_351_945n);
   });
@@ -254,9 +254,9 @@ describe("PONS v2 launch constants", () => {
   it("orders the ETH thresholds the way the launch flow relies on", () => {
     // The stake must cover the PONS launch fee the treasury fronts, and both are dust next to graduation.
     expect(PONS_LAUNCH_FEE_WEI).toBe(500_000_000_000_000n);
-    expect(LAUNCH_STAKE_WEI).toBe(2_000_000_000_000_000n);
+    expect(LAUNCH_STAKE_WEI).toBe(50_000_000_000_000_000n);
     expect(LAUNCH_STAKE_WEI).toBeGreaterThan(PONS_LAUNCH_FEE_WEI);
     expect(PONS_GRADUATION_THRESHOLD_WEI).toBe(4_200_000_000_000_000_000n);
-    expect(PONS_GRADUATION_THRESHOLD_WEI).toBeGreaterThan(LAUNCH_STAKE_WEI * 1000n);
+    expect(PONS_GRADUATION_THRESHOLD_WEI).toBeGreaterThan(LAUNCH_STAKE_WEI * 50n);
   });
 });

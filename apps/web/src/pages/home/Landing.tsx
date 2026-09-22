@@ -25,7 +25,7 @@ const STAGES: ReadonlyArray<Stage> = [
   {
     id: "launch",
     label: "launch",
-    copy: "describe the app. the coin launches on PONS v2 with a refundable 0.002 ETH stake.",
+    copy: "describe the app. the coin launches on PONS v2 with a refundable 0.05 ETH stake.",
     value: (s) => ({ value: s.appsTotal, caption: "coins launched" }),
   },
   {
@@ -279,7 +279,7 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
       <h2 id="cta-title" className="display text-36 sm:text-48">
         launch a coin that <em>ships</em>.
       </h2>
-      <p className="body mx-auto mt-3 max-w-md text-ink-2">describe the app in a paragraph. the stake is 0.002 ETH and comes back.</p>
+      <p className="body mx-auto mt-3 max-w-md text-ink-2">describe the app in a paragraph. the stake is 0.05 ETH and comes back.</p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
         <Button variant="primary" size="lg" href="/launch" iconRight={<IconArrowRight size={16} />}>
           Launch

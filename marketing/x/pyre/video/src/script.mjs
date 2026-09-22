@@ -29,7 +29,7 @@ export const BEATS = [
     ],
     sentences: [
       { shot: "launch-mg", text: "Write one sentence. An agent writes the spec.", say: "Write one sentence. An agent writes the spec." },
-      { shot: "launch-mg", text: "Stake 0.002 ETH, refundable, and it launches on pons.", say: "Stake point zero zero two ETH, refundable, and it launches on pons." },
+      { shot: "launch-mg", text: "Stake 0.05 ETH, refundable, and it launches on pons.", say: "Stake point zero five ETH, refundable, and it launches on pons." },
     ],
   },
   {
