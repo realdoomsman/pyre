@@ -11,8 +11,13 @@ import { logger } from "./logger.js";
 import { queues } from "./queues.js";
 import { TREASURY_WALLET } from "./treasury.js";
 
+/**
+ * Launches that count against the daily cap: everything the user created in the last 24h except
+ * intakes the classifier refused — those cost nothing and a refused idea reworded is the expected
+ * next step, not abuse.
+ */
 export const launchesLast24h = (userId: string): Promise<number> =>
-  prisma.app.count({ where: { launcherId: userId, createdAt: { gte: new Date(Date.now() - 86_400_000) } } });
+  prisma.app.count({ where: { launcherId: userId, createdAt: { gte: new Date(Date.now() - 86_400_000) }, status: { not: "FAILED" } } });
 
 /**
  * Creates a DRAFT app for the launcher, assigns a unique slug + derived app wallet (the PONS
@@ -22,7 +27,7 @@ export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: A
   if (!user.wallet) throw new HttpError(400, "wallet_required");
   const tier = reputationTier(user.reputation);
   const limit = LAUNCH_RATE_LIMIT_PER_DAY[tier];
-  if ((await launchesLast24h(user.id)) >= limit) {
+  if (!user.isAdmin && (await launchesLast24h(user.id)) >= limit) {
     throw new HttpError(429, "launch_rate_limited", { limitPerDay: limit, tier });
   }
 

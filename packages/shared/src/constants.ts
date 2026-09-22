@@ -106,7 +106,7 @@ export const LAUNCH_PHASE = {
 } as const;
 
 /** Rate limits by launcher reputation tier (launches per 24h). */
-export const LAUNCH_RATE_LIMIT_PER_DAY = { NEW: 2, TRUSTED: 10, VETERAN: 30 } as const;
+export const LAUNCH_RATE_LIMIT_PER_DAY = { NEW: 5, TRUSTED: 15, VETERAN: 30 } as const;
 
 /** Reputation thresholds. */
 export const REPUTATION_TIERS = { TRUSTED: 20, VETERAN: 100 } as const;
