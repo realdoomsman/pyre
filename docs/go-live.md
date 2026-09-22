@@ -31,7 +31,7 @@ Production configuration:
 | `GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID` | set | |
 | `ANTHROPIC_API_KEY`, `E2B_API_KEY`, `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_WEBHOOK_SECRET` | set | |
 | `BLOCKSCOUT_API_KEY` | unset | holders self-index from `Transfer` logs (blocked item 4) |
-| `CREDITS_FUNDING_WALLET` | unset | credits slice accrues on `CREDITS:<appId>` ledger only |
+| `ZENTRO_STATE` | unset | credits slice accrues on `CREDITS:<appId>` ledger only (`credits_accrue_only` on /ops) |
 | `X_API_*` | unset | growth posts are recorded as `[X not connected]` |
 | `APP_DOMAIN` / `VITE_APP_DOMAIN` | `pyre.fun` | apps serve at `<slug>.pyre.fun` |
 
@@ -57,7 +57,7 @@ Production was purged on 2026-09-21: `seed-demo-data.mjs --remove` and `seed-dem
 ## Blocked on you
 
 1. **Treasury ETH.** `0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54` holds 0 ETH. It pre-funds every launch (0.0005 ETH fee + gas), pays gas for sweeps, buybacks, burns, attestations, stake refunds and relayed USDG payments, and refuses to act below a 0.01 ETH floor — so nothing on-chain moves until it is funded. Send **~0.05 ETH on Robinhood Chain** (bridge from Arbitrum One or Ethereum, or withdraw directly from an exchange that supports chain 4663). Confirm at `https://robinhoodchain.blockscout.com/address/0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54`. The ops page raises `treasury_low` under 0.02 ETH.
-2. **Anthropic credit balance.** The key is set and the reviewer model answered during a production build, but the balance has not been checked. Confirm it in the Anthropic Console and set auto-reload; an empty balance fails every agent call with `credit balance is too low` while E2B sandboxes still bill. If you want builds held until then: `POST /v1/admin/settings { "key": "pause_builds", "value": true }`. To make fees pay for compute afterwards, set `CREDITS_FUNDING_WALLET` to the deposit address of the card that bills Anthropic (see `docs/runbook.md`).
+2. **Anthropic credit balance.** The key is set and the reviewer model answered during a production build, but the balance has not been checked. Confirm it in the Anthropic Console and set auto-reload; an empty balance fails every agent call with `credit balance is too low` while E2B sandboxes still bill. If you want builds held until then: `POST /v1/admin/settings { "key": "pause_builds", "value": true }`. To make fees pay for compute afterwards, set the Zentro card as the billing method with auto-reload and set `ZENTRO_STATE` on `runner` (see `docs/runbook.md` → Model-credit funding).
 3. **$PYRE launch.** `PYRE_TOKEN` is empty, so the $PYRE share (25% of fees, 10% of revenue) accrues on the `PYRE_TOKEN` ledger without being swapped or burned, staking and platform governance are closed, and `/pyre` shows the pre-launch state. Launch from the treasury after step 1 (procedure in `docs/runbook.md` → Launching $PYRE), then set `PYRE_TOKEN` on `api` and `runner` and `VITE_PYRE_TOKEN` on `web` and redeploy.
 4. **Optional keys.** (a) **Alchemy** — create a Robinhood Chain app, set `RPC_URL` on `api` and `runner`; the public RPC is rate-limited per origin and shared by the indexer, price, holders, reconcile and every browser read. (b) **Blockscout API key** — set `BLOCKSCOUT_API_KEY` on `runner` so holder lists come from the explorer instead of self-indexed logs. (c) **X API keys** — `X_API_*` on `runner` so the growth agent publishes instead of recording.
 

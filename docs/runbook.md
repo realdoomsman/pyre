@@ -8,7 +8,7 @@ Copy `.env.example` and fill every value. Groups, in the order the file lists th
 
 - **Core**: `DATABASE_URL`, `REDIS_URL`, `WEB_ORIGIN`, `API_ORIGIN`, `APP_DOMAIN` (wildcard `*.APP_DOMAIN` → API; leave empty to serve apps at `API_ORIGIN/a/<slug>`), `INTERNAL_SECRET` (bearer for `/metrics`), `SESSION_SECRET` (signs platform session JWTs and per-app host cookies), `LOG_LEVEL`, `PORT`.
 - **Auth**: `GOOGLE_CLIENT_ID` (Google Identity Services; the same client id is exposed to the web app and to hosted apps as `VITE_GOOGLE_CLIENT_ID` / `window.__PYRE__.googleClientId`). Wallet sign-in needs nothing extra — it is an EIP-191 challenge verified server-side.
-- **Robinhood Chain**: `RPC_URL` (the public `https://rpc.mainnet.chain.robinhood.com` is rate-limited and has no websocket; use an Alchemy Robinhood Chain app URL in production), `RPC_WSS_URL` (optional, Alchemy), `CHAIN_ID=4663`, `PLATFORM_MASTER_SEED_HEX` (16–64 bytes hex; users derive at `m/44'/60'/0'/0/<walletIndex>`, treasury = index 0; apps derive at `m/44'/60'/1'/0/<keypairIndex>`), `TREASURY_WALLET` (informational), `PYRE_TOKEN` (empty until launched), `LAUNCH_STAKE_WEI` (override; default 0.002 ETH), `USDG_ADDRESS`, `PONS_FACTORY` / `PONS_LAUNCH_AND_BUY` / `PONS_FEE_ESCROW` / `PONS_MEME_HOOK`, `UNIV4_POOL_MANAGER` / `UNIV4_UNIVERSAL_ROUTER` / `UNIV4_QUOTER` / `UNIV4_STATE_VIEW`, `BLOCKSCOUT_URL`, `BLOCKSCOUT_API_KEY` (optional), `CREDITS_FUNDING_WALLET` (optional), `GITHUB_WEBHOOK_SECRET`.
+- **Robinhood Chain**: `RPC_URL` (the public `https://rpc.mainnet.chain.robinhood.com` is rate-limited and has no websocket; use an Alchemy Robinhood Chain app URL in production), `RPC_WSS_URL` (optional, Alchemy), `CHAIN_ID=4663`, `PLATFORM_MASTER_SEED_HEX` (16–64 bytes hex; users derive at `m/44'/60'/0'/0/<walletIndex>`, treasury = index 0; apps derive at `m/44'/60'/1'/0/<keypairIndex>`), `TREASURY_WALLET` (informational), `PYRE_TOKEN` (empty until launched), `LAUNCH_STAKE_WEI` (override; default 0.002 ETH), `USDG_ADDRESS`, `PONS_FACTORY` / `PONS_LAUNCH_AND_BUY` / `PONS_FEE_ESCROW` / `PONS_MEME_HOOK`, `UNIV4_POOL_MANAGER` / `UNIV4_UNIVERSAL_ROUTER` / `UNIV4_QUOTER` / `UNIV4_STATE_VIEW`, `BLOCKSCOUT_URL`, `BLOCKSCOUT_API_KEY` (optional), `ZENTRO_STATE` (optional, runner only; see Model-credit funding), `GITHUB_WEBHOOK_SECRET`.
 - **Agents**: `ANTHROPIC_API_KEY`, `E2B_API_KEY`, `E2B_TEMPLATE` (`pyre-builder`; falls back to `base`), `GITHUB_TOKEN` (repo scope on `GITHUB_OWNER`), `GITHUB_OWNER`, optional `MODEL_ROUTINE` / `MODEL_ARCHITECT` / `MODEL_REVIEWER` overrides.
 - **Growth**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` (user-context tokens for the platform account). When empty, posts are recorded to the feed marked "X not connected" and nothing is published.
 - **Web** (build-time, `VITE_` prefixed): `VITE_API_ORIGIN`, `VITE_GOOGLE_CLIENT_ID`, `VITE_APP_DOMAIN`, `VITE_PYRE_TOKEN`, `VITE_CHAIN_ID`, `VITE_EXPLORER_URL`.
@@ -26,7 +26,7 @@ Project **`pyre`** (id `33701d8a-7fa9-4255-8640-d508c174af14`, environment `prod
 | `Postgres` | Railway plugin | — | `DATABASE_URL`; volume `postgres-volume` |
 | `Redis` | Railway plugin | — | `REDIS_URL`; volume `redis-volume`; BullMQ needs `maxRetriesPerRequest: null` (set in code) |
 | `api` | `apps/api/Dockerfile` (`RAILWAY_DOCKERFILE_PATH`) | `npx prisma migrate deploy … && node apps/api/dist/index.js` | health check `/health` (120 s); custom domains `api.pyre.fun` + `*.pyre.fun`; `PORT` 8080 |
-| `runner` | `apps/runner/Dockerfile` | `node apps/runner/dist/index.js` | no public domain; restart `ALWAYS`; needs outbound to E2B, Anthropic, the RPC, Blockscout, GitHub, X |
+| `runner` | `apps/runner/Dockerfile` | `node apps/runner/dist/index.js` | no public domain; restart `ALWAYS`; needs outbound to E2B, Anthropic, the RPC, Blockscout, GitHub, X, zentro.finance and api.relay.link; image ships headless Chromium |
 | `web` | `apps/web/Dockerfile` | `node server.mjs` (sirv + SPA fallback, `/healthz`) | custom domain `pyre.fun`; `VITE_*` are build args, so a variable change needs a redeploy |
 
 Deploy with `railway up --service <api|runner|web> --ci` from the repo root. Read logs with `railway logs --service <name>`; run one-off scripts with `railway ssh --service api "node apps/api/scripts/<script>.mjs"`.
@@ -61,7 +61,7 @@ node -e "import('@pyre/chain').then(c => console.log(c.treasury().address))"
 
 ### Funding
 
-Keep the treasury in ETH on Robinhood Chain. It pays for: pre-funding each app wallet with the PONS launch fee (0.0005 ETH) + gas at launch, gas top-ups for fee sweeps, buyback swaps (revenue is received in USDG; buys are paid in ETH at the current price), burn and attestation gas, stake refunds, bounty payouts, credits-funding swaps, and gas for relayed USDG authorizations. Every spending path refuses to take the balance below `TREASURY_FLOOR_WEI` (0.01 ETH) and retries next cycle, so an empty treasury degrades to "nothing moves" rather than to a broken state. ~0.05 ETH covers dozens of launches and sweeps at current gas; alert under 0.02 ETH.
+Keep the treasury in ETH on Robinhood Chain. It pays for: pre-funding each app wallet with the PONS launch fee (0.0005 ETH) + gas at launch, gas top-ups for fee sweeps, buyback swaps (revenue is received in USDG; buys are paid in ETH at the current price), burn and attestation gas, stake refunds, bounty payouts, credit top-ups (ETH → USDC on Ethereum via Relay), and gas for relayed USDG authorizations. Every spending path refuses to take the balance below `TREASURY_FLOOR_WEI` (0.01 ETH) and retries next cycle, so an empty treasury degrades to "nothing moves" rather than to a broken state. ~0.05 ETH covers dozens of launches and sweeps at current gas; alert under 0.02 ETH.
 
 Bridge ETH from Arbitrum One or Ethereum with the Robinhood Chain bridge, or send from any exchange that supports the chain directly, to the address above. Confirm on Blockscout: `https://robinhoodchain.blockscout.com/address/0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54`.
 
@@ -125,7 +125,7 @@ $PYRE is an ordinary PONS v2 launch whose creator is the treasury, so its creato
 Platform-wide pauses are `PlatformSetting` rows set with `POST /v1/admin/settings { "key", "value" }`; a value of `true` pauses, anything else resumes:
 
 - `pause_builds` — the scheduler creates no new BuildJobs and the build worker delays already-queued jobs by 15 minutes.
-- `pauseFeeSweep` — no sweeps, claims, splits, stake refunds or credits funding.
+- `pauseFeeSweep` — no sweeps, claims, splits or stake refunds; the `credits` worker honours it too, so no card top-ups.
 - `pauseBuyback` — no swaps, burns or attestations; `pendingRevenueMicros` keeps accumulating.
 
 Only keys a worker reads have any effect.
@@ -137,6 +137,18 @@ Global compute: if `DailyComputeSpend` for today approaches `GLOBAL_DAILY_COMPUT
 The `reconcile` worker runs seven checks every 5 minutes and writes one `ReconcileRun` row per check (visible on `/ops`): `JOBS`, `SANDBOXES`, `JOBTOKENS` (repair: settle dead builds, kill orphaned sandboxes, revoke spent tokens), `PAYOUTS` (repair: a treasury payout the API broadcast but could not confirm — fee claim, unstake, staker rewards, bounty — is settled from its receipt: ledger/status finalised on success, funds released on revert; `PAYOUT_DROPPED` means an hour with no receipt), `LEDGER` (report: budget vs ledger, buybacks vs revenue, fee-split sums), `FEES` (repair: escrow `Claimed` logs with no `FeeEvent` are replayed; app wallets holding unswept ETH are reported), `BURNS` (report: `Buyback.burnedUnits` and `PyreBurn.burnedUnits` vs the on-chain supply reduction; `PYRE_BURN_STUCK` is a $PYRE burn parked in SWAPPING/SWAPPED for over 30 minutes — check `PyreBurn.error` and the swap tx before touching it, the ledger debit is already written). `drifted > 0` on `LEDGER`, `BURNS` or `PAYOUTS` needs a human; on `FEES` it usually means the runner was down while claims happened and has already been repaired. `BURN_SUPPLY_UNREADABLE` means an `App.tokenAddress` is not an ERC-20 on this chain — expected only for seeded demo rows.
 
 There is no ad-hoc trigger; a pass runs on the next tick (≤ 5 min).
+
+## Model-credit funding (Zentro card)
+
+Mechanics in `docs/economics.md` → Model-credit funding. Operationally:
+
+- **Prerequisites.** The founder's Zentro card is Anthropic's billing method with auto-reload on; `ZENTRO_STATE` is set on `runner`; the treasury holds ETH above the 0.01 ETH floor plus the top-up.
+- **Capturing `ZENTRO_STATE`.** Sign in at `https://zentro.finance/dash` in a normal browser, then export `{ "cookies": [{ "name": "connect.sid", "value": …, "domain": "zentro.finance", "path": "/", "httpOnly": true }], "localStorage": { "cardhub_private_key": …, "cardhub_public_key": …, "cardhub_server_public_key": … } }` (cookie from DevTools → Application → Cookies; the three keys from Local Storage). Keep it in `.secrets/zentro-state.json` locally (git-ignored) and set the one-line JSON as the `ZENTRO_STATE` variable on `runner`. Never paste it into logs, issues or chat.
+- **Verifying without moving money.** `ZENTRO_STATE=$(cat .secrets/zentro-state.json) node apps/runner/scripts/probe-zentro.mjs 15 --quote` (needs `npm run build -w @pyre/runner` and `npx playwright install chromium` locally, or `railway ssh --service runner`) mints one deposit address, prints it masked, and fetches — never sends — the Relay quote the runner would use.
+- **`ZENTRO_SESSION_EXPIRED` on `/ops`.** The session stopped authenticating. Re-capture `ZENTRO_STATE`, redeploy `runner`; the next `credits` pass after the 6-hour back-off (or a restart, which does not reset the back-off — clear it with `POST /v1/admin/settings { "key": "credits_funding", "value": { "mode": "zentro", "sessionExpiredAt": null } }`) resumes. Credits keep accruing meanwhile.
+- **`credits_accrue_only` on `/ops`.** `ZENTRO_STATE` is unset on `runner`; intended until the card is wired up.
+- **`stuck_funding` on `/ops`.** A `CreditFunding` older than 30 minutes is still `ADDRESS_MINTED` (unsent: the treasury could not afford the quote, or the pass kept failing — check runner logs; the row fails itself after 30 minutes unsent and a fresh address is minted) or `SENT` (Relay has the ETH but no fill yet: check `https://api.relay.link/intents/status?requestId=<relayRequestId>`; every pass keeps polling and settles it, `refund` fails the row and the ETH is back in the treasury).
+- **Reconciling by hand.** `CreditFunding.usdMicros` is the obligation, `usdcUnits` what Relay delivered (6-decimal USDC on Ethereum), `ethWei` what the treasury paid including Relay's fee, `fillTx` the Ethereum transaction to the card's address. The `CREDITS:<appId>` debit is written only with `CONFIRMED`, so a `FAILED` row never leaves a coin's balance short.
 
 ## DMCA flow
 

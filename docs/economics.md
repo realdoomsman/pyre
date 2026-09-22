@@ -65,14 +65,17 @@ Burns are supply reductions executed by the platform on-chain. Nothing is paid t
 
 ## Model-credit funding (the card that pays Anthropic)
 
-The credits slice, tracked **per coin**, closes the loop between a coin's on-chain fees and its off-chain model bill.
+The credits slice, tracked **per coin**, closes the loop between a coin's on-chain fees and its off-chain model bill. The card is the founder's Zentro card, set as Anthropic's billing method with auto-reload; Zentro has no API and rotates its deposit address per top-up, so the runner drives a logged-in Zentro session in headless Chromium (`ZENTRO_STATE`).
 
 1. `feeSweep` records each fee's credits slice on that coin's `CREDITS:<appId>` ledger account (positive delta).
-2. At the end of every sweep pass, `fundCredits` reads each coin's `CREDITS:<appId>` balance. For every coin whose balance clears `MIN_CREDITS_FUNDING_USD` ($15) it swaps that many dollars of treasury ETH to USDG and deposits the USDG to a fresh deposit address — one `CreditFunding { ethWei, usdgUnits }` row per coin, so every deposit is attributable to the coin that paid for it.
-3. Success writes the `CreditFunding` row (`SENT`, with `swapTx`/`transferTx`, scoped to `appId`) and a negative `CREDITS:<appId>` entry that clears that coin's obligation. Failure marks the row `FAILED` and leaves the coin's balance for the next pass.
-4. The deposit address belongs to a card set as Anthropic's billing method with auto-reload. When no card provider is configured, funding is disabled and the credits slice simply accrues.
+2. Every 5 minutes the `credits` worker reads each coin's `CREDITS:<appId>` balance. For every coin whose balance clears `MIN_CREDITS_FUNDING_USD` ($15) — capped at `MAX_CREDITS_FUNDING_USD` ($250) per top-up, the rest waits — it runs one `CreditFunding` through a persisted step machine, scoped to the coin so every top-up is attributable to the fees that paid for it:
+   - `ADDRESS_MINTED` — the headless session walks Top Up → USDC (Ethereum) → amount → Continue and reads the fresh deposit address (`CreditFunding.wallet`). Nothing has left the treasury.
+   - `SENT` — Relay (`api.relay.link`) quotes an `EXACT_OUTPUT` swap of treasury ETH on Robinhood Chain into exactly that many USDC on Ethereum mainnet delivered to the address, in one Robinhood-side transaction (fee ≈ $0.21 + gas). The quote is refused unless its output is worth ≥ 98% of the dollars requested, the recipient and asset match, and it is a single transaction. `relayRequestId`, `ethWei` (swap input + fees) and `usdcUnits` are written before the broadcast, `sendTx` with it, so a crash never sends twice: a later pass finds the row and resumes at the status poll (or adopts an intent Relay already saw).
+   - `CONFIRMED` — `GET /intents/status` reports the fill; `fillTx` is the Ethereum transaction and a negative `CREDITS:<appId>` entry clears the coin's obligation in the same DB transaction. Relay usually fills within a minute; the sending pass waits up to 15 minutes and later passes keep polling.
+   - `FAILED` — nothing moved (quote refused, deposit reverted, address stale after 30 minutes unsent) or Relay refunded/failed; the balance stays on the ledger for the next pass.
+3. A `zentro_session_expired` (the stored session no longer authenticates) is recorded on the `credits_funding` PlatformSetting: `/ops` raises `ZENTRO_SESSION_EXPIRED` and funding backs off for 6 hours between attempts until the session is re-captured. With `ZENTRO_STATE` unset the setting says `accrue_only`, `/ops` shows `credits_accrue_only`, and the credits slice simply accrues.
 
-Card numbers, CVV and card-provider logins never touch the platform; only public deposit addresses (or a card-provider API key) are used, kept in secrets, never logged.
+Card numbers, CVV and the Zentro login never touch the platform; the captured session lives only in the `ZENTRO_STATE` secret, and deposit addresses appear in logs, audit rows and alerts masked (`0x1234…abcd`).
 
 ## App payments in USDG
 

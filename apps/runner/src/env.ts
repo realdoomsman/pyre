@@ -26,8 +26,8 @@ const Env = z.object({
   USDG_ADDRESS: optionalAddress,
   BLOCKSCOUT_URL: optionalUrl,
   BLOCKSCOUT_API_KEY: optional,
-  /** Card-funding deposit address for model credits; unset keeps credits accruing in the ledger. */
-  CREDITS_FUNDING_WALLET: optionalAddress,
+  /** Zentro session (cookies + CardHub localStorage) for card top-ups; unset keeps credits accruing in the ledger. */
+  ZENTRO_STATE: optional,
 
   ANTHROPIC_API_KEY: z.string().min(1),
   E2B_API_KEY: z.string().min(1),

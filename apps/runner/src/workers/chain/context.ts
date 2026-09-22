@@ -14,4 +14,5 @@ export const CHAIN_QUEUES = {
   price: "price",
   holders: "holders",
   market: "market",
+  credits: "credits",
 } as const;

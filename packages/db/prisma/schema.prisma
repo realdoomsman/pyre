@@ -475,33 +475,36 @@ model PyreBurn {
 }
 
 enum CreditFundingStatus {
-  PENDING  // credits accrued, transfer not yet attempted
-  SWAPPED  // ETH swapped to USDG in the treasury
-  SENT     // USDG delivered to the credit-funding wallet
+  ADDRESS_MINTED // a fresh Zentro deposit address is on the row; nothing has left the treasury
+  SENT           // treasury ETH deposited with Relay on Robinhood Chain (sendTx); fill pending
+  CONFIRMED      // Relay filled: USDC landed at the deposit address on Ethereum (fillTx)
   FAILED
 }
 
 /**
- * One ETH→USDG→card deposit that drains a single coin's accrued model-credit funds
- * (FeeEvent.creditsMicros for that app) into the credit-funding card that pays Anthropic. Scoped to
- * one `appId` so every deposit is attributable to the coin whose fees paid for it — a coin can only
- * ever fund, and therefore spend, its own credits. `usdMicros` is the credit obligation cleared;
- * `usdgUnits` is what actually landed after swap slippage.
+ * One top-up of the card that pays Anthropic, draining a single coin's accrued model-credit funds
+ * (FeeEvent.creditsMicros for that app): a fresh Zentro deposit address is minted, treasury ETH on
+ * Robinhood Chain is swapped by Relay into USDC on Ethereum delivered to that address, and the
+ * `CREDITS:<appId>` ledger is debited once the fill is confirmed. Scoped to one `appId` so every
+ * top-up is attributable to the coin whose fees paid for it — a coin can only ever fund, and
+ * therefore spend, its own credits. The statuses are persisted steps: a crash resumes from the
+ * last one and never sends twice.
  */
 model CreditFunding {
-  id          String              @id @default(cuid())
-  appId       String
-  app         App                 @relation(fields: [appId], references: [id], onDelete: Cascade)
-  usdMicros   BigInt              // credit obligation cleared by this deposit
-  ethWei      Decimal @db.Decimal(78, 0)              @default(0) // ETH swapped
-  usdgUnits   BigInt              @default(0) // USDG (6 decimals) delivered to the card
-  wallet      String              // destination deposit address (0x, rotates per deposit)
-  status      CreditFundingStatus @default(PENDING)
-  swapTx      String?
-  transferTx  String?
-  error       String?
-  createdAt   DateTime            @default(now())
-  completedAt DateTime?
+  id             String              @id @default(cuid())
+  appId          String
+  app            App                 @relation(fields: [appId], references: [id], onDelete: Cascade)
+  usdMicros      BigInt              // credit obligation cleared by this top-up
+  ethWei         Decimal @db.Decimal(78, 0)              @default(0) // ETH sent to Relay (swap input + fees)
+  usdcUnits      BigInt              @default(0) // USDC (6 decimals, Ethereum mainnet) delivered to the card
+  wallet         String              // Zentro deposit address (0x, rotates per top-up)
+  status         CreditFundingStatus @default(ADDRESS_MINTED)
+  relayRequestId String?             // Relay intent id; polled at /intents/status
+  sendTx         String?             // Robinhood Chain deposit transaction
+  fillTx         String?             // Ethereum transaction that delivered the USDC
+  error          String?
+  createdAt      DateTime            @default(now())
+  completedAt    DateTime?
 
   @@index([appId, status])
   @@index([status, createdAt])

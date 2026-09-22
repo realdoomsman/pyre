@@ -26,7 +26,7 @@ CREATE TYPE "RevenueSource" AS ENUM ('CHECKOUT', 'SUBSCRIPTION', 'X402', 'AD', '
 CREATE TYPE "BuybackStatus" AS ENUM ('PENDING', 'SWAPPING', 'SWAPPED', 'BURNED', 'FAILED');
 
 -- CreateEnum
-CREATE TYPE "CreditFundingStatus" AS ENUM ('PENDING', 'SWAPPED', 'SENT', 'FAILED');
+CREATE TYPE "CreditFundingStatus" AS ENUM ('ADDRESS_MINTED', 'SENT', 'CONFIRMED', 'FAILED');
 
 -- CreateEnum
 CREATE TYPE "QueueStatus" AS ENUM ('OPEN', 'SCHEDULED', 'DONE', 'REJECTED');
@@ -349,11 +349,12 @@ CREATE TABLE "CreditFunding" (
     "appId" TEXT NOT NULL,
     "usdMicros" BIGINT NOT NULL,
     "ethWei" DECIMAL(78,0) NOT NULL DEFAULT 0,
-    "usdgUnits" BIGINT NOT NULL DEFAULT 0,
+    "usdcUnits" BIGINT NOT NULL DEFAULT 0,
     "wallet" TEXT NOT NULL,
-    "status" "CreditFundingStatus" NOT NULL DEFAULT 'PENDING',
-    "swapTx" TEXT,
-    "transferTx" TEXT,
+    "status" "CreditFundingStatus" NOT NULL DEFAULT 'ADDRESS_MINTED',
+    "relayRequestId" TEXT,
+    "sendTx" TEXT,
+    "fillTx" TEXT,
     "error" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "completedAt" TIMESTAMP(3),

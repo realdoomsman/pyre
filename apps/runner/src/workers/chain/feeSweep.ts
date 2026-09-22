@@ -7,7 +7,6 @@ import type { Address, Hash } from "viem";
 import { audit } from "../../lib/audit.js";
 import { withLock } from "../../lib/lock.js";
 import { CHAIN_QUEUES, type ChainWorkerContext } from "./context.js";
-import { fundCredits } from "./credits.js";
 import { chainWorkerEnv } from "./env.js";
 import { syncLaunchPhase } from "./launchState.js";
 import { isPaused } from "./money.js";
@@ -311,7 +310,6 @@ export async function runFeeSweep(ctx: ChainWorkerContext): Promise<void> {
       }
       await sweepPlatformFees(log);
       await refundStakes(ctx, log);
-      await fundCredits(log);
       log.info("fee sweep done");
     },
     { autoRenew: true },

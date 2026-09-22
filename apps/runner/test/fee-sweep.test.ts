@@ -41,7 +41,6 @@ const publishEvent = vi.fn();
 
 vi.mock("@pyre/db", async (importOriginal) => ({ ...(await importOriginal<typeof Db>()), prisma }));
 vi.mock("@pyre/chain", () => chain);
-vi.mock("../src/workers/chain/credits.js", () => ({ fundCredits: vi.fn() }));
 vi.mock("../src/workers/chain/env.js", () => ({ chainWorkerEnv: () => ({}) }));
 vi.mock("../src/workers/chain/publish.js", () => ({ publishGlobal: vi.fn(), publishEvent }));
 vi.mock("../src/workers/chain/launchState.js", () => ({ syncLaunchPhase: vi.fn() }));

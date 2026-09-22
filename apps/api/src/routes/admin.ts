@@ -84,12 +84,12 @@ admin.get(
       prisma.buyback.count({ where: { status: "SWAPPING", createdAt: { lt: new Date(now - BUYBACK_STUCK_MS) } } }),
       // Per-app model-credit accrual: every CREDITS:<appId> ledger balance.
       prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { startsWith: "CREDITS:" } }, _sum: { deltaMicros: true } }),
-      // USDG actually delivered to the card, per app (all-time SENT deposits).
-      prisma.creditFunding.groupBy({ by: ["appId"], where: { status: "SENT" }, _sum: { usdgUnits: true } }),
+      // USDC actually delivered to the card, per app (all-time CONFIRMED top-ups).
+      prisma.creditFunding.groupBy({ by: ["appId"], where: { status: "CONFIRMED" }, _sum: { usdcUnits: true } }),
       prisma.creditFunding.findMany({ orderBy: { createdAt: "desc" }, take: 20, include: { app: { select: { slug: true, ticker: true } } } }),
-      // Deposits wedged mid-pipeline for >30 min — need manual reconcile.
+      // Top-ups wedged mid-pipeline for >30 min (address minted but unsent, or sent and unfilled) — need manual reconcile.
       prisma.creditFunding.findMany({
-        where: { status: { in: ["PENDING", "SWAPPED"] }, createdAt: { lt: new Date(now - 30 * 60_000) } },
+        where: { status: { in: ["ADDRESS_MINTED", "SENT"] }, createdAt: { lt: new Date(now - 30 * 60_000) } },
         include: { app: { select: { slug: true } } },
       }),
       prisma.creditFunding.findMany({ where: { status: "FAILED", createdAt: { gte: since24h } }, orderBy: { createdAt: "desc" }, take: 1 }),
@@ -119,9 +119,9 @@ admin.get(
       creditByApp[appId] = (creditByApp[appId] ?? 0n) + (row._sum.deltaMicros ?? 0n);
     }
     const fundedByApp: Record<string, bigint> = {};
-    for (const row of creditFunded) fundedByApp[row.appId] = row._sum.usdgUnits ?? 0n;
+    for (const row of creditFunded) fundedByApp[row.appId] = row._sum.usdcUnits ?? 0n;
     const accruedTotalMicros = creditLedger.reduce((s, r) => s + (r._sum.deltaMicros ?? 0n), 0n);
-    const fundedTotalUnits = creditFunded.reduce((s, r) => s + (r._sum.usdgUnits ?? 0n), 0n);
+    const fundedTotalUnits = creditFunded.reduce((s, r) => s + (r._sum.usdcUnits ?? 0n), 0n);
     const creditApps = await prisma.app.findMany({
       where: { OR: [{ status: { in: ["LIVE", "DORMANT"] } }, { id: { in: Object.keys(creditByApp) } }, { creditFundings: { some: {} } }] },
       select: { id: true, slug: true, ticker: true, name: true, spentMicros: true, budgetMicros: true },
@@ -137,6 +137,13 @@ admin.get(
     if (stuckFundings.length > 0)
       alerts.push({ level: "critical", code: "stuck_funding", message: `${stuckFundings.length} credit funding(s) stuck — manual reconcile: ${stuckFundings.map((f) => f.app.slug).join(", ")}`, href: null });
     if (failedFundings.length > 0) alerts.push({ level: "warn", code: "funding_failed", message: `Credit funding failed: ${failedFundings[0]!.error ?? "unknown error"}`, href: null });
+    // Written by the runner's credits worker: how (or whether) accrued credits reach the card.
+    const creditsFunding = settingsMap["credits_funding"] as { mode?: string; sessionExpiredAt?: string | null } | undefined;
+    if (creditsFunding?.sessionExpiredAt) {
+      alerts.push({ level: "critical", code: "ZENTRO_SESSION_EXPIRED", message: `Zentro session expired at ${creditsFunding.sessionExpiredAt}: re-capture ZENTRO_STATE on the runner; credit top-ups are paused`, href: null });
+    } else if (creditsFunding?.mode === "accrue_only") {
+      alerts.push({ level: "info", code: "credits_accrue_only", message: "ZENTRO_STATE is unset on the runner: credits accrue on the ledger only, nothing reaches the card", href: null });
+    }
     if (todayMicros * 10n >= ceilingMicros * 8n)
       alerts.push({ level: "warn", code: "ceiling", message: `Platform compute at $${(Number(todayMicros) / 1e6).toFixed(2)} of $${GLOBAL_DAILY_COMPUTE_CEILING_USD} daily ceiling`, href: null });
     for (const flag of ["pause_builds", "pauseFeeSweep", "pauseBuyback"]) {
@@ -198,7 +205,7 @@ admin.get(
           slug: f.app.slug,
           ticker: f.app.ticker,
           usdMicros: f.usdMicros.toString(),
-          usdgUnits: f.usdgUnits.toString(),
+          usdcUnits: f.usdcUnits.toString(),
           ethWei: big(f.ethWei).toString(),
           status: f.status,
           error: f.error,

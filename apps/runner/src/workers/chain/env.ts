@@ -13,8 +13,8 @@ const ChainWorkerEnv = z.object({
   PLATFORM_MASTER_SEED_HEX: z.string().regex(/^(0x)?[0-9a-fA-F]{32,128}$/),
   /** $PYRE launch token; when set, its fee/revenue shares are bought back and burned too. */
   PYRE_TOKEN: EvmAddress.optional(),
-  /** Card-funding deposit address for model credits; unset keeps credits accruing in the ledger. */
-  CREDITS_FUNDING_WALLET: EvmAddress.optional(),
+  /** Zentro session (cookies + CardHub localStorage) for card top-ups; unset keeps credits accruing in the ledger. */
+  ZENTRO_STATE: z.string().optional(),
   /** Blockscout PRO key: with it holders come from the explorer; without it the runner indexes Transfer logs itself. */
   BLOCKSCOUT_API_KEY: z.string().optional(),
 });

@@ -35,7 +35,7 @@ export const FORK_ROYALTY_BPS = 1000;
  */
 export const CREDITS_FUNDING_BPS = 5000;
 
-/** Minimum accrued, unfunded credits (USD) before an ETH→USDG→card deposit is worth its fees. */
+/** Minimum accrued, unfunded credits (USD) before an ETH→USDC→card top-up is worth its fees (also Zentro's minimum). */
 export const MIN_CREDITS_FUNDING_USD = 15;
 
 /** Minimum accrued build budget before the first build starts. */
