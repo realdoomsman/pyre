@@ -36,7 +36,7 @@ Voice: edge-tts `en-US-AndrewMultilingualNeural` (rate +10%). 121 words · 71.7 
 | 00:54.1 | 3.0s | burn-cap | real capture: pyre.fun/burns ledger, chart tilting into the table · demo data |
 | 00:57.1 | 4.2s | dormant-mg | the mark cools to ash at $0 budget; a fee arrives and the heat rises again |
 | 01:01.3 | 6.0s | proof | unit tests · production audit · 1 high + 5 medium review findings fixed (counts filled from the post-cutover run) |
-| 01:07.3 | 4.4s | close | lockup; pyre.fun · Robinhood Chain · @PyreFun; $PYRE launching soon · buybacks are burns, never distributions |
+| 01:07.3 | 4.4s | close | lockup; pyre.fun · Robinhood Chain · @PyreFun; $PYRE live · buybacks are burns, never distributions |
 
 ## spoken forms
 

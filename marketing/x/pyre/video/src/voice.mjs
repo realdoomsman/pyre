@@ -84,7 +84,7 @@ export function buildVoice(opts) {
     "burn-cap": "real capture: pyre.fun/burns ledger, chart tilting into the table · demo data",
     "dormant-mg": "the mark cools to ash at $0 budget; a fee arrives and the heat rises again",
     proof: "unit tests · production audit · 1 high + 5 medium review findings fixed (counts filled from the post-cutover run)",
-    close: "lockup; pyre.fun · Robinhood Chain · @PyreFun; $PYRE launching soon · buybacks are burns, never distributions",
+    close: "lockup; pyre.fun · Robinhood Chain · @PyreFun; $PYRE live · buybacks are burns, never distributions",
   };
   for (const s of tl.shots) lines.push(`| ${clock(s.start)} | ${s.dur.toFixed(1)}s | ${s.id} | ${PICTURE[s.id] ?? ""} |`);
   lines.push("", "## spoken forms", "", "Where the caption and the spoken text differ (numbers, tickers), the spoken form is:", "");
