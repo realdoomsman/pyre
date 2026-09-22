@@ -93,6 +93,9 @@ export const RATE_TIERS = {
 
 export type RateBucket = keyof typeof RATE_TIERS;
 
+/** IP-bucket tier applied when the caller is a verified user: same window, 5× the requests. */
+const SHARED_IP_HEADROOM = (tier: RateTier): RateTier => ({ limit: tier.limit * 5, windowMs: tier.windowMs });
+
 let counter = 0;
 
 export interface RateDecision {
@@ -149,8 +152,7 @@ const applyHeaders = (res: Response, decision: RateDecision, tier: RateTier): vo
  * Consumes one slot or throws 429. Used directly by the app host and the Anthropic proxy, which
  * key on identities (app id, job token) the generic express guard cannot see.
  */
-export async function consumeRate(res: Response, bucket: RateBucket, identity: string): Promise<void> {
-  const tier: RateTier = RATE_TIERS[bucket];
+export async function consumeRate(res: Response, bucket: RateBucket, identity: string, tier: RateTier = RATE_TIERS[bucket]): Promise<void> {
   const decision = await checkRate(bucket, identity, tier);
   applyHeaders(res, decision, tier);
   if (decision.allowed) return;
@@ -232,7 +234,13 @@ export const rateLimitGuard: RequestHandler = (req, res, next) => {
   }
   callerIdentities(req)
     .then(async (identities) => {
-      for (const identity of identities) await consumeRate(res, bucket, identity);
+      // A verified user is charged their own budget; the IP bucket then only has to stop an
+      // unauthenticated flood, so it gets headroom for the many humans behind one NAT/carrier IP.
+      const verified = identities.some((id) => id.startsWith("u:"));
+      for (const identity of identities) {
+        const tier = verified && identity.startsWith("ip:") ? SHARED_IP_HEADROOM(RATE_TIERS[bucket]) : RATE_TIERS[bucket];
+        await consumeRate(res, bucket, identity, tier);
+      }
     })
     .then(() => next())
     .catch(next);
