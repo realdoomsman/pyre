@@ -95,6 +95,7 @@ async function main() {
       console.log(`no app ${slug}`);
       return;
     }
+    await prisma.ledgerEntry.deleteMany({ where: { account: { in: [`BUILD:${existing.id}`, `STAKERS:${existing.id}`, `CONTRIB:${existing.id}`, `CREDITS:${existing.id}`] } } });
     await prisma.app.delete({ where: { slug } });
     // The synthetic owner exists only for fixtures; drop it once it owns nothing else, so a
     // production audit leaves no admin user behind.

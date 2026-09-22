@@ -45,7 +45,7 @@ import { Redis } from "ioredis";
 import { privateKeyToAccount } from "viem/accounts";
 import { parseSiweMessage } from "viem/siwe";
 import { big, dec, prisma } from "@pyre/db";
-import { attestationHash, deriveAppWallet, deriveWallet, getEthPriceUsd, publicClient, treasury } from "@pyre/chain";
+import { attestationHash, deriveAppWallet, deriveWallet, getEthBalance, getEthPriceUsd, publicClient, transferEth, treasury } from "@pyre/chain";
 import {
   AppSort,
   CONTRIBUTOR_MIN_HOLD_BPS,
@@ -265,19 +265,32 @@ const blockedOffline = (reached) => ({ blocked: true, detail: `${reached}; ${off
 /* ───────────────────────────── fixtures ───────────────────────────── */
 
 const createUser = async (label, { admin = false, authWallet = null } = {}) => {
+  // The wallet must be the real custodial derivation of the row's walletIndex: the API signs
+  // custodial actions with `deriveWallet(walletIndex)`, so a made-up address would receive real
+  // ETH (a funded treasury pays a bounty) that the fixture could never spend or return.
   const user = await prisma.user.create({
-    data: {
-      googleSub: `${TAG}:${label}`,
-      wallet: fixtureAddress(Object.keys(state.users).length + 1),
-      authWallet,
-      displayName: `audit ${label}`,
-      isAdmin: admin,
-    },
+    data: { googleSub: `${TAG}:${label}`, authWallet, displayName: `audit ${label}`, isAdmin: admin },
   });
+  user.wallet = deriveWallet(user.walletIndex).address;
+  await prisma.user.update({ where: { id: user.id }, data: { wallet: user.wallet } });
   // A real session token the auth middleware will verify, exactly like a logged-in client's.
   const { signSession } = await import("../dist/lib/session.js");
   user.token = await signSession(user.id, user.tokenVersion);
   onExit(`user ${label}`, async () => {
+    // Anything a funded treasury really paid this fixture (bounty payout) goes back to the treasury.
+    try {
+      const balance = await getEthBalance(user.wallet);
+      if (balance > 0n) {
+        const client = publicClient();
+        const fee = (await client.getGasPrice()) * 21_000n * 2n;
+        if (balance > fee) {
+          const hash = await transferEth(deriveWallet(user.walletIndex).account, treasury().address, balance - fee);
+          console.log(`  refunded ${balance - fee} wei from fixture ${label} to the treasury (${hash})`);
+        }
+      }
+    } catch (err) {
+      console.log(`  could not refund fixture ${label}: ${err instanceof Error ? err.message.split("\n")[0] : err}`);
+    }
     await prisma.vote.deleteMany({ where: { userId: user.id } });
     await prisma.maintainerVote.deleteMany({ where: { userId: user.id } });
     await prisma.purchase.deleteMany({ where: { userId: user.id } });
@@ -1226,6 +1239,7 @@ async function governanceChecks() {
       e.eq(claimed.status, "PAID", "paid status").ok(HASH_RE.test(claimed.payoutTx ?? ""), "payoutTx must be a 0x tx hash").eq(claim.json?.wei, wei.toString(), "dto wei");
       const payoutLedger = await prisma.ledgerEntry.findFirst({ where: { refType: "Payout", refId: bounty.id } });
       e.ok(payoutLedger !== null, "payout must debit TREASURY").ok((payoutLedger?.deltaMicros ?? 0n) < 0n, "payout ledger must be negative");
+      state.bountyPaid = true;
       const done = e.done("");
       return done.ok ? { ok: true, detail: "OPEN → CLAIMED → PAID with a real treasury ETH payout" } : done;
     }
@@ -1247,7 +1261,7 @@ async function governanceChecks() {
     e.eq(listed.status, 200, "list status")
       .ok(mine !== undefined, "the escrowed fixture bounty must be listed")
       .eq(mine?.wei, "20000000000000000", "listed wei is a decimal string")
-      .eq(mine?.status, "OPEN", "listed status")
+      .eq(mine?.status, state.bountyPaid ? "PAID" : "OPEN", "listed status")
       .ok(HASH_RE.test(mine?.escrowTx ?? ""), "listed escrowTx")
       .eq(mine?.author?.id, launcher.id, "listed author");
 
@@ -1282,7 +1296,8 @@ async function governanceChecks() {
     const noWallet = await call(local(`/v1/apps/${state.apps.dormant.slug}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ eth: 0.01 }) });
     e.eq(noWallet.status, 409, "app without a wallet status").eq(noWallet.json?.error, "app_has_no_wallet", "app without a wallet code");
 
-    const funded = await call(local(`/v1/apps/${app.slug}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ eth: 0.01 }) });
+    // The launcher fixture never receives ETH (the holder may hold a real bounty payout by now).
+    const funded = await call(local(`/v1/apps/${app.slug}/topup`), { method: "POST", headers: jsonHeaders(state.users.launcher), body: JSON.stringify({ eth: 0.01 }) });
     const fees = await prisma.feeEvent.count({ where: { appId: app.id, source: "REVIVE_BUY" } });
     e.eq(fees, 0, "no REVIVE_BUY fee event may be written before the transfer settles");
     if (unreachable(funded)) {
