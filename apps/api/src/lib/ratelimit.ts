@@ -58,7 +58,7 @@ export const RATE_TIERS = {
   /** Mutations: queue submissions, votes, bounties, stakes, approvals, maintainer votes. */
   write: { limit: 30, windowMs: 60_000 },
   /** Launch + fork creation. The reputation-tier daily cap in lib/launch.ts still applies on top. */
-  launch: { limit: 10, windowMs: 3_600_000 },
+  launch: { limit: 30, windowMs: 3_600_000 },
   /** Abuse reports — matches the pre-existing 5/hour cap, now shared across instances. */
   report: { limit: 5, windowMs: 3_600_000 },
   read: { limit: 300, windowMs: 60_000 },
