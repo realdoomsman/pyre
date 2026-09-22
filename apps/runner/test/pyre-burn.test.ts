@@ -101,7 +101,6 @@ vi.mock("@pyre/chain", () => ({
   tokenAbi: [],
 }));
 vi.mock("../src/workers/chain/env.js", () => ({ chainWorkerEnv: () => ({ PYRE_TOKEN: "0x1111111111111111111111111111111111111111" }) }));
-vi.mock("../src/workers/chain/publish.js", () => ({ publishGlobal: vi.fn(), publishEvent: vi.fn() }));
 vi.mock("../src/lib/audit.js", () => ({ audit: fx.audit }));
 vi.mock("../src/lib/lock.js", () => ({ withLock: vi.fn() }));
 

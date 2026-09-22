@@ -1,6 +1,6 @@
 import { hasPyreEnv, pyreEnv, pyreUrl } from "./env.js";
-import { NotAuthenticatedError, InsufficientFundsError, PyreError } from "./errors.js";
-import type { AdCreative, HolderStatus, MeResult, PaidResult, PyreUser } from "./types.js";
+import { NotAuthenticatedError, PyreError } from "./errors.js";
+import type { HolderStatus, MeResult, PyreUser } from "./types.js";
 
 interface SendOpts {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -52,13 +52,6 @@ function failure(res: Response, body: unknown): PyreError {
   const record = typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {};
   const message = typeof record.error === "string" ? record.error : `request failed with status ${res.status}`;
   if (res.status === 401) return new NotAuthenticatedError(message);
-  if (res.status === 402) {
-    return new InsufficientFundsError(
-      typeof record.priceUsd === "number" ? record.priceUsd : null,
-      typeof record.balanceUsd === "number" ? record.balanceUsd : null,
-      typeof record.depositAddress === "string" ? record.depositAddress : null,
-    );
-  }
   return new PyreError(message, { status: res.status, code: `http_${res.status}` });
 }
 
@@ -91,7 +84,6 @@ export async function me(): Promise<MeResult> {
       balance: String(holderRecord.balance ?? "0"),
       minHold: String(holderRecord.minHold ?? "0"),
     },
-    purchases: Array.isArray(body.purchases) ? body.purchases.filter((p): p is string => typeof p === "string") : [],
   };
 }
 
@@ -122,8 +114,8 @@ export const kv = {
 };
 
 /**
- * Calls `functions/<name>.js` on the platform. Priced functions charge the caller's custodial
- * wallet in USDG on the server; a `402` (not enough USDG) surfaces as `InsufficientFundsError`.
+ * Calls `functions/<name>.js` on the platform. A function declared with `auth: true` answers
+ * `401` (`NotAuthenticatedError`) for anonymous callers; `holderOnly: true` answers `403`.
  */
 export async function fn<T = unknown>(name: string, input?: unknown): Promise<T> {
   const path = `/_pyre/fn/${encodeURIComponent(name)}`;
@@ -246,48 +238,53 @@ export async function logout(): Promise<void> {
   await json("/_pyre/auth/logout", { method: "POST" });
 }
 
+/** One coin launched on Pyre, as the platform's public feed describes it (prices in USD, live). */
+export interface PyreCoin {
+  id: string;
+  slug: string;
+  name: string;
+  ticker: string;
+  imageUrl: string;
+  tokenAddress: string | null;
+  priceUsd: number;
+  marketCapUsd: number;
+  change24hPct: number;
+  volume24hUsd: number;
+  holdersCount: number;
+  /** 0 = bonding curve, 2 = Uniswap v4 pool. */
+  launchPhase: number;
+  /** Curve progress 0..1. */
+  progress: number;
+  [extra: string]: unknown;
+}
+
+export interface PyreCandle {
+  t: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}
+
+const qs = (params: Record<string, string | number | undefined>): string => {
+  const parts = Object.entries(params)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  return parts.length ? `?${parts.join("&")}` : "";
+};
+
 /**
- * Buys a product from `pyre.manifest.json`. The platform charges the user's custodial wallet in
- * USDG on Robinhood Chain server-side; the browser never signs. A `402` surfaces as
- * `InsufficientFundsError`.
+ * Live data about every coin on Pyre, served from the app's own origin (`/_pyre/coins`), so apps
+ * can build on real prices, market caps and history without keys or CORS.
  */
-export async function charge(productId: string): Promise<PaidResult> {
-  const body = asRecord(await json("/_pyre/checkout", { method: "POST", body: { productId } }), "checkout");
-  const purchase = asRecord(body.purchase, "checkout purchase");
-  if (purchase.status !== "PAID") {
-    throw new PyreError(`purchase is ${String(purchase.status ?? "unconfirmed")}`, { code: "not_paid" });
-  }
-  return {
-    status: "PAID",
-    expiresAt: typeof purchase.expiresAt === "string" ? purchase.expiresAt : null,
-    txHash: typeof purchase.txHash === "string" ? purchase.txHash : "",
-  };
-}
-
-/** Endpoint that serves (and bills) one ad impression. `<AdSlot/>` fetches it. */
-export function adUrl(): string {
-  return pyreUrl("/_pyre/ad");
-}
-
-/** Fetches an ad creative, or `null` when no campaign is available / the slot is off. */
-export async function ad(): Promise<AdCreative | null> {
-  const env = pyreEnv();
-  if (env.adSlot === false) return null;
-  const res = await send("/_pyre/ad");
-  if (res.status === 204 || res.status === 404) return null;
-  const body = await bodyOf(res);
-  if (!res.ok) throw failure(res, body);
-  if (body === null) return null;
-  const record = asRecord(body, "GET /_pyre/ad");
-  if (typeof record.id !== "string" || typeof record.clickUrl !== "string") return null;
-  return {
-    id: record.id,
-    headline: String(record.headline ?? ""),
-    body: String(record.body ?? ""),
-    imageUrl: typeof record.imageUrl === "string" ? record.imageUrl : null,
-    clickUrl: record.clickUrl,
-  };
-}
+export const coins = {
+  list: (opts: { sort?: "trending" | "new" | "heating" | "graduated" | "shipping"; limit?: number; cursor?: string } = {}) =>
+    json(`/_pyre/coins${qs({ sort: opts.sort, limit: opts.limit, cursor: opts.cursor })}`) as Promise<{ items: PyreCoin[]; nextCursor: string | null }>,
+  get: async (slug: string) => ((await json(`/_pyre/coins/${encodeURIComponent(slug)}`)) as { app: PyreCoin }).app,
+  candles: (slug: string, opts: { interval?: "1m" | "5m" | "15m" | "1h" | "4h" | "1d"; limit?: number } = {}) =>
+    json(`/_pyre/coins/${encodeURIComponent(slug)}/candles${qs({ interval: opts.interval, limit: opts.limit })}`) as Promise<{ interval: string; candles: PyreCandle[]; supply: number }>,
+};
 
 let tracked = false;
 
@@ -307,14 +304,12 @@ export const ship = {
   holder,
   kv,
   fn,
+  coins,
   login,
   exchange,
   logout,
-  charge,
-  ad,
-  adUrl,
   track,
 };
 
-// Impression/user counting is a load-time signal; a failure here must never break the app.
+// User counting is a load-time signal; a failure here must never break the app.
 if (hasPyreEnv()) void track().catch(() => undefined);

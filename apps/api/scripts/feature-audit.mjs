@@ -21,7 +21,7 @@
  *
  * Every row it writes is created under a per-run `audit:<runId>` tag and removed again on the way
  * out (LIFO), including the rows Prisma will not cascade: LedgerEntry, JobToken, PyreStake,
- * AdCampaign, AuditLog, WebhookEvent and the Redis keys it touched. The Prisma client is always
+ * AuditLog, WebhookEvent and the Redis keys it touched. The Prisma client is always
  * disconnected — a leaked one holds a whole connection pool.
  *
  * Env:
@@ -59,7 +59,6 @@ import {
   MIN_BUILD_BUDGET_USD,
   MIN_BUYBACK_USD,
   PONS_TOTAL_SUPPLY,
-  REVENUE_SPLIT_BPS,
   ROBINHOOD_CHAIN_ID,
   STAKERS_OF_LAUNCHER_BPS,
   TOKEN_DECIMALS,
@@ -294,7 +293,6 @@ const createUser = async (label, { admin = false, authWallet = null } = {}) => {
     }
     await prisma.vote.deleteMany({ where: { userId: user.id } });
     await prisma.maintainerVote.deleteMany({ where: { userId: user.id } });
-    await prisma.purchase.deleteMany({ where: { userId: user.id } });
     await prisma.contributor.deleteMany({ where: { userId: user.id } });
     await prisma.appUserSession.deleteMany({ where: { userId: user.id } });
     await prisma.promptQueueItem.deleteMany({ where: { authorId: user.id } });
@@ -310,7 +308,7 @@ const createUser = async (label, { admin = false, authWallet = null } = {}) => {
 
 /**
  * A fixture app. `data` overrides anything on the row; the teardown also removes what Prisma will
- * not cascade (ledger rows, job tokens, stakes, ad campaigns, audit log, Redis visitor set).
+ * not cascade (ledger rows, job tokens, stakes, audit log, Redis visitor set).
  */
 const createApp = async (label, data = {}) => {
   const app = await prisma.app.create({
@@ -329,8 +327,6 @@ const createApp = async (label, data = {}) => {
     await prisma.ledgerEntry.deleteMany({ where: { account: { in: [`BUILD:${app.id}`, `STAKERS:${app.id}`, `CONTRIB:${app.id}`, `CREDITS:${app.id}`] } } });
     await prisma.jobToken.deleteMany({ where: { appId: app.id } });
     await prisma.pyreStake.deleteMany({ where: { appId: app.id } });
-    await prisma.adCampaign.deleteMany({ where: { advertiserAppId: app.id } });
-    await prisma.adImpression.deleteMany({ where: { advertiserAppId: app.id } });
     await prisma.auditLog.deleteMany({ where: { targetId: app.id } });
     await prisma.report.deleteMany({ where: { appId: app.id } });
     if (state.redis) await state.redis.del(`app:${app.id}:visitors`);
@@ -354,10 +350,8 @@ const AUDIT_SPEC = {
   title: "Audit Rig",
   oneLiner: "Synthetic launch used by the platform feature audit.",
   whatItDoes: "Nothing: it exists so the launch state machine can be exercised end to end.",
-  whoPays: "nobody, this is an internal verification fixture",
   mvp: ["exist", "be approved", "be deleted"],
   outOfScope: [],
-  monetization: { model: "ONE_TIME", priceUsd: 1, priceDescription: "n/a" },
   holderTier: { enabled: false, minHoldTokens: null, perks: [] },
   template: "AGENT_API",
   risks: [],
@@ -368,15 +362,9 @@ const RIG_MANIFEST = {
   version: "1.0.0",
   entry: "index.html",
   functions: [
-    { name: "counter", priceUsd: 0, auth: false, holderOnly: false },
-    { name: "paid", priceUsd: 0.25, auth: false, holderOnly: false },
-    { name: "private", priceUsd: 0, auth: true, holderOnly: false },
+    { name: "counter", auth: false, holderOnly: false },
+    { name: "private", auth: true, holderOnly: false },
   ],
-  products: [
-    { id: "pro", name: "Pro unlock", priceUsd: 1, kind: "ONE_TIME" },
-    { id: "sub", name: "Monthly", priceUsd: 2, kind: "SUBSCRIPTION_MONTHLY" },
-  ],
-  adSlot: true,
   holderTier: { minHoldTokens: 0 },
 };
 
@@ -393,7 +381,6 @@ const RIG_FILES = [
 `,
     contentType: "text/javascript; charset=utf-8",
   },
-  { path: "functions/paid.js", body: "export default async function handler() { return { paid: true }; }\n", contentType: "text/javascript; charset=utf-8" },
   { path: "functions/private.js", body: "export default async function handler(i, ship) { return { user: ship.user.id }; }\n", contentType: "text/javascript; charset=utf-8" },
   { path: "pyre.manifest.json", body: JSON.stringify(RIG_MANIFEST), contentType: "application/json; charset=utf-8" },
 ];
@@ -640,7 +627,6 @@ async function launchChecks() {
 
 async function moneyChecks() {
   section("money");
-  const { recordRevenue } = await import("../dist/host/revenue.js");
   const parent = state.apps.feeParent;
   const fork = state.apps.feeFork;
 
@@ -794,150 +780,92 @@ async function moneyChecks() {
       .done(`upstream $${(Number(split.upstreamMicros) / 1e6).toFixed(4)} routed to the parent's budget and ledger`);
   });
 
-  let revenueIds = [];
-  await check("revenue_recorded", async () => {
-    const before = await prisma.app.findUnique({ where: { id: parent.id }, select: { revenueMicros: true, pendingRevenueMicros: true, firstRevenueAt: true } });
-    const amounts = [4_000_000n, 2_500_000n];
-    for (const usdMicros of amounts) {
-      const ev = await recordRevenue({ app: { id: parent.id, slug: parent.slug }, source: "CHECKOUT", usdMicros, payer: state.users.holder.wallet, reference: `${TAG}-rev-${usdMicros}`, label: `${TAG} revenue` });
-      revenueIds.push(ev.id);
-    }
-    onExit("revenue events", async () => {
-      await prisma.ledgerEntry.deleteMany({ where: { refId: { in: revenueIds } } });
-      await prisma.revenueEvent.deleteMany({ where: { id: { in: revenueIds } } });
+  let pyreBurn = null;
+  await check("pyre_burn_status_machine", async () => {
+    // The PYRE_TOKEN ledger accrues the 25% fee share; `openPyreBurn` consumes the whole balance
+    // into one PENDING row and debits the ledger in the same transaction. Replayed here with fixture
+    // credits so the row walks PENDING → SWAPPED → BURNED with the same guarded updates the worker uses.
+    const credits = [4_000_000n, 2_500_000n];
+    const creditRows = await prisma.$transaction(credits.map((deltaMicros, i) => prisma.ledgerEntry.create({ data: { account: "PYRE_TOKEN", deltaMicros, refType: "FeeEvent", refId: `${TAG}-pyre-${i}`, memo: `${TAG} pyre share` } })));
+    onExit("pyre credits", async () => {
+      await prisma.ledgerEntry.deleteMany({ where: { id: { in: creditRows.map((r) => r.id) } } });
     });
-    const total = amounts.reduce((a, b) => a + b, 0n);
-    const after = await prisma.app.findUnique({ where: { id: parent.id }, select: { revenueMicros: true, pendingRevenueMicros: true, firstRevenueAt: true } });
-    const ledger = await prisma.ledgerEntry.findMany({ where: { account: "TREASURY", refId: { in: revenueIds } } });
-    return expect()
-      .eq(after.revenueMicros - before.revenueMicros, total, "lifetime revenue")
-      .eq(after.pendingRevenueMicros - before.pendingRevenueMicros, total, "pending revenue")
-      .ok(after.firstRevenueAt !== null, "firstRevenueAt must be stamped")
-      .eq(ledger.length, 2, "TREASURY ledger rows")
-      .eq(ledger.reduce((a, r) => a + r.deltaMicros, 0n), total, "TREASURY credit total")
-      .done(`$${(Number(total) / 1e6).toFixed(2)} recorded across ${revenueIds.length} events`);
-  });
-
-  let buyback = null;
-  await check("buyback_status_machine", async () => {
-    const events = await prisma.revenueEvent.findMany({ where: { appId: parent.id, buybackId: null }, select: { id: true, usdMicros: true } });
-    const revenueMicros = events.reduce((a, e) => a + e.usdMicros, 0n);
-    if (revenueMicros < BigInt(MIN_BUYBACK_USD) * MICROS) return { ok: false, detail: `fixture revenue ${revenueMicros} below the $${MIN_BUYBACK_USD} minimum` };
-    const ids = events.map((e) => e.id);
-    const buybackMicros = bps(revenueMicros, REVENUE_SPLIT_BPS.BUYBACK_BURN);
-    const pyreMicros = bps(revenueMicros, REVENUE_SPLIT_BPS.PYRE_TOKEN);
-    const opsMicros = revenueMicros - buybackMicros - pyreMicros;
-    const attestHash = attestationHash(ids);
-    const ethWei = 2_000_000_000_000_000n; // 0.002 ETH spent on the buy
+    const usdMicros = credits.reduce((a, b) => a + b, 0n);
+    if (usdMicros < BigInt(MIN_BUYBACK_USD) * MICROS) return { ok: false, detail: `fixture credits ${usdMicros} below the $${MIN_BUYBACK_USD} minimum` };
+    const attestHash = attestationHash(creditRows.map((r) => r.id));
+    const ethWei = 2_000_000_000_000_000n; // 0.002 ETH quoted for the buy
     const bought = 1_234n * UNIT;
+    const balanceBefore = (await prisma.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN" }, _sum: { deltaMicros: true } }))._sum.deltaMicros ?? 0n;
 
-    buyback = await prisma.$transaction(async (tx) => {
-      const row = await tx.buyback.create({ data: { appId: parent.id, status: "PENDING", revenueMicros, ethWei: dec(ethWei), pyreMicros, opsMicros, attestHash } });
-      await tx.revenueEvent.updateMany({ where: { id: { in: ids } }, data: { buybackId: row.id } });
+    pyreBurn = await prisma.$transaction(async (tx) => {
+      const row = await tx.pyreBurn.create({ data: { status: "PENDING", usdMicros, ethWei: dec(ethWei), attestHash } });
+      await tx.ledgerEntry.create({ data: { account: "PYRE_TOKEN", deltaMicros: -usdMicros, refType: "PyreBurn", refId: row.id, memo: `${TAG} $PYRE buyback` } });
       return row;
     });
-    onExit("buyback", async () => {
-      await prisma.revenueEvent.updateMany({ where: { buybackId: buyback.id }, data: { buybackId: null } });
-      await prisma.ledgerEntry.deleteMany({ where: { refId: buyback.id } });
-      await prisma.buyback.delete({ where: { id: buyback.id } }).catch(() => {});
+    onExit("pyre burn", async () => {
+      await prisma.ledgerEntry.deleteMany({ where: { refId: pyreBurn.id } });
+      await prisma.pyreBurn.delete({ where: { id: pyreBurn.id } }).catch(() => {});
     });
-    state.buybackId = buyback.id;
+    state.pyreBurnId = pyreBurn.id;
 
+    const balanceAfter = (await prisma.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN" }, _sum: { deltaMicros: true } }))._sum.deltaMicros ?? 0n;
     const e = expect()
-      .eq(buyback.status, "PENDING", "opened status")
-      .eq(buyback.revenueMicros, revenueMicros, "attested revenue")
-      .eq(buyback.pyreMicros, pyreMicros, `$PYRE share (${REVENUE_SPLIT_BPS.PYRE_TOKEN}bps)`)
-      .eq(buyback.opsMicros, opsMicros, "ops share absorbs rounding")
-      .eq(buybackMicros + pyreMicros + opsMicros, revenueMicros, "revenue split conservation")
-      .eq(buyback.attestHash, attestHash, "attestation hash");
+      .eq(pyreBurn.status, "PENDING", "opened status")
+      .eq(pyreBurn.usdMicros, usdMicros, "ledger balance consumed")
+      .eq(balanceBefore - balanceAfter, usdMicros, "PYRE_TOKEN debited with the PENDING row")
+      .eq(pyreBurn.attestHash, attestHash, "attestation hash");
 
-    // PENDING → SWAPPED
-    const swapped = await prisma.buyback.update({ where: { id: buyback.id }, data: { status: "SWAPPED", swapTx: fakeTxHash(), tokensBought: dec(bought), error: null } });
+    // PENDING → SWAPPING → SWAPPED (the CAS the worker uses to claim the buy)
+    const claimed = await prisma.pyreBurn.updateMany({ where: { id: pyreBurn.id, status: "PENDING" }, data: { status: "SWAPPING" } });
+    e.eq(claimed.count, 1, "PENDING → SWAPPING claim");
+    const swapped = await prisma.pyreBurn.update({ where: { id: pyreBurn.id }, data: { status: "SWAPPED", swapTx: fakeTxHash(), tokensBought: dec(bought), error: null } });
     e.eq(swapped.status, "SWAPPED", "swap transition").eq(big(swapped.tokensBought), bought, "tokens bought");
 
-    // SWAPPED → BURNED, with the same counter and ledger settlement burnStage performs
-    const pendingBefore = (await prisma.app.findUnique({ where: { id: parent.id }, select: { pendingRevenueMicros: true } })).pendingRevenueMicros;
-    await prisma.$transaction(async (tx) => {
-      await tx.buyback.update({
-        where: { id: buyback.id },
-        data: { status: "BURNED", burnTx: fakeTxHash(), attestTx: fakeTxHash(), tokensBurned: dec(bought), burnedUnits: dec(bought), completedAt: new Date(), error: null },
-      });
-      const current = await tx.app.findUniqueOrThrow({ where: { id: parent.id }, select: { pendingRevenueMicros: true } });
-      const remaining = current.pendingRevenueMicros - revenueMicros;
-      await tx.app.update({
-        where: { id: parent.id },
-        data: { buybackWei: { increment: dec(ethWei) }, burnedTokens: { increment: dec(bought) }, pendingRevenueMicros: remaining > 0n ? remaining : 0n },
-      });
-      await tx.ledgerEntry.createMany({
-        data: [
-          { account: "TREASURY", deltaMicros: -buybackMicros, refType: "Buyback", refId: buyback.id, memo: `${TAG} buyback` },
-          { account: "PYRE_TOKEN", deltaMicros: pyreMicros, refType: "Buyback", refId: buyback.id, memo: `${TAG} pyre share` },
-          { account: "OPS", deltaMicros: opsMicros, refType: "Buyback", refId: buyback.id, memo: `${TAG} ops share` },
-        ],
-      });
+    // SWAPPED → BURNED
+    const burned = await prisma.pyreBurn.update({
+      where: { id: pyreBurn.id },
+      data: { status: "BURNED", burnTx: fakeTxHash(), attestTx: fakeTxHash(), tokensBurned: dec(bought), burnedUnits: dec(bought), completedAt: new Date(), error: null },
     });
-    const burned = await prisma.buyback.findUnique({ where: { id: buyback.id } });
-    const app = await prisma.app.findUnique({ where: { id: parent.id }, select: { pendingRevenueMicros: true, burnedTokens: true, buybackWei: true } });
     e.eq(burned.status, "BURNED", "burn transition")
       .ok(burned.completedAt !== null, "completedAt must be stamped")
       .eq(big(burned.tokensBurned), bought, "tokens burned")
-      .eq(big(burned.burnedUnits), bought, "on-chain burned units")
-      .eq(app.pendingRevenueMicros, pendingBefore - revenueMicros > 0n ? pendingBefore - revenueMicros : 0n, "pending revenue drained")
-      .eq(big(app.burnedTokens), bought, "app burned supply")
-      .eq(big(app.buybackWei), ethWei, "app buybackWei counter");
+      .eq(big(burned.burnedUnits), bought, "on-chain burned units");
 
     // Illegal transitions: the guarded updates every stage uses must match zero rows on a BURNED row.
-    const reSwap = await prisma.buyback.updateMany({ where: { id: buyback.id, status: "PENDING" }, data: { status: "SWAPPED" } });
-    const reBurn = await prisma.buyback.updateMany({ where: { id: buyback.id, status: "SWAPPED" }, data: { status: "BURNED" } });
-    const reopen = await prisma.buyback.updateMany({ where: { id: buyback.id, status: { in: ["PENDING", "SWAPPED"] } }, data: { status: "FAILED" } });
-    e.eq(reSwap.count, 0, "BURNED cannot re-enter SWAPPED").eq(reBurn.count, 0, "BURNED cannot re-burn").eq(reopen.count, 0, "BURNED cannot fail");
-
-    const attached = await prisma.revenueEvent.count({ where: { buybackId: buyback.id } });
-    e.eq(attached, ids.length, "revenue events stay attached");
-    return e.done(`PENDING → SWAPPED → BURNED on $${(Number(revenueMicros) / 1e6).toFixed(2)}; burn $${(Number(buybackMicros) / 1e6).toFixed(2)} / pyre $${(Number(pyreMicros) / 1e6).toFixed(2)} / ops $${(Number(opsMicros) / 1e6).toFixed(2)}; 3 illegal transitions refused`);
+    const reClaim = await prisma.pyreBurn.updateMany({ where: { id: pyreBurn.id, status: "PENDING" }, data: { status: "SWAPPING" } });
+    const reBurn = await prisma.pyreBurn.updateMany({ where: { id: pyreBurn.id, status: "SWAPPED" }, data: { status: "BURNED" } });
+    const reopen = await prisma.pyreBurn.updateMany({ where: { id: pyreBurn.id, status: { in: ["PENDING", "SWAPPED"] } }, data: { status: "FAILED" } });
+    e.eq(reClaim.count, 0, "BURNED cannot re-enter SWAPPING").eq(reBurn.count, 0, "BURNED cannot re-burn").eq(reopen.count, 0, "BURNED cannot fail");
+    return e.done(`PENDING → SWAPPING → SWAPPED → BURNED on $${(Number(usdMicros) / 1e6).toFixed(2)} of PYRE_TOKEN; 3 illegal transitions refused`);
   });
 
-  await check("revenue_attestation", async () => {
+  await check("burn_attestation", async () => {
     const e = expect();
     // Order independence is the property the memo relies on.
     const a = ["c", "a", "b"];
     e.eq(attestationHash(a), attestationHash([...a].reverse()), "hash must be order independent")
       .ok(attestationHash(a) !== attestationHash(["a", "b"]), "hash must depend on the full set")
       .ok(HASH_RE.test(attestationHash([])), `hash is 0x-prefixed sha256 hex (got ${attestationHash([])})`);
-    // Every stored buyback must still be recomputable from the revenue it claims.
-    const rows = await prisma.buyback.findMany({ select: { id: true, appId: true, attestHash: true, revenueEvents: { select: { id: true, usdMicros: true } } } });
-    let checked = 0;
-    let mismatched = 0;
-    for (const row of rows) {
-      if (row.revenueEvents.length === 0) continue;
-      checked++;
-      if (attestationHash(row.revenueEvents.map((r) => r.id)) !== row.attestHash) mismatched++;
-    }
-    e.eq(mismatched, 0, `${mismatched}/${checked} stored buybacks do not hash to their attached revenue`);
-    return e.done(`order independent; ${checked} stored buyback${checked === 1 ? "" : "s"} recompute to their stored attestation`);
+    // Every stored $PYRE burn carries a well-formed attestation hash.
+    const rows = await prisma.pyreBurn.findMany({ select: { id: true, attestHash: true } });
+    const malformed = rows.filter((r) => !HASH_RE.test(r.attestHash)).length;
+    e.eq(malformed, 0, `${malformed}/${rows.length} stored burns carry a malformed attestation hash`);
+    return e.done(`order independent; ${rows.length} stored burn${rows.length === 1 ? "" : "s"} carry sha256 attestations`);
   });
 
   await check("ledger_invariants_global", async () => {
-    // Exactly the three per-app invariants plus the fee-split invariant the reconcile LEDGER check uses.
+    // Exactly the per-app invariant plus the fee-split invariant the reconcile LEDGER check uses.
     const TOLERANCE = 1_000n;
     const abs = (v) => (v < 0n ? -v : v);
-    const apps = await prisma.app.findMany({ select: { id: true, slug: true, budgetMicros: true, revenueMicros: true, pendingRevenueMicros: true } });
+    const apps = await prisma.app.findMany({ select: { id: true, slug: true, budgetMicros: true } });
     const buildLedger = await prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { startsWith: "BUILD:" } }, _sum: { deltaMicros: true } });
     const ledgerByApp = Object.fromEntries(buildLedger.map((r) => [r.account.slice("BUILD:".length), r._sum.deltaMicros ?? 0n]));
-    const buybacks = await prisma.buyback.groupBy({ by: ["appId"], where: { status: { not: "FAILED" } }, _sum: { revenueMicros: true } });
-    const attestedByApp = Object.fromEntries(buybacks.map((r) => [r.appId, r._sum.revenueMicros ?? 0n]));
-    const unattested = await prisma.revenueEvent.groupBy({ by: ["appId"], where: { buybackId: null }, _sum: { usdMicros: true } });
-    const unattestedByApp = Object.fromEntries(unattested.map((r) => [r.appId, r._sum.usdMicros ?? 0n]));
 
     const findings = [];
     for (const app of apps) {
       const ledgerSum = ledgerByApp[app.id] ?? 0n;
       const budgetDrift = app.budgetMicros === 0n ? (ledgerSum > TOLERANCE ? ledgerSum : 0n) : ledgerSum - app.budgetMicros;
       if (abs(budgetDrift) > TOLERANCE) findings.push(`BUILD_LEDGER_DRIFT ${app.slug} ${budgetDrift}`);
-      const attested = attestedByApp[app.id] ?? 0n;
-      if (attested > app.revenueMicros + TOLERANCE) findings.push(`BUYBACK_EXCEEDS_REVENUE ${app.slug}`);
-      const pending = unattestedByApp[app.id] ?? 0n;
-      if (abs(pending - app.pendingRevenueMicros) > TOLERANCE) findings.push(`PENDING_REVENUE_DRIFT ${app.slug} ${pending - app.pendingRevenueMicros}`);
     }
     const fees = await prisma.feeEvent.aggregate({ _sum: { usdMicros: true, buildMicros: true, creditsMicros: true, pyreMicros: true, launcherMicros: true, upstreamMicros: true }, _count: true });
     const stakerLedger = await prisma.ledgerEntry.aggregate({ where: { account: { startsWith: "STAKERS:" }, refType: "FeeEvent" }, _sum: { deltaMicros: true } });
@@ -1008,12 +936,12 @@ async function gatingChecks() {
 
   await check("dormant_at_zero_budget", async () => {
     const app = state.apps.dormant;
-    const dormantDue = (a) => a.budgetMicros < MIN_ITER_MICROS && a.pendingRevenueMicros === 0n;
+    const dormantDue = (a) => a.budgetMicros < MIN_ITER_MICROS;
     const e = expect()
-      .ok(dormantDue({ budgetMicros: 0n, pendingRevenueMicros: 0n }), "zero budget and no pending revenue must go dormant")
-      .ok(!dormantDue({ budgetMicros: 0n, pendingRevenueMicros: 1n }), "pending revenue must defer dormancy")
-      .ok(!dormantDue({ budgetMicros: MIN_ITER_MICROS, pendingRevenueMicros: 0n }), "a funded app must stay live");
-    await prisma.app.update({ where: { id: app.id }, data: { status: "DORMANT", budgetMicros: 0n, pendingRevenueMicros: 0n } });
+      .ok(dormantDue({ budgetMicros: 0n }), "zero budget must go dormant")
+      .ok(dormantDue({ budgetMicros: MIN_ITER_MICROS - 1n }), "a budget below the iteration floor must go dormant")
+      .ok(!dormantDue({ budgetMicros: MIN_ITER_MICROS }), "a funded app must stay live");
+    await prisma.app.update({ where: { id: app.id }, data: { status: "DORMANT", budgetMicros: 0n } });
     const row = await prisma.app.findUnique({ where: { id: app.id }, select: { status: true } });
     e.eq(row.status, "DORMANT", "transition applied");
     // Invariant the reviver maintains: nothing sits DORMANT while it can afford an iteration.
@@ -1452,8 +1380,8 @@ async function platformChecks() {
     if (unreachable(res)) return blockedOffline("stats reached the ETH oracle / $PYRE snapshot");
     const j = res.json ?? {};
     const e = expect().eq(res.status, 200, "http status");
-    for (const k of ["appsLive", "appsBuilding", "appsTotal", "buybacksCount"]) e.ok(Number.isInteger(j[k]) && j[k] >= 0, `${k} is a non-negative int`);
-    for (const k of ["revenueTotalMicros", "revenue24hMicros", "revenue30dMicros", "feesTotalWei", "burnedEthWei", "burnedEth24hWei", "burnedEth30dWei"]) e.bigint(j[k], k);
+    for (const k of ["appsLive", "appsBuilding", "appsTotal", "pyreBurnsCount"]) e.ok(Number.isInteger(j[k]) && j[k] >= 0, `${k} is a non-negative int`);
+    for (const k of ["feesTotalWei", "burnedEthWei", "burnedEth24hWei", "burnedEth30dWei"]) e.bigint(j[k], k);
     e.ok(j.counts && typeof j.counts === "object", "counts object");
     for (const sort of AppSort.options) e.ok(Number.isInteger(j.counts?.[sort]), `counts.${sort} is an int`);
     e.ok(typeof j.agentHoursToday === "number" && j.agentHoursToday >= 0, "agentHoursToday")
@@ -1461,7 +1389,7 @@ async function platformChecks() {
       .ok(j.pyreToken === null || (ADDRESS_RE.test(j.pyreToken?.address ?? "") && BIGINT_RE.test(j.pyreToken?.burnedUnits ?? "")), "pyreToken is null or {address, burnedUnits…}")
       .ok(ISO_RE.test(j.updatedAt ?? ""), "updatedAt")
       .ok(BigInt(j.burnedEth24hWei ?? 0) <= BigInt(j.burnedEth30dWei ?? 0), "24h burn ≤ 30d burn")
-      .ok(BigInt(j.revenue24hMicros ?? 0) <= BigInt(j.revenue30dMicros ?? 0), "24h revenue ≤ 30d revenue");
+      .ok(BigInt(j.burnedEth30dWei ?? 0) <= BigInt(j.burnedEthWei ?? 0), "30d burn ≤ lifetime burn");
     return e.done(`${j.appsTotal} public apps (${j.appsLive} live), counts{${AppSort.options.map((s) => `${s}:${j.counts?.[s]}`).join(" ")}}, burned ${j.burnedEthWei} wei, ETH $${j.ethPriceUsd}, pyreToken ${j.pyreToken ? "launched" : "null"}`);
   });
 
@@ -1479,8 +1407,6 @@ async function platformChecks() {
         e.ok(item.status === "LIVE" || item.status === "DORMANT", `sort=${sort} ${item.slug}: public status`)
           .address(item.tokenAddress, `sort=${sort} ${item.slug}: tokenAddress`)
           .bigint(item.feesWei, `sort=${sort} ${item.slug}: feesWei`)
-          .bigint(item.buybackWei, `sort=${sort} ${item.slug}: buybackWei`)
-          .bigint(item.burnedUnits, `sort=${sort} ${item.slug}: burnedUnits`)
           .ok(typeof item.heat === "number" && item.heat >= 0 && item.heat <= 1, `sort=${sort} ${item.slug}: heat in [0,1]`)
           .ok(typeof item.progress === "number", `sort=${sort} ${item.slug}: progress`)
           .ok(item.phase !== undefined && item.launcher && typeof item.launcher.id === "string", `sort=${sort} ${item.slug}: phase + launcher`);
@@ -1497,7 +1423,7 @@ async function platformChecks() {
       .ok(search.json?.items?.some((i) => i.id === rig.id && i.tokenAddress === rig.tokenAddress), "search must find the tokenised fixture app");
     const hidden = await call(`${API}/v1/apps?q=${encodeURIComponent(state.apps.gate.slug)}`);
     e.eq(hidden.json?.items?.length ?? -1, 0, "an app without a token must not be public");
-    return e.done(`7 sorts → 200 {items,nextCursor} (${seen.join(" ")}); bogus sort → 400; search finds the fixture, tokenless app hidden`);
+    return e.done(`${AppSort.options.length} sorts → 200 {items,nextCursor} (${seen.join(" ")}); bogus sort → 400; search finds the fixture, tokenless app hidden`);
   });
 
   await check("burns_ledger", async () => {
@@ -1508,33 +1434,31 @@ async function platformChecks() {
       .ok(Array.isArray(j.items) && j.items.length <= 5, "items array within limit")
       .ok(j.nextCursor === null || typeof j.nextCursor === "string", "nextCursor")
       .bigint(j.totals?.ethWei, "totals.ethWei")
-      .bigint(j.totals?.revenueMicros, "totals.revenueMicros")
-      .ok(Number.isInteger(j.totals?.buybacks) && j.totals.buybacks >= (j.items?.length ?? 0), "totals.buybacks covers the page")
-      .ok(Number.isInteger(j.totals?.coins) && j.totals.coins <= j.totals?.buybacks, "totals.coins ≤ totals.buybacks");
+      .bigint(j.totals?.usdMicros, "totals.usdMicros")
+      .ok(Number.isInteger(j.totals?.burns) && j.totals.burns >= (j.items?.length ?? 0), "totals.burns covers the page");
     const items = j.items ?? [];
     for (const [i, row] of items.entries()) {
-      e.eq(row.status, "BURNED", `row ${i} status`)
-        .bigint(row.ethWei, `row ${i} ethWei`)
-        .bigint(row.revenueMicros, `row ${i} revenueMicros`)
+      e.bigint(row.ethWei, `row ${i} ethWei`)
+        .bigint(row.usdMicros, `row ${i} usdMicros`)
         .bigint(row.cumulativeEthWei, `row ${i} cumulativeEthWei`)
-        .bigint(row.cumulativeRevenueMicros, `row ${i} cumulativeRevenueMicros`)
-        .bigint(row.tokensBurnedUnits, `row ${i} tokensBurnedUnits`)
+        .bigint(row.cumulativeUsdMicros, `row ${i} cumulativeUsdMicros`)
+        .bigint(row.burnedUnits, `row ${i} burnedUnits`)
         .ok(typeof row.burnedPctOfSupply === "number", `row ${i} burnedPctOfSupply`)
-        .ok(row.completedAt !== null, `row ${i} completedAt`)
-        .ok(typeof row.slug === "string" && typeof row.ticker === "string", `row ${i} slug/ticker`);
+        .ok(ISO_RE.test(row.createdAt ?? ""), `row ${i} createdAt`)
+        .ok(HASH_RE.test(row.attestHash ?? ""), `row ${i} attestHash`);
       const next = items[i + 1];
       if (next) {
         e.eq(BigInt(row.cumulativeEthWei) - BigInt(next.cumulativeEthWei), BigInt(row.ethWei), `row ${i} cumulative ETH steps by its own burn`)
-          .eq(BigInt(row.cumulativeRevenueMicros) - BigInt(next.cumulativeRevenueMicros), BigInt(row.revenueMicros), `row ${i} cumulative revenue steps by its own attestation`);
+          .eq(BigInt(row.cumulativeUsdMicros) - BigInt(next.cumulativeUsdMicros), BigInt(row.usdMicros), `row ${i} cumulative USD steps by its own burn`);
       }
     }
     if (items.length > 0) {
       e.eq(items[0].cumulativeEthWei, j.totals.ethWei, "newest row's running total equals totals.ethWei")
-        .eq(items[0].cumulativeRevenueMicros, j.totals.revenueMicros, "newest row's running total equals totals.revenueMicros");
+        .eq(items[0].cumulativeUsdMicros, j.totals.usdMicros, "newest row's running total equals totals.usdMicros");
     }
-    const fixture = items.find((r) => r.id === state.buybackId);
-    if (fixture) e.eq(fixture.ethWei, "2000000000000000", "fixture burn ethWei").eq(fixture.tokensBurnedUnits, (1_234n * UNIT).toString(), "fixture burnedUnits");
-    return e.done(`${j.totals?.buybacks} burns across ${j.totals?.coins} coins, ${j.totals?.ethWei} wei total; page of ${items.length} with exact running totals${fixture ? " (this run's burn on top)" : ""}`);
+    const fixture = items.find((r) => r.id === state.pyreBurnId);
+    if (fixture) e.eq(fixture.ethWei, "2000000000000000", "fixture burn ethWei").eq(fixture.burnedUnits, (1_234n * UNIT).toString(), "fixture burnedUnits");
+    return e.done(`${j.totals?.burns} $PYRE burns, ${j.totals?.ethWei} wei total; page of ${items.length} with exact running totals${fixture ? " (this run's burn on top)" : ""}`);
   });
 
   await check("pyre_page", async () => {
@@ -1550,7 +1474,6 @@ async function platformChecks() {
       .bigint(j.ledger?.burnedMicros, "ledger.burnedMicros")
       .bigint(j.ledger?.pendingMicros, "ledger.pendingMicros")
       .eq(j.feeShareBps, FEE_SPLIT_BPS.PYRE_TOKEN, "feeShareBps")
-      .eq(j.revenueShareBps, REVENUE_SPLIT_BPS.PYRE_TOKEN, "revenueShareBps")
       .bigint(j.stakes?.totalUnits, "stakes.totalUnits")
       .ok(Number.isInteger(j.stakes?.stakers), "stakes.stakers")
       .bigint(j.stakes?.earnedMicros, "stakes.earnedMicros")
@@ -1645,7 +1568,7 @@ async function platformChecks() {
       .bigint(j.compute?.todayMicros, "compute.todayMicros")
       .bigint(j.money?.feesTotalWei, "money.feesTotalWei")
       .bigint(j.money?.fees24hWei, "money.fees24hWei")
-      .bigint(j.money?.revenueTotalMicros, "money.revenueTotalMicros")
+      .ok(Number.isInteger(j.money?.pyreBurnsPending) && Number.isInteger(j.money?.pyreBurnsStuck), "money.pyreBurnsPending/pyreBurnsStuck")
       .ok(j.money?.ledger && typeof j.money.ledger === "object" && Object.values(j.money.ledger).every((v) => /^-?\d+$/.test(v)), "money.ledger balances are bigint strings")
       .ok(Number.isInteger(j.flags?.open) && Number.isInteger(j.flags?.reportsOpen), "flags")
       .ok(j.settings && typeof j.settings === "object", "settings")
@@ -1713,18 +1636,15 @@ async function hostingChecks() {
       .eq(payload?.basePath, `/a/${DEMO_SLUG}`, "basePath")
       .eq(payload?.apiOrigin, PUBLIC_ORIGIN, "apiOrigin")
       .eq(payload?.chainId, ROBINHOOD_CHAIN_ID, "chainId is Robinhood Chain")
-      .address(payload?.usdg, "usdg token address")
-      .address(payload?.treasury, "treasury address")
-      .eq(payload?.treasury, state.treasury, "treasury is the platform treasury")
       .ok(payload?.tokenAddress === "" || ADDRESS_RE.test(payload?.tokenAddress ?? ""), "tokenAddress is empty or 0x")
       .eq(payload?.tokenAddress, state.demo?.tokenAddress ?? "", "tokenAddress mirrors the app row")
       .ok(typeof payload?.explorerUrl === "string" && payload.explorerUrl.startsWith("https://"), "explorerUrl")
       .ok(typeof payload?.googleClientId === "string" && payload.googleClientId.length > 0, "googleClientId")
       .ok(Number(payload?.version) > 0, "version must be the live deployment")
-      .ok(Array.isArray(payload?.products) && Array.isArray(payload?.functions), "products/functions arrays")
+      .ok(Array.isArray(payload?.functions), "functions array")
       .ok(res.text.includes("Object.freeze(window.__PYRE__)"), "payload must be frozen")
       .ok(!res.text.includes("</script>"), "payload must escape any closing script tag")
-      .done(`v${payload?.version}, chain ${payload?.chainId}, usdg ${payload?.usdg?.slice(0, 10)}…, ${payload?.functions?.length ?? 0} fn / ${payload?.products?.length ?? 0} products, basePath ${payload?.basePath}`);
+      .done(`v${payload?.version}, chain ${payload?.chainId}, ${payload?.functions?.length ?? 0} fn, holderMin ${payload?.holderMin}, basePath ${payload?.basePath}`);
   });
 
   await check("fn_hello_with_kv", async () => {
@@ -1753,7 +1673,6 @@ async function hostingChecks() {
       .eq(anon.status, 200, "anonymous status")
       .eq(anon.json?.user, null, "anonymous user")
       .ok(anon.json?.holder && typeof anon.json.holder.isHolder === "boolean", "holder info")
-      .ok(Array.isArray(anon.json?.purchases), "purchases array")
       .eq(authed.status, 200, "authed status")
       .eq(authed.json?.user?.id, state.users.holder.id, "session user")
       .eq(authed.json?.holder?.minHold, 100000, "holder tier from the manifest")
@@ -1761,111 +1680,28 @@ async function hostingChecks() {
       .done(`anonymous → null user; app-bound cookie → ${state.users.holder.id.slice(0, 8)}…; cross-app cookie rejected`);
   });
 
-  await check("checkout_funding_gate", async () => {
-    // /_pyre/checkout is one-shot and server-signs the USDG transfer (EIP-3009) from the caller's
-    // custodial wallet — no client-built transaction and no confirm step. The audit wallet holds
-    // nothing, so a signed-in caller hits the 402 funding gate before any purchase row is written;
-    // the auth and unknown-product guards still fully assert.
+  await check("fn_auth_gate", async () => {
+    // `auth: true` functions require the app-bound session cookie; there is no payment gate — apps are free to use.
     const e = expect();
-    const anon = await call(`${rigBase}/_pyre/checkout`, { method: "POST", headers: { "content-type": "application/json", ...sameOrigin }, body: JSON.stringify({ productId: "pro" }) });
-    e.eq(anon.status, 401, "anonymous checkout status");
-    const unknown = await call(`${rigBase}/_pyre/checkout`, { method: "POST", headers: { "content-type": "application/json", cookie: rigCookie, ...sameOrigin }, body: JSON.stringify({ productId: "nope" }) });
-    e.eq(unknown.status, 404, "unknown product status");
-
-    const funded = await call(`${rigBase}/_pyre/checkout`, { method: "POST", headers: { "content-type": "application/json", cookie: rigCookie, ...sameOrigin }, body: JSON.stringify({ productId: "pro" }) });
-    const reserved = await prisma.purchase.count({ where: { appId: rig.id, userId: state.users.holder.id, productId: "pro" } });
-    e.eq(reserved, 0, "no purchase row may be written before the transfer settles");
-    if (unreachable(funded)) {
-      const done = e.done("");
-      return done.ok ? blockedOffline("anon → 401, unknown product → 404; the USDG balance read reached the chain") : done;
-    }
-    e.eq(funded.status, 402, "insufficient-funds status")
-      .eq(funded.json?.error, "insufficient_funds", "funding gate code")
-      .eq(String(funded.json?.priceUsd), "1", "priceUsd echoed back")
-      .eq(String(funded.json?.balanceUsd), "0", "balanceUsd of the empty wallet")
-      .eq(funded.json?.depositAddress, state.users.holder.wallet, "depositAddress is the caller's custodial wallet");
-    const done = e.done("");
-    if (!done.ok) return done;
-    return { blocked: true, detail: "custodial USDG checkout reached; needs a funded wallet — 402 {insufficient_funds, priceUsd, balanceUsd, depositAddress}, no purchase reserved; anon → 401, unknown product → 404" };
+    const anon = await call(`${rigBase}/_pyre/fn/private`, { method: "POST", headers: { "content-type": "application/json", ...sameOrigin }, body: "{}" });
+    e.eq(anon.status, 401, "anonymous call to an auth function must require sign-in");
+    const authed = await call(`${rigBase}/_pyre/fn/private`, { method: "POST", headers: { "content-type": "application/json", cookie: rigCookie, ...sameOrigin }, body: "{}" });
+    e.eq(authed.status, 200, "signed-in call status").eq(authed.json?.result?.user, state.users.holder.id, "the function sees the session user");
+    const unknown = await call(`${rigBase}/_pyre/fn/nope`, { method: "POST", headers: { "content-type": "application/json", cookie: rigCookie, ...sameOrigin }, body: "{}" });
+    e.eq(unknown.status, 404, "unknown function status");
+    return e.done("anon → 401; signed-in → 200 with ship.user; unknown function → 404");
   });
 
-  await check("x402_funding_gate", async () => {
-    // Paid functions server-sign the USDG transfer from the caller's custodial wallet: there is no
-    // 402 challenge header, no client X-PAYMENT, and no replay lock. Anonymous callers are refused
-    // outright; a signed-in caller with an empty wallet hits the funding gate.
+  await check("retired_payment_endpoints", async () => {
+    // In-app money is gone: the checkout, ad and paid-function surfaces must fall through to the 404, not a handler.
     const e = expect();
-    const anon = await call(`${rigBase}/_pyre/fn/paid`, { method: "POST", headers: { "content-type": "application/json", ...sameOrigin }, body: "{}" });
-    e.eq(anon.status, 401, "anonymous paid call must require sign-in");
-    const funded = await call(`${rigBase}/_pyre/fn/paid`, { method: "POST", headers: { "content-type": "application/json", cookie: rigCookie, ...sameOrigin }, body: "{}" });
-    const revenue = await prisma.revenueEvent.count({ where: { appId: rig.id, source: "X402" } });
-    e.eq(revenue, 0, "no revenue may be recorded for an unpaid call");
-    if (unreachable(funded)) {
-      const done = e.done("");
-      return done.ok ? blockedOffline("anon → 401; the USDG balance read reached the chain") : done;
-    }
-    e.eq(funded.status, 402, "authenticated but unfunded status")
-      .eq(funded.json?.error, "insufficient_funds", "funding gate code")
-      .eq(String(funded.json?.priceUsd), "0.25", "priceUsd echoed back")
-      .eq(String(funded.json?.balanceUsd), "0", "balanceUsd of the empty wallet")
-      .eq(funded.json?.depositAddress, state.users.holder.wallet, "depositAddress is the caller's custodial wallet");
-    const done = e.done("");
-    if (!done.ok) return done;
-    return { blocked: true, detail: "custodial USDG payment reached; needs a funded wallet — anon → 401, unfunded → 402 insufficient_funds with depositAddress, no revenue recorded" };
-  });
-
-  await check("ad_selection", async () => {
-    // Selection is cpm-weighted across every ACTIVE campaign, so the pick may be a live campaign
-    // rather than this fixture: the bookkeeping is asserted for whichever campaign was served, and
-    // a live campaign's counters are put back afterwards — the audit's traffic is not real reach.
-    const campaign = await prisma.adCampaign.create({
-      data: { advertiserAppId: state.apps.feeParent.id, headline: `${TAG} ad`, body: "audit fixture campaign", targetUrl: "https://pyre.fun/apps", cpmMicros: 2_000n, budgetMicros: 1_000_000n, status: "ACTIVE" },
-    });
-    onExit("ad campaign", async () => {
-      await prisma.adImpression.deleteMany({ where: { advertiserAppId: campaign.advertiserAppId } });
-      await prisma.adCampaign.delete({ where: { id: campaign.id } }).catch(() => {});
-    });
-    const eligible = await prisma.adCampaign.findMany({ where: { status: "ACTIVE", advertiserAppId: { not: rig.id } } });
-    const before = Object.fromEntries(eligible.map((c) => [c.id, c]));
-
-    const res = await call(`${rigBase}/_pyre/ad`);
-    const chosenBefore = before[res.json?.id];
-    const e = expect().eq(res.status, 200, "http status").ok(chosenBefore !== undefined, `the served campaign must be one of the ${eligible.length} ACTIVE campaigns (got ${res.json?.id})`);
-    if (!chosenBefore) return e.done("");
-    const ours = chosenBefore.id === campaign.id;
-    const charge = chosenBefore.cpmMicros / 1000n;
-    const after = await prisma.adCampaign.findUnique({ where: { id: chosenBefore.id } });
-    const impression = await prisma.adImpression.findFirst({ where: { appId: rig.id, advertiserAppId: chosenBefore.advertiserAppId }, orderBy: { createdAt: "desc" } });
-    const revenue = await prisma.revenueEvent.findFirst({ where: { appId: rig.id, source: "AD", reference: chosenBefore.id }, orderBy: { createdAt: "desc" } });
-    onExit("ad impression", async () => {
-      if (impression) await prisma.adImpression.delete({ where: { id: impression.id } }).catch(() => {});
-      if (revenue) {
-        await prisma.ledgerEntry.deleteMany({ where: { refId: revenue.id } });
-        await prisma.revenueEvent.delete({ where: { id: revenue.id } }).catch(() => {});
-      }
-    });
-    e.eq(res.json?.headline, chosenBefore.headline, "headline")
-      .eq(res.json?.clickUrl, `/a/${rig.slug}/_pyre/ad/click/${chosenBefore.id}`, "click url")
-      .eq(after.impressions, chosenBefore.impressions + 1, "impression counted")
-      .eq(after.spentMicros, chosenBefore.spentMicros + charge, "campaign charged cpm/1000")
-      .ok(impression !== null, "AdImpression row must be written")
-      .eq(impression?.usdMicros, charge, "impression amount")
-      // A cpm under $0.001 rounds to a zero charge, which is never booked as revenue.
-      .ok(charge === 0n ? revenue === null : revenue !== null, charge === 0n ? "a zero charge must not book revenue" : "impression must be credited as revenue to the host app")
-      .eq(revenue?.usdMicros ?? 0n, charge, "revenue amount");
-
-    const click = await call(`${rigBase}/_pyre/ad/click/${chosenBefore.id}`);
-    // The route redirects to the parsed target (`new URL(...).toString()`), which normalises a bare origin with a trailing slash.
-    e.eq(click.status, 302, "click status").eq(click.headers.get("location"), new URL(chosenBefore.targetUrl).toString(), "click redirect");
-    e.eq((await prisma.adCampaign.findUnique({ where: { id: chosenBefore.id } })).clicks, chosenBefore.clicks + 1, "click counted");
-    if (!ours) {
-      // Synthetic traffic against a live campaign: give the advertiser their money and counters back.
-      onExit("live ad campaign counters", async () => {
-        await prisma.adCampaign.update({ where: { id: chosenBefore.id }, data: { spentMicros: { decrement: charge }, impressions: { decrement: 1 }, clicks: { decrement: 1 } } }).catch(() => {});
-      });
-    }
-    const noSlot = await call(`${API}/a/${DEMO_SLUG}/_pyre/ad`);
-    e.eq(noSlot.status, 404, "an app without an ad slot must 404");
-    return e.done(`served 1 impression of ${ours ? "the fixture campaign" : `live campaign "${chosenBefore.headline}"`} (${eligible.length} eligible) at $${(Number(charge) / 1e6).toFixed(6)}, charged the advertiser, credited the host, click redirected${ours ? "" : "; live counters restored"}`);
+    const checkout = await call(`${rigBase}/_pyre/checkout`, { method: "POST", headers: { "content-type": "application/json", cookie: rigCookie, ...sameOrigin }, body: JSON.stringify({ productId: "pro" }) });
+    e.eq(checkout.status, 404, "POST /_pyre/checkout is retired");
+    const ad = await call(`${rigBase}/_pyre/ad`);
+    e.eq(ad.status, 404, "GET /_pyre/ad is retired");
+    const click = await call(`${rigBase}/_pyre/ad/click/anything`);
+    e.eq(click.status, 404, "GET /_pyre/ad/click/:id is retired");
+    return e.done("checkout, ad and ad click → 404 unknown platform endpoint");
   });
 
   await check("track_heartbeat", async () => {
@@ -2284,7 +2120,7 @@ async function dataChecks() {
     return expect()
       .ok(rows.length > 0, "no migrations recorded — the schema was pushed, not migrated")
       .eq(bad.length, 0, `unfinished or rolled-back migrations: ${bad.map((r) => r.migration_name).join(", ")}`)
-      .ok(rows.some((r) => r.migration_name === "20260921000000_pyre_init"), "the EVM init migration must be applied")
+      .ok(rows.some((r) => r.migration_name === "20260922000000_remove_app_revenue"), "the app-revenue removal migration must be applied")
       .done(`${rows.length} migration${rows.length === 1 ? "" : "s"} applied, newest ${rows[rows.length - 1]?.migration_name}`);
   });
 
@@ -2292,8 +2128,6 @@ async function dataChecks() {
     // Relations Prisma models as plain columns, so nothing but this check protects them.
     const queries = {
       "PyreStake.appId": `SELECT count(*)::int AS n FROM "PyreStake" s LEFT JOIN "App" a ON a.id = s."appId" WHERE a.id IS NULL`,
-      "AdCampaign.advertiserAppId": `SELECT count(*)::int AS n FROM "AdCampaign" c LEFT JOIN "App" a ON a.id = c."advertiserAppId" WHERE a.id IS NULL`,
-      "AdImpression.advertiserAppId": `SELECT count(*)::int AS n FROM "AdImpression" i LEFT JOIN "App" a ON a.id = i."advertiserAppId" WHERE a.id IS NULL`,
       "Report.appId": `SELECT count(*)::int AS n FROM "Report" r LEFT JOIN "App" a ON a.id = r."appId" WHERE a.id IS NULL`,
       "JobToken.appId": `SELECT count(*)::int AS n FROM "JobToken" t LEFT JOIN "App" a ON a.id = t."appId" WHERE a.id IS NULL`,
       "JobToken.jobId": `SELECT count(*)::int AS n FROM "JobToken" t LEFT JOIN "BuildJob" j ON j.id = t."jobId" WHERE j.id IS NULL`,
@@ -2303,7 +2137,6 @@ async function dataChecks() {
       "LedgerEntry CREDITS:<appId>": `SELECT count(*)::int AS n FROM "LedgerEntry" l LEFT JOIN "App" a ON a.id = substring(l.account from 9) WHERE l.account LIKE 'CREDITS:%' AND a.id IS NULL`,
       "App.forkOfId": `SELECT count(*)::int AS n FROM "App" f LEFT JOIN "App" p ON p.id = f."forkOfId" WHERE f."forkOfId" IS NOT NULL AND p.id IS NULL`,
       "App.liveVersion without Deployment": `SELECT count(*)::int AS n FROM "App" a LEFT JOIN "Deployment" d ON d."appId" = a.id AND d.version = a."liveVersion" WHERE a."liveVersion" > 0 AND d.id IS NULL`,
-      "RevenueEvent.buybackId": `SELECT count(*)::int AS n FROM "RevenueEvent" r LEFT JOIN "Buyback" b ON b.id = r."buybackId" WHERE r."buybackId" IS NOT NULL AND b.id IS NULL`,
     };
     const bad = [];
     for (const [label, sql] of Object.entries(queries)) {
@@ -2340,11 +2173,9 @@ async function dataChecks() {
     const e = expect();
     // Wei/base-unit columns are Decimal(78,0): Prisma filters them with a number or string, not a BigInt.
     const negative = await prisma.app.count({
-      where: { OR: [{ budgetMicros: { lt: 0n } }, { spentMicros: { lt: 0n } }, { revenueMicros: { lt: 0n } }, { pendingRevenueMicros: { lt: 0n } }, { burnedTokens: { lt: 0 } }, { feesWei: { lt: 0 } }, { buybackWei: { lt: 0 } }, { stakeWei: { lt: 0 } }] },
+      where: { OR: [{ budgetMicros: { lt: 0n } }, { spentMicros: { lt: 0n } }, { feesWei: { lt: 0 } }, { stakeWei: { lt: 0 } }] },
     });
     e.eq(negative, 0, "no app may hold a negative money counter");
-    const overPending = await prisma.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "App" WHERE "pendingRevenueMicros" > "revenueMicros"`);
-    e.eq(Number(overPending[0].n), 0, "pending revenue may never exceed lifetime revenue");
     const badUptime = await prisma.app.count({ where: { OR: [{ uptimeBps: { lt: 0 } }, { uptimeBps: { gt: 10_000 } }] } });
     e.eq(badUptime, 0, "uptimeBps must stay in [0, 10000]");
     const killedWithoutReason = await prisma.app.count({ where: { status: "KILLED", killedReason: null } });
@@ -2364,7 +2195,7 @@ async function dataChecks() {
     e.eq(Number(feeHashes.n), 0, "FeeEvent.txHash must be a 0x tx hash");
     const liveWithoutWallet = await prisma.app.count({ where: { status: { in: ["LIVE", "DORMANT"] }, walletAddress: null } });
     const seeded = await prisma.app.count({ where: { status: { in: ["LIVE", "DORMANT"] } } });
-    return e.done(`counters non-negative, pending ≤ lifetime, uptime in range, kills explained, phases 0..3, every address/hash well-formed (${liveWithoutWallet}/${seeded} live apps are seed rows with no app wallet)`);
+    return e.done(`counters non-negative, uptime in range, kills explained, phases 0..3, every address/hash well-formed (${liveWithoutWallet}/${seeded} live apps are seed rows with no app wallet)`);
   });
 }
 

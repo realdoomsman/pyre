@@ -40,7 +40,7 @@ export const BEATS = [
     ],
     sentences: [
       { shot: "fees-mg", text: "70% of every trade fee comes back:", say: "Seventy percent of every trade fee comes back:" },
-      { shot: "fees-mg", text: "60 to the build budget, 25 to a $PYRE buyback, 15 to the launcher.", say: "Sixty to the build budget, twenty-five to a Pyre buyback, fifteen to the launcher." },
+      { shot: "fees-mg", text: "60 to the build budget, 25 to a PYRE buyback, 15 to the launcher.", say: "Sixty to the build budget, twenty-five to a Pyre buyback, fifteen to the launcher." },
     ],
   },
   {
@@ -55,17 +55,17 @@ export const BEATS = [
     id: "app",
     shots: [{ id: "app-mg", base: 5.0 }],
     sentences: [
-      { shot: "app-mg", text: "It goes live on its own subdomain and charges in stablecoin. No gas.", say: "It goes live on its own subdomain and charges in stablecoin. No gas." },
+      { shot: "app-mg", text: "It goes live on its own subdomain, free to use. Holders unlock features.", say: "It goes live on its own subdomain, free to use. Holders unlock features." },
     ],
   },
   {
-    id: "revenue",
+    id: "share",
     shots: [
-      { id: "revenue-mg", base: 3.4 },
-      { id: "revenue-cap", base: 2.8 },
+      { id: "share-mg", base: 3.4 },
+      { id: "share-cap", base: 2.8 },
     ],
     sentences: [
-      { shot: "revenue-mg", text: "85% of revenue buys the coin back.", say: "Eighty-five percent of revenue buys the coin back." },
+      { shot: "share-mg", text: "A quarter of every fee buys PYRE.", say: "A quarter of every fee buys Pyre." },
     ],
   },
   {
@@ -90,7 +90,7 @@ export const BEATS = [
     id: "proof",
     shots: [{ id: "proof", base: 6.0 }],
     sentences: [
-      { shot: "proof", text: "408 tests, 62 of 68 production features, an independent security review.", say: "Four hundred and eight tests, sixty-two of sixty-eight production features, an independent security review." },
+      { shot: "proof", text: "Every test, every audit and an independent security review, in the public repo.", say: "Every test, every audit, and an independent security review, in the public repo." },
     ],
   },
   {

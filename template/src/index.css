@@ -1,18 +1,94 @@
 @import "tailwindcss";
 
+/*
+ * Pyre design system — the only theme this app has. Dark, obsidian, violet.
+ * Every colour, font and radius below is mandatory: the default Tailwind palette is
+ * removed on purpose, so `bg-orange-500` and friends do not exist here.
+ */
 @theme {
-  --color-pyre-bg: oklch(0.16 0.01 270);
-  --color-pyre-panel: oklch(0.22 0.012 270);
-  --color-pyre-accent: oklch(0.72 0.17 150);
+  --color-*: initial;
+
+  /* surfaces */
+  --color-bg: #0a0a0c;
+  --color-surface: #111114;
+  --color-surface-raised: #16161b;
+  --color-border: #1f1f24;
+  --color-border-strong: #2c2c33;
+
+  /* ink */
+  --color-ink: #f3f2ee;
+  --color-ink-muted: #a3a29c;
+  --color-ink-faint: #6b6a66;
+
+  /* accent */
+  --color-violet: #9d8cff;
+  --color-violet-hover: #7a66f5;
+  --color-violet-soft: rgb(157 140 255 / 0.14);
+
+  /* heat ramp: cold → hot; charts, progress, intensity only */
+  --color-heat-1: #1c1b2e;
+  --color-heat-2: #3b2f7a;
+  --color-heat-3: #7a66f5;
+  --color-heat-4: #3e8bff;
+  --color-heat-5: #9cd2ff;
+  --color-heat-6: #e9f1ff;
+
+  /* errors only */
+  --color-danger: #e5484d;
+  --color-danger-soft: rgb(229 72 77 / 0.12);
+
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --radius-card: 8px;
+}
+
+:root {
+  --pyre-bg: #0a0a0c;
+  --pyre-surface: #111114;
+  --pyre-border: #1f1f24;
+  --pyre-ink: #f3f2ee;
+  --pyre-violet: #9d8cff;
+  --pyre-violet-hover: #7a66f5;
+  --pyre-heat-1: #1c1b2e;
+  --pyre-heat-2: #3b2f7a;
+  --pyre-heat-3: #7a66f5;
+  --pyre-heat-4: #3e8bff;
+  --pyre-heat-5: #9cd2ff;
+  --pyre-heat-6: #e9f1ff;
+  --pyre-radius: 8px;
+  color-scheme: dark;
 }
 
 html {
-  color-scheme: dark;
+  background-color: var(--pyre-bg);
 }
 
 body {
   margin: 0;
-  background-color: var(--color-pyre-bg);
-  color: oklch(0.96 0 0);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background-color: var(--pyre-bg);
+  color: var(--pyre-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background-color: var(--pyre-violet);
+  color: var(--pyre-bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--pyre-violet);
+  outline-offset: 2px;
 }

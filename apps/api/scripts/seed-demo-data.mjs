@@ -1,5 +1,5 @@
 /**
- * Seeds demo apps with build-feed events, revenue and buybacks so the UI can be
+ * Seeds demo apps with build-feed events, fees and holders so the UI can be
  * developed and verified against realistic content. Every row it writes is
  * tagged `demo:` in its prompt/memo so it can be purged in one command.
  *
@@ -10,7 +10,6 @@
  */
 import { createHash, randomUUID } from "node:crypto";
 import { dec, prisma } from "@pyre/db";
-import { attestationHash } from "@pyre/chain";
 import { getAddress } from "viem";
 
 const remove = process.argv.includes("--remove");
@@ -25,7 +24,7 @@ const APPS = [
     name: "Inbox Zero",
     ticker: "INBOX",
     oneLiner: "Turns a messy inbox into a ranked action list in one click.",
-    revenueUsd: 4213.55,
+    volume24hUsd: 12_640,
     usersCount: 1842,
     priceUsd: 0.00041,
     marketCapUsd: 410_000,
@@ -34,7 +33,6 @@ const APPS = [
     spentUsd: 212.18,
     feesEth: 2.1,
     uptimeBps: 9993,
-    buybacks: 6,
     versions: 9,
   },
   {
@@ -42,7 +40,7 @@ const APPS = [
     name: "Shotcaller",
     ticker: "SHOT",
     oneLiner: "Pay-per-call API that grades trading screenshots for AI agents.",
-    revenueUsd: 1287.02,
+    volume24hUsd: 3_860,
     usersCount: 356,
     priceUsd: 0.00017,
     marketCapUsd: 168_000,
@@ -51,7 +49,6 @@ const APPS = [
     spentUsd: 128.4,
     feesEth: 0.84,
     uptimeBps: 9971,
-    buybacks: 4,
     versions: 5,
   },
   {
@@ -59,7 +56,7 @@ const APPS = [
     name: "Deadlinks",
     ticker: "DEAD",
     oneLiner: "Crawls a site weekly and emails a broken-link report.",
-    revenueUsd: 96.0,
+    volume24hUsd: 288,
     usersCount: 41,
     priceUsd: 0.000031,
     marketCapUsd: 31_000,
@@ -68,7 +65,6 @@ const APPS = [
     spentUsd: 64.2,
     feesEth: 0.17,
     uptimeBps: 9820,
-    buybacks: 1,
     versions: 3,
     dormant: true,
   },
@@ -104,7 +100,7 @@ const FEED = (app, version) => [
       type: "REVIEW",
       verdict: "APPROVE",
       summary: "Diff matches the spec. No auth, wallet or payment surfaces touched.",
-      findings: [{ severity: "INFO", text: "New function declared in the manifest and priced at $0." }],
+      findings: [{ severity: "INFO", text: "New function declared in the manifest." }],
     },
     at: 156,
   },
@@ -130,22 +126,18 @@ const fakeAddress = (seed) => getAddress(`0x${createHash("sha256").update(seed).
 
 /**
  * Deleting an App cascades everything that points at it with a relation, but the ledger, job
- * tokens, stakes and ad rows address apps by plain id — so they survive and become orphans that
- * still carry a balance. Ledger rows reference the app either directly (`refId` = app id, the
- * seed's placeholder for BUILD/Buyback rows) or through a FeeEvent/RevenueEvent/Buyback the
- * cascade is about to remove (PYRE_TOKEN, OPS and LAUNCHER:<user> rows), so both sets are
- * collected before the delete. Every removal path has to go through here.
+ * tokens and stakes address apps by plain id — so they survive and become orphans that still
+ * carry a balance. Ledger rows reference the app either directly (`refId` = app id, the seed's
+ * placeholder for BUILD rows) or through a FeeEvent the cascade is about to remove (PYRE_TOKEN
+ * and LAUNCHER:<user> rows), so both sets are collected before the delete. Every removal path
+ * has to go through here.
  */
 const purgeApps = async (where) => {
   const apps = await prisma.app.findMany({ where, select: { id: true } });
   if (apps.length === 0) return 0;
   const ids = apps.map((a) => a.id);
-  const [fees, revenues, buybacks] = await Promise.all([
-    prisma.feeEvent.findMany({ where: { appId: { in: ids } }, select: { id: true } }),
-    prisma.revenueEvent.findMany({ where: { appId: { in: ids } }, select: { id: true } }),
-    prisma.buyback.findMany({ where: { appId: { in: ids } }, select: { id: true } }),
-  ]);
-  const refIds = [...ids, ...fees.map((r) => r.id), ...revenues.map((r) => r.id), ...buybacks.map((r) => r.id)];
+  const fees = await prisma.feeEvent.findMany({ where: { appId: { in: ids } }, select: { id: true } });
+  const refIds = [...ids, ...fees.map((r) => r.id)];
   await prisma.ledgerEntry.deleteMany({
     where: {
       OR: [
@@ -156,8 +148,6 @@ const purgeApps = async (where) => {
   });
   await prisma.jobToken.deleteMany({ where: { appId: { in: ids } } });
   await prisma.pyreStake.deleteMany({ where: { appId: { in: ids } } });
-  await prisma.adCampaign.deleteMany({ where: { advertiserAppId: { in: ids } } });
-  await prisma.adImpression.deleteMany({ where: { advertiserAppId: { in: ids } } });
   await prisma.report.deleteMany({ where: { appId: { in: ids } } });
   await prisma.auditLog.deleteMany({ where: { targetType: "App", targetId: { in: ids } } });
   await prisma.app.deleteMany({ where: { id: { in: ids } } });
@@ -172,7 +162,7 @@ const purgeApps = async (where) => {
 const DEPLOY_PAGE = (app) => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${app.name} — seeded demo</title><style>:root{color-scheme:dark}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#07090b;color:#e6edf3;font:15px/1.6 ui-monospace,Menlo,monospace}main{max-width:34rem;padding:2rem}h1{color:#22e07a;font-size:1.4rem;margin:0 0 .5rem}p{color:#9aa4ad;margin:0 0 .9rem}.note{border-left:2px solid #f5a524;padding-left:.8rem;color:#f5a524}a{color:#22e07a}</style></head>
-<body><main><h1>${app.name}</h1><p>${app.oneLiner}</p><p class="note">This is a seeded demo deployment (v${app.versions}), not output the Pyre agent built. This coin's build feed, revenue, holders and burns are demo data used to develop and verify the platform.</p><p><a href="${WEB_ORIGIN}/c/${app.slug}">Coin page</a></p></main></body></html>
+<body><main><h1>${app.name}</h1><p>${app.oneLiner}</p><p class="note">This is a seeded demo deployment (v${app.versions}), not output the Pyre agent built. This coin's build feed, fees and holders are demo data used to develop and verify the platform.</p><p><a href="${WEB_ORIGIN}/c/${app.slug}">Coin page</a></p></main></body></html>
 `;
 
 const DEPLOY_MANIFEST = (app) => ({
@@ -180,8 +170,6 @@ const DEPLOY_MANIFEST = (app) => ({
   version: `${app.versions}.0.0`,
   entry: "index.html",
   functions: [],
-  products: [{ id: "pro", name: "Pro", priceUsd: 9, kind: "SUBSCRIPTION_MONTHLY" }],
-  adSlot: false,
   holderTier: null,
 });
 
@@ -250,23 +238,11 @@ async function repair() {
     }
   }
 
-  // Attestations: every stored hash must be recomputable from the revenue actually attached.
-  const buybacks = await prisma.buyback.findMany({ select: { id: true, attestHash: true, revenueEvents: { select: { id: true } } } });
-  let rehashed = 0;
-  for (const b of buybacks) {
-    if (b.revenueEvents.length === 0) continue;
-    const want = attestationHash(b.revenueEvents.map((e) => e.id));
-    if (want === b.attestHash) continue;
-    await prisma.buyback.update({ where: { id: b.id }, data: { attestHash: want } });
-    rehashed++;
-  }
   console.log(
     JSON.stringify({
       orphanLedgerRowsDeleted: stranded.length,
       strandedUsd: Number(strandedMicros) / 1e6,
       deploymentsCreated: deployed,
-      attestationsRecomputed: rehashed,
-      buybacksChecked: buybacks.length,
     }),
   );
 }
@@ -312,10 +288,8 @@ async function main() {
           title: app.name,
           oneLiner: app.oneLiner,
           whatItDoes: `${app.oneLiner} Built and iterated by the Pyre build agent from trading-fee budget.`,
-          whoPays: "Individual users on a one-time unlock, and agents per API call.",
-          mvp: ["Core flow end to end", "Hosted checkout", "Holder tier gate"],
+          mvp: ["Core flow end to end", "Holder tier gate"],
           outOfScope: ["Mobile apps", "Team accounts"],
-          monetization: { model: "ONE_TIME", priceUsd: 9, priceDescription: "$9 one-time unlock" },
           holderTier: { enabled: true, minHoldTokens: 250000, perks: ["Unlimited runs", "Priority queue"] },
           template: "WEB_TOOL",
           risks: ["Depends on third-party rate limits"],
@@ -330,16 +304,12 @@ async function main() {
         progress: app.marketCapUsd > 100_000 ? 1 : Math.min(0.95, app.marketCapUsd / 120_000),
         graduatedAt: app.marketCapUsd > 100_000 ? ago(60 * 30) : null,
         change24hPct: app.dormant ? -4.2 : 12.6,
-        volume24hUsd: app.revenueUsd * 3,
+        volume24hUsd: app.volume24hUsd,
         launchPhase: app.marketCapUsd > 100_000 ? 2 : 0,
         launchTx: sig(),
         budgetMicros: usd(app.budgetUsd),
         spentMicros: usd(app.spentUsd),
         feesWei: eth(app.feesEth),
-        revenueMicros: usd(app.revenueUsd),
-        pendingRevenueMicros: usd(app.revenueUsd * 0.04),
-        buybackWei: eth((app.revenueUsd * 0.85) / ETH_PRICE_USD),
-        burnedTokens: units((app.revenueUsd * 0.85) / app.priceUsd),
         usersCount: app.usersCount,
         uptimeBps: app.uptimeBps,
         healthy: !app.dormant,
@@ -352,9 +322,8 @@ async function main() {
         repoUrl: `https://github.com/realdoomsman/pyre-${app.slug}`,
         firstBuildAt: ago(60 * 38),
         mvpLiveAt: ago(60 * 36),
-        firstRevenueAt: ago(60 * 30),
-        milestones: app.revenueUsd >= 1000 ? ["mvp_live", "revenue_1", "revenue_1000"] : ["mvp_live", "revenue_1"],
-        growthEnabled: app.revenueUsd >= 1000,
+        milestones: ["mvp_live"],
+        growthEnabled: app.usersCount >= 1000,
         createdAt: ago(60 * 42),
       },
     });
@@ -368,62 +337,8 @@ async function main() {
       })),
     });
 
-    // Keep the seeded money self-consistent so the reconcile LEDGER check passes:
-    // attested revenue + pending revenue must equal App.revenueMicros, and the
-    // BUILD ledger must net to App.budgetMicros.
-    const pendingUsd = app.revenueUsd * 0.04;
-    const attestedTotalUsd = app.revenueUsd - pendingUsd;
-    for (let i = 0; i < app.buybacks; i++) {
-      const revenue = attestedTotalUsd / app.buybacks;
-      const buybackUsd = revenue * 0.85;
-      // The revenue event comes first: `attestHash` is the public proof of WHICH revenue funded
-      // this burn, so it has to be the digest of the ids actually attached, not a placeholder.
-      const event = await prisma.revenueEvent.create({
-        data: {
-          appId: row.id,
-          source: i % 3 === 2 ? "X402" : "CHECKOUT",
-          usdMicros: usd(revenue),
-          payer: fakeAddress(`payer:${app.slug}`),
-          reference: i % 3 === 2 ? "fn:grade" : "product:pro",
-          createdAt: ago(302 - i * 40),
-        },
-      });
-      const buyback = await prisma.buyback.create({
-        data: {
-          appId: row.id,
-          status: "BURNED",
-          revenueMicros: usd(revenue),
-          ethWei: eth(buybackUsd / ETH_PRICE_USD),
-          tokensBought: units(buybackUsd / app.priceUsd),
-          tokensBurned: units(buybackUsd / app.priceUsd),
-          burnedUnits: units(buybackUsd / app.priceUsd),
-          attestTx: sig(),
-          pyreMicros: usd(revenue * 0.1),
-          opsMicros: usd(revenue * 0.05),
-          attestHash: attestationHash([event.id]),
-          swapTx: sig(),
-          burnTx: sig(),
-          createdAt: ago(300 - i * 40),
-          completedAt: ago(299 - i * 40),
-        },
-      });
-      await prisma.revenueEvent.update({ where: { id: event.id }, data: { buybackId: buyback.id } });
-    }
-
-    // The unattested remainder is what `pendingRevenueMicros` claims is queued.
-    await prisma.revenueEvent.create({
-      data: {
-        appId: row.id,
-        source: "CHECKOUT",
-        usdMicros: usd(pendingUsd),
-        payer: fakeAddress(`payer:${app.slug}`),
-        reference: "product:pro",
-        createdAt: ago(20),
-      },
-    });
-
-    // BUILD ledger: everything ever credited to the build budget, less what the
-    // agent spent. Nets to App.budgetMicros.
+    // BUILD ledger: everything ever credited to the build budget, less what the agent spent.
+    // Nets to App.budgetMicros so the reconcile LEDGER check passes.
     await prisma.ledgerEntry.createMany({
       data: [
         {
@@ -462,11 +377,9 @@ async function main() {
     });
 
     /*
-     * The platform-level accounts are read by /v1/pyre and the ops console, so
-     * a seed that writes only BUILD:<app> leaves $PYRE showing $0.00 next to a
-     * board advertising thousands in revenue. Mirror the real split: every fee
-     * event credits PYRE_TOKEN and the launcher, and every settled buyback
-     * credits PYRE_TOKEN and OPS.
+     * The platform-level accounts are read by /v1/pyre and the ops console, so a seed that
+     * writes only BUILD:<app> leaves $PYRE showing $0.00. Mirror the real split: every fee
+     * event credits PYRE_TOKEN and the launcher.
      */
     await prisma.ledgerEntry.createMany({
       data: [
@@ -486,22 +399,6 @@ async function main() {
           memo: `demo: 15% of ${app.ticker} creator fees`,
           createdAt: ago(199),
         },
-        {
-          account: "PYRE_TOKEN",
-          deltaMicros: usd(attestedTotalUsd * 0.1),
-          refType: "Buyback",
-          refId: row.id,
-          memo: `demo: 10% of ${app.ticker} revenue`,
-          createdAt: ago(60),
-        },
-        {
-          account: "OPS",
-          deltaMicros: usd(attestedTotalUsd * 0.05),
-          refType: "Buyback",
-          refId: row.id,
-          memo: `demo: 5% of ${app.ticker} revenue`,
-          createdAt: ago(60),
-        },
       ],
     });
 
@@ -509,7 +406,7 @@ async function main() {
       await prisma.promptQueueItem.createMany({
         data: [
           { appId: row.id, authorId: launcher.id, text: "Add a weekly email digest of the top actions.", weight: units(41_200_000) },
-          { appId: row.id, authorId: launcher.id, text: "Expose the ranking as a paid x402 endpoint.", weight: units(18_900_000) },
+          { appId: row.id, authorId: launcher.id, text: "Expose the ranking as a function other Pyre apps can call.", weight: units(18_900_000) },
           { appId: row.id, authorId: launcher.id, text: "Dark mode and keyboard shortcuts.", weight: units(7_400_000) },
         ],
       });

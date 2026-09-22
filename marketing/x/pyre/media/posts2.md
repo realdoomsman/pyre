@@ -25,20 +25,22 @@ Posting notes:
 | 10 | Oct 8 · 11:00 | video · the design system | `design.mp4` · `design-square.mp4` |
 | 11 | Oct 10 · 11:00 | image · /pyre, pre-launch | `img/04-pyre-prelaunch.png` |
 
-Pairings with the 15:00 schedule: 01 leads into 03·revenue-burn; 05 sits before 06·agent-scope; 06 lands the morning of 04·attestation; 07 the morning of 17·verify-burn; 08 the morning of 16·launch-trays; 10 the morning of 15·design; 11 the morning of 18·live-next.
+Pairings with the 15:00 schedule: 01 leads into 03·pyre-burn; 05 sits before 06·agent-scope; 06 lands the morning of 04·attestation; 07 the morning of 17·verify-burn; 08 the morning of 16·launch-trays; 10 the morning of 15·design; 11 the morning of 18·live-next.
+
+**Stale (2026-09-22).** Apps are free since the cutover and only PYRE is bought and burned. The films, captions and cards below were rendered against the earlier loop; the copy in this file is current, the media listed in the report's re-render list are not. Do not post a film or card until it is re-rendered from the updated sources.
 
 ## 01 · loop-video
 
 - when: post now
 - media: `loop.mp4` (1920×1080, 23.6 s, VO) · alt square `loop-square.mp4` · captions `loop-captions.srt`
-- alt text: screen recording with voice-over: the empty pyre.fun home, the launch form being typed into with an example coin, then a mock coin page walking the six-cell loop panel; ends on the pyre lockup and "supply falls because the app earned"
+- alt text: screen recording with voice-over: the empty pyre.fun home, the launch form being typed into with an example coin, then a mock coin page walking the four-cell loop panel; ends on the pyre lockup and "supply falls because the coin traded"
 - link: none; first reply: https://pyre.fun
-- count: 277 / 280
+- count: 274 / 280
 
 ```
 the loop, in twenty seconds.
 
-launch a coin with one sentence. its trading fees pay an agent to build the app. the app earns, and 85% of that revenue buys the coin back and burns it.
+launch a coin with one sentence. its trading fees pay an agent to build the app. the app is free to use, and 25% of every fee buys PYRE and burns it.
 
 the coin page in this clip is mock data. no coin has launched yet. the rest is the live site.
 ```
@@ -47,7 +49,7 @@ the coin page in this clip is mock data. no coin has launched yet. the rest is t
 
 - when: Sep 22 · 11:00
 - media: `img/01-home-empty.png`
-- alt text: pyre.fun home on a dark canvas: eth burned 0.000, apps live 0, a dashed empty-feed panel reading "nothing has launched yet. be first." with a launch button, and "one loop. revenue closes it." below
+- alt text: pyre.fun home on a dark canvas: eth burned 0.000, apps live 0, a dashed empty-feed panel reading "nothing has launched yet. be first." with a launch button, and "one loop. fees close it." below
 - link: none; first reply: https://pyre.fun
 - count: 244 / 280
 
@@ -65,12 +67,12 @@ the first coin to launch is the first thing on this page.
 - media: `img/06-status-live.png`
 - alt text: pyre.fun/status: pyre api operational; postgres 4 ms, redis 4 ms, robinhood chain rpc block 69,053,939 at 95 ms, queues 0 active 0 failed; network totals all zero
 - link: none; first reply: https://pyre.fun/status
-- count: 269 / 280
+- count: 266 / 280
 
 ```
 pyre.fun/status, read this morning: api operational, postgres and redis answering in 4 ms, robinhood chain rpc at block 69,053,939, queues 0 active and 0 failed.
 
-apps live 0 · revenue $0.00 · eth burned 0.0000.
+apps live 0 · fees $0.00 · eth burned 0.0000.
 
 every number on the page is a probe, not a claim.
 ```
@@ -96,7 +98,7 @@ small thing. but a launchpad you can drive from the keyboard is one that expects
 - when: Sep 26 · 11:00
 - media: `img/05-me-deposit.png` + `img/09-wallet-flows.png`
 - alt text (1): the account page dimmed behind an open deposit tray: a qr code, the custodial address on robinhood chain, "send ETH or USDG on robinhood chain only", and three bridge options: relay, arbitrum canonical bridge, across; balances behind read $0.00, 0.0000 ETH, 0.00 USDG
-- alt text (2): diagram card "two ways in. same rules, different signer": four steps for google sign-in with a derived custodial wallet, four steps for signing in with your own wallet via an eip-191 challenge, and a footer on gas-free eip-3009 USDG payments relayed by the treasury
+- alt text (2): diagram card "two ways in. same rules, different signer": four steps for google sign-in with a derived custodial wallet, four steps for signing in with your own wallet via an eip-191 challenge, and a footer saying apps are free and never charge either wallet
 - link: none; first reply: https://pyre.fun/me
 - count: 263 / 280
 
@@ -112,14 +114,14 @@ google sign-in gets a wallet pyre derives and signs for. your own wallet signs e
 
 - when: Sep 27 · 11:00
 - media: `burn.mp4` (1920×1080, 29.6 s, VO) · alt square `burn-square.mp4` · captions `burn-captions.srt`
-- alt text: motion graphic with voice-over: 37 calldata bytes typing out, 50 59 52 45 then 01 then a 32-byte hash; three example revenue event ids sorted, joined and hashed to match; a blockscout-style layout of a burn tx and an attestation tx marked as an illustration; the live empty burn ledger; "no burn has happened yet"
+- alt text: motion graphic with voice-over: 37 calldata bytes typing out, 50 59 52 45 then 01 then a 32-byte hash; three example fee entry ids sorted, joined and hashed to match; a blockscout-style layout of a burn tx and an attestation tx marked as an illustration; the live empty burn ledger; "no burn has happened yet"
 - link: none; first reply: https://pyre.fun/burns
-- count: 272 / 280
+- count: 273 / 280
 
 ```
 how a burn is verified.
 
-every burn ends with an attestation tx: calldata 0x5059524501, then sha256 of the revenue event ids that paid for it. on blockscout, burn() lowers totalSupply and nothing moves to a wallet.
+every PYRE burn ends with an attestation tx: calldata 0x5059524501, then sha256 of the fee entry ids that paid for it. on blockscout, burn() lowers totalSupply and nothing moves to a wallet.
 
 no burn has happened yet; the explorer frames are drawn.
 ```
@@ -128,14 +130,14 @@ no burn has happened yet; the explorer frames are drawn.
 
 - when: Sep 28 · 11:00
 - media: `img/03-burns-empty.png`
-- alt text: pyre.fun/burns: eth burned 0.000, buybacks 0, coins 0, last burn dash; a dashed empty panel "no burns yet: the first buyback fires once any app on pyre has earned $5"; a note that burns call burn() and lower totalSupply
+- alt text: pyre.fun/burns: eth burned 0.000, burns 0, last burn dash; a dashed empty panel "no burns yet: the first PYRE burn fires once $5 of fee share has pooled"; a note that burns call burn() and lower totalSupply
 - link: none; first reply: https://pyre.fun/burns
-- count: 269 / 280
+- count: 280 / 280
 
 ```
-the burn ledger, live: 0.000 ETH burned, 0 buybacks, 0 coins.
+the burn ledger, live: 0.000 ETH burned, 0 burns.
 
-the first row appears when any app on pyre has earned $5. it will carry a swap tx, a burn tx and an attestation tx you can open on blockscout.
+the first row appears when $5 of fee share has pooled across every coin on pyre. it will carry a swap tx, a burn tx and an attestation tx you can open on blockscout.
 
 an empty ledger is not a bug. it is the honest starting state.
 ```
@@ -144,8 +146,8 @@ an empty ledger is not a bug. it is the honest starting state.
 
 - when: Sep 29 · 11:00
 - media: `img/02-launch-step1.png` + `img/10-budget-50.png`
-- alt text (1): the launch page signed in, step 01 coin of three: name and ticker fields, an image picker, a "what should the agent build?" textarea, a "draft the agent brief" button, and a live preview card on the right showing $TICKER, market cap $0.00, fees to agent $0.00, burned 0.00%
-- alt text (2): diagram card "nothing builds until the coin has earned $50 of budget": where budget comes from, then a rail with $0 launch, $10 iteration minimum, $50 first build, $5 revenue for the first buyback, and the five deploy gates
+- alt text (1): the launch page signed in, step 01 coin of three: name and ticker fields, an image picker, a "what should the agent build?" textarea, a "draft the agent brief" button, and a live preview card on the right showing $TICKER, market cap $0.00, fees to agent $0.00
+- alt text (2): diagram card "nothing builds until the coin has earned $50 of budget": where budget comes from, then a rail with $0 launch, $10 iteration minimum, $50 first build, $5 of pooled fee share for the first PYRE burn, and the five deploy gates
 - link: none; first reply: https://pyre.fun/launch
 - count: 272 / 280
 
@@ -193,12 +195,12 @@ the gallery in this clip runs on sample values.
 - media: `img/04-pyre-prelaunch.png`
 - alt text: pyre.fun/pyre: the PYRE page with a "not launched yet" band, contract "not launched yet", chain robinhood chain 4663, venue PONS v2 curve then uniswap v4; a card "earmarked so far $0.00"; a ledger accrued $0, burned $0, pending $0
 - link: none; first reply: https://pyre.fun/pyre
-- count: 277 / 280
+- count: 256 / 280
 
 ```
 pyre.fun/pyre today: not launched yet.
 
-25% of every claimed creator fee and 10% of every sale accrue to a ledger that buys and burns PYRE once it exists. no pre-sale, no allocation, no whitelist.
+25% of every claimed creator fee accrues to a ledger that buys and burns PYRE once it exists. no pre-sale, no allocation, no whitelist.
 
 PYRE launching soon. no address exists. anyone posting one is not us.
 ```

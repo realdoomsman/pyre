@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../../api/queries.js";
-import { formatEth, formatUsdCompact } from "../../lib/format.js";
+import { formatCount, formatEth, formatUsdCompact } from "../../lib/format.js";
 import { Avatar } from "../../ui/index.js";
 import { ShareFrame } from "./ShareFrame.js";
 
-/** `/c/:slug/card` — one coin's share composition: what its app earned, what it burned. */
+/** `/c/:slug/card` — one coin's share composition: what its fees funded, who holds it. */
 export const ShareCoin = () => {
   const { slug } = useParams<{ slug: string }>();
   const q = useApp(slug);
@@ -27,22 +27,22 @@ export const ShareCoin = () => {
           <>
             {app.name.toLowerCase()}
             <br />
-            <span className="text-ink-2">earned</span> {formatUsdCompact(app.revenueMicros)}.
+            <span className="text-ink-2">fees paid</span> {formatUsdCompact(app.budgetMicros)}
             <br />
-            <em>burned</em> {app.burnedPct.toFixed(2)}%.
+            to the <em>agent</em> building it.
           </>
         ) : (
           <>
             coins that build apps.
             <br />
-            revenue <em>burns</em> them.
+            every fee <em>burns</em> PYRE.
           </>
         )
       }
       stats={[
         { label: "market cap", value: app ? formatUsdCompact(Math.round(app.mcapUsd * 1e6)) : "—" },
-        { label: "fees → agent", value: app ? formatUsdCompact(app.budgetMicros) : "—" },
-        { label: "bought back", value: app ? formatEth(app.buybackWei) : "—" },
+        { label: "fees claimed", value: app ? formatEth(app.feesWei) : "—" },
+        { label: "holders", value: app ? formatCount(app.holders) : "—" },
       ]}
     />
   );

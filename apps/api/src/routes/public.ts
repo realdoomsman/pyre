@@ -5,7 +5,7 @@ import { getEthPriceUsd, publicClient } from "@pyre/chain";
 import { type BurnsPageDto, type StatsDto } from "@pyre/shared";
 import { env } from "../env.js";
 import { APPS_TAG, cacheKey, cached } from "../lib/cache.js";
-import { BUYBACK_INCLUDE, buybackDto, pctOfSupply } from "../lib/dto.js";
+import { pctOfSupply, pyreBurnDto } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
 import { pageQuery, sendCached } from "../lib/http.js";
 import { db } from "../lib/metrics.js";
@@ -29,21 +29,16 @@ const loadStats = async (): Promise<StatsDto> => {
   const since30d = new Date(now - 30 * DAY_MS);
   const dayStart = new Date(new Date(now).toISOString().slice(0, 10));
   // One batched transaction for every platform aggregate: a single round trip, one snapshot.
-  const [totals, live, building, total, rev24h, rev30d, burned24h, burned30d, burnsAll, jobsToday, pyreAll, pyre24h, pyre30d] = await db.$transaction([
-    db.app.aggregate({ _sum: { revenueMicros: true, feesWei: true, buybackWei: true } }),
+  const [totals, live, building, total, jobsToday, pyreAll, pyre24h, pyre30d] = await db.$transaction([
+    db.app.aggregate({ _sum: { feesWei: true } }),
     db.app.count({ where: { status: "LIVE" } }),
     db.app.count({ where: { jobs: { some: { status: { in: ["RUNNING", "QUEUED"] } } } } }),
     db.app.count({ where: { status: { in: ["LIVE", "DORMANT"] }, tokenAddress: { not: null } } }),
-    db.revenueEvent.aggregate({ where: { createdAt: { gte: since24h } }, _sum: { usdMicros: true } }),
-    db.revenueEvent.aggregate({ where: { createdAt: { gte: since30d } }, _sum: { usdMicros: true } }),
-    db.buyback.aggregate({ where: { status: "BURNED", completedAt: { gte: since24h } }, _sum: { ethWei: true } }),
-    db.buyback.aggregate({ where: { status: "BURNED", completedAt: { gte: since30d } }, _sum: { ethWei: true } }),
-    db.buyback.count({ where: { status: "BURNED" } }),
     db.buildJob.findMany({
       where: { startedAt: { gte: dayStart } },
       select: { startedAt: true, finishedAt: true },
     }),
-    // $PYRE's own buy-and-burns count as ETH burned too; they are the platform's share of every fee and sale.
+    // ETH burned = $PYRE's buy-and-burns: the platform's 25% share of every coin's creator fees.
     db.pyreBurn.aggregate({ where: { status: "BURNED" }, _sum: { ethWei: true }, _count: true }),
     db.pyreBurn.aggregate({ where: { status: "BURNED", completedAt: { gte: since24h } }, _sum: { ethWei: true } }),
     db.pyreBurn.aggregate({ where: { status: "BURNED", completedAt: { gte: since30d } }, _sum: { ethWei: true } }),
@@ -59,15 +54,12 @@ const loadStats = async (): Promise<StatsDto> => {
     appsLive: live,
     appsBuilding: building,
     appsTotal: total,
-    revenueTotalMicros: (totals._sum.revenueMicros ?? 0n).toString(),
-    revenue24hMicros: (rev24h._sum.usdMicros ?? 0n).toString(),
     feesTotalWei: big(totals._sum.feesWei).toString(),
-    burnedEthWei: (big(totals._sum.buybackWei) + big(pyreAll._sum.ethWei)).toString(),
-    burnedEth24hWei: (big(burned24h._sum.ethWei) + big(pyre24h._sum.ethWei)).toString(),
-    burnedEth30dWei: (big(burned30d._sum.ethWei) + big(pyre30d._sum.ethWei)).toString(),
-    revenue30dMicros: (rev30d._sum.usdMicros ?? 0n).toString(),
+    burnedEthWei: big(pyreAll._sum.ethWei).toString(),
+    burnedEth24hWei: big(pyre24h._sum.ethWei).toString(),
+    burnedEth30dWei: big(pyre30d._sum.ethWei).toString(),
     counts,
-    buybacksCount: burnsAll + pyreAll._count,
+    pyreBurnsCount: pyreAll._count,
     agentHoursToday: Math.round((agentMs / 3_600_000) * 100) / 100,
     ethPriceUsd: market?.ethPriceUsd ?? 0,
     pyreToken: pyre
@@ -96,47 +88,44 @@ publicRoutes.get(
 const BurnsQuery = pageQuery(50, 100);
 
 /**
- * Global burn ledger, newest first, with running totals as of each row so a page reads like a
- * statement. Totals are computed from the rows after the cursor plus everything older, in one
+ * Global $PYRE burn ledger, newest first, with running totals as of each row so a page reads like
+ * a statement. Totals are computed from the rows after the cursor plus everything older, in one
  * grouped aggregate per page.
  */
 const loadBurns = async (q: z.infer<typeof BurnsQuery>): Promise<BurnsPageDto> => {
   const where = { status: "BURNED" as const };
-  const rows = await db.buyback.findMany({
+  const rows = await db.pyreBurn.findMany({
     where,
     orderBy: [{ completedAt: "desc" }, { id: "desc" }],
     take: q.limit + 1,
     ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
-    include: BUYBACK_INCLUDE,
   });
   const items = rows.slice(0, q.limit);
   const last = items[items.length - 1];
-  const [totals, coins, older] = await Promise.all([
-    db.buyback.aggregate({ where, _sum: { ethWei: true, revenueMicros: true }, _count: { _all: true } }),
-    db.buyback.groupBy({ by: ["appId"], where }),
+  const [totals, older] = await Promise.all([
+    db.pyreBurn.aggregate({ where, _sum: { ethWei: true, usdMicros: true }, _count: { _all: true } }),
     last
-      ? db.buyback.aggregate({
+      ? db.pyreBurn.aggregate({
           where: { ...where, OR: [{ completedAt: { lt: last.completedAt! } }, { completedAt: last.completedAt!, id: { lt: last.id } }] },
-          _sum: { ethWei: true, revenueMicros: true },
+          _sum: { ethWei: true, usdMicros: true },
         })
       : Promise.resolve(null),
   ]);
   // Walk the page oldest → newest so each row carries the cumulative total up to and including itself.
   let ethWei = big(older?._sum.ethWei);
-  let revenueMicros = older?._sum.revenueMicros ?? 0n;
+  let usdMicros = older?._sum.usdMicros ?? 0n;
   const withTotals = [...items].reverse().map((b) => {
     ethWei += big(b.ethWei);
-    revenueMicros += b.revenueMicros;
-    return { ...buybackDto(b), cumulativeEthWei: ethWei.toString(), cumulativeRevenueMicros: revenueMicros.toString() };
+    usdMicros += b.usdMicros;
+    return { ...pyreBurnDto(b), cumulativeEthWei: ethWei.toString(), cumulativeUsdMicros: usdMicros.toString() };
   });
   return {
     items: withTotals.reverse(),
     nextCursor: rows.length > q.limit ? last!.id : null,
     totals: {
       ethWei: big(totals._sum.ethWei).toString(),
-      revenueMicros: (totals._sum.revenueMicros ?? 0n).toString(),
-      buybacks: totals._count._all,
-      coins: coins.length,
+      usdMicros: (totals._sum.usdMicros ?? 0n).toString(),
+      burns: totals._count._all,
     },
   };
 };

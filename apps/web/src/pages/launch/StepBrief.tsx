@@ -1,20 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { AppSpec, MonetizationModel } from "@pyre/shared";
-import type { AppSpec as Spec, MonetizationModel as Model } from "@pyre/shared";
+import { AppSpec } from "@pyre/shared";
+import type { AppSpec as Spec } from "@pyre/shared";
 import { Button, Chip, Field, Input, Select, Skeleton, StatusLed, Textarea } from "../../ui/index.js";
-
-const MODEL_LABEL: Record<Model, string> = {
-  ONE_TIME: "One-time purchase (USDG)",
-  SUBSCRIPTION: "Monthly subscription (USDG)",
-  PAY_PER_REQUEST: "Pay per request (USDG per call)",
-  ADS: "Free with ads",
-  HOLDER_TIER: "Free, pro tier for holders",
-};
 
 const TEMPLATES: Array<{ id: Spec["template"]; label: string }> = [
   { id: "WEB_TOOL", label: "Web tool — utility / SaaS-style page" },
   { id: "GAME", label: "Game — canvas or DOM game loop" },
-  { id: "AGENT_API", label: "Agent API — paid endpoint + docs page" },
+  { id: "AGENT_API", label: "Agent API — endpoint + docs page" },
 ];
 
 /** The intake agent is drafting: the draft sits in DRAFT and the page polls. */
@@ -60,8 +52,6 @@ export const StepBrief = ({ spec: initial, ticker, busy, error, onApprove, onBac
     onApprove(parsed.data);
   };
 
-  const priced = spec.monetization.model !== "ADS" && spec.monetization.model !== "HOLDER_TIER";
-
   return (
     <div className="flex flex-col gap-7">
       <div className="rounded-card border border-[color-mix(in_oklab,var(--color-build)_30%,var(--color-line))] bg-[color-mix(in_oklab,var(--color-build)_6%,var(--color-surface))] px-4 py-3">
@@ -94,47 +84,6 @@ export const StepBrief = ({ spec: initial, ticker, busy, error, onApprove, onBac
 
       <Section title="What it does">
         <Textarea value={spec.whatItDoes} onChange={(e) => patch({ whatItDoes: e.target.value })} rows={5} maxLength={1200} aria-label="What it does" />
-      </Section>
-
-      <Section title="Who pays, and how">
-        <Field label="Who pays">
-          <Textarea value={spec.whoPays} onChange={(e) => patch({ whoPays: e.target.value })} rows={3} maxLength={600} />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px]">
-          <Field label="Model">
-            <Select
-              value={spec.monetization.model}
-              onChange={(e) => {
-                const model = e.target.value as Model;
-                const keepPrice = model !== "ADS" && model !== "HOLDER_TIER";
-                patch({ monetization: { ...spec.monetization, model, priceUsd: keepPrice ? spec.monetization.priceUsd : null } });
-              }}
-            >
-              {MonetizationModel.options.map((m) => (
-                <option key={m} value={m}>
-                  {MODEL_LABEL[m]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Price">
-            <Input
-              mono
-              prefix="$"
-              type="number"
-              min={0}
-              max={10_000}
-              step="0.01"
-              inputMode="decimal"
-              disabled={!priced}
-              value={spec.monetization.priceUsd ?? ""}
-              onChange={(e) => patch({ monetization: { ...spec.monetization, priceUsd: e.target.value === "" ? null : Number(e.target.value) } })}
-            />
-          </Field>
-        </div>
-        <Field label="Price description" hint="What the price buys, in the app's own words.">
-          <Input value={spec.monetization.priceDescription} onChange={(e) => patch({ monetization: { ...spec.monetization, priceDescription: e.target.value } })} maxLength={200} />
-        </Field>
       </Section>
 
       <Section title="MVP">

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 /*
  * The heat ramp as data. CSS owns the colours (`--heat-0..5`); this reads them
- * once so SVG/JS consumers (gauges, kilns, canvases) can interpolate a colour
+ * once so SVG/JS consumers (gauges, canvases) can interpolate a colour
  * for a value in 0–1.
  */
 

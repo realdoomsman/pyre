@@ -92,15 +92,6 @@ async function originChecks() {
     return { ok: res.status === 403, detail: `${res.status} ${res.json?.error ?? res.text.slice(0, 40)}` };
   });
 
-  await check("csrf   cross-origin POST /_pyre/checkout", async () => {
-    const res = await call(pyreUrl("checkout"), {
-      method: "POST",
-      headers: { "content-type": "application/json", origin: FOREIGN_ORIGIN },
-      body: JSON.stringify({ productId: "probe" }),
-    });
-    return { ok: res.status === 403, detail: `${res.status} ${res.json?.error ?? res.text.slice(0, 40)}` };
-  });
-
   await check("csrf   Sec-Fetch-Site: cross-site POST /_pyre/track", async () => {
     const res = await call(pyreUrl("track"), {
       method: "POST",

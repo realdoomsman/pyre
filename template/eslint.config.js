@@ -15,6 +15,20 @@ const FORBIDDEN_GLOBALS = [
   { name: "eval", message: "eval() is blocked by the app CSP." },
 ];
 
+/**
+ * Astral-plane characters (every emoji, incl. flames) and the BMP symbol blocks. Written
+ * as surrogate pairs because esquery regexes have no `u` flag.
+ */
+const GLYPHS = "[\\uD83C-\\uDBFF][\\uDC00-\\uDFFF]|[\\u2600-\\u27BF]|\\uFE0F";
+const GLYPH_MESSAGE = "No emoji or symbol glyphs: Pyre apps use words, not pictograms.";
+
+/** Tailwind palette colours outside the Pyre theme; they do not exist in src/index.css. */
+const OFF_PALETTE =
+  "(^|[^a-z-])(bg|text|border|from|via|to|ring|fill|stroke|outline|shadow|accent|caret|decoration|divide|placeholder)-" +
+  "(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone|white|black)(-|$|[^a-z])";
+const OFF_PALETTE_MESSAGE =
+  "Off-palette colour: use the Pyre tokens from src/index.css (bg, surface, border, ink, violet, heat-1…6, danger).";
+
 const FORBIDDEN_SYNTAX = [
   {
     selector: "JSXOpeningElement[name.name='script']",
@@ -32,6 +46,11 @@ const FORBIDDEN_SYNTAX = [
     selector: "MemberExpression[object.name=/^(window|globalThis|self)$/][property.name='fetch']",
     message: "Use ship.fn(name, input) from @pyre/app-sdk — apps may not call the network.",
   },
+  { selector: `JSXText[value=/${GLYPHS}/]`, message: GLYPH_MESSAGE },
+  { selector: `Literal[value=/${GLYPHS}/]`, message: GLYPH_MESSAGE },
+  { selector: `TemplateElement[value.raw=/${GLYPHS}/]`, message: GLYPH_MESSAGE },
+  { selector: `Literal[value=/${OFF_PALETTE}/]`, message: OFF_PALETTE_MESSAGE },
+  { selector: `TemplateElement[value.raw=/${OFF_PALETTE}/]`, message: OFF_PALETTE_MESSAGE },
 ];
 
 export default tseslint.config(

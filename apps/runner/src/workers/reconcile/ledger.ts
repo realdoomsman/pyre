@@ -19,7 +19,7 @@ const usd = (micros: bigint): string => `$${(Number(micros) / 1e6).toFixed(6)}`;
 export const checkLedger = async (ctx: WorkerContext): Promise<CheckOutcome> => {
   const outcome = emptyOutcome();
   const apps = await prisma.app.findMany({
-    select: { id: true, slug: true, budgetMicros: true, spentMicros: true, revenueMicros: true, pendingRevenueMicros: true },
+    select: { id: true, slug: true, budgetMicros: true, spentMicros: true },
   });
   outcome.checked = apps.length;
 
@@ -30,24 +30,6 @@ export const checkLedger = async (ctx: WorkerContext): Promise<CheckOutcome> => 
   });
   const ledgerByApp: Record<string, bigint> = {};
   for (const row of buildLedger) ledgerByApp[row.account.slice("BUILD:".length)] = row._sum.deltaMicros ?? 0n;
-
-  const buybacks = await prisma.buyback.groupBy({
-    by: ["appId"],
-    where: { status: { not: "FAILED" } },
-    _sum: { revenueMicros: true },
-  });
-  const buybackByApp: Record<string, bigint> = {};
-  for (const row of buybacks) buybackByApp[row.appId] = row._sum.revenueMicros ?? 0n;
-
-  // Revenue claimed by a buyback that has not settled is still "pending" on the App column: only
-  // a BURNED buyback decrements it, so PENDING/SWAPPING/SWAPPED rows must count as unattested here.
-  const unattested = await prisma.revenueEvent.groupBy({
-    by: ["appId"],
-    where: { OR: [{ buybackId: null }, { buyback: { status: { in: ["PENDING", "SWAPPING", "SWAPPED"] } } }] },
-    _sum: { usdMicros: true },
-  });
-  const unattestedByApp: Record<string, bigint> = {};
-  for (const row of unattested) unattestedByApp[row.appId] = row._sum.usdMicros ?? 0n;
 
   for (const app of apps) {
     const ledgerSum = ledgerByApp[app.id] ?? 0n;
@@ -65,30 +47,6 @@ export const checkLedger = async (ctx: WorkerContext): Promise<CheckOutcome> => 
         ledgerMicros: ledgerSum.toString(),
         budgetMicros: app.budgetMicros.toString(),
         spentMicros: app.spentMicros.toString(),
-      });
-    }
-
-    const attested = buybackByApp[app.id] ?? 0n;
-    if (attested > app.revenueMicros + TOLERANCE_MICROS) {
-      outcome.drifted++;
-      outcome.findings.push({
-        code: "BUYBACK_EXCEEDS_REVENUE",
-        detail: `buybacks attested ${usd(attested)} exceed lifetime revenue ${usd(app.revenueMicros)}`,
-        appId: app.id,
-        slug: app.slug,
-      });
-    }
-
-    const pending = unattestedByApp[app.id] ?? 0n;
-    if (abs(pending - app.pendingRevenueMicros) > TOLERANCE_MICROS) {
-      outcome.drifted++;
-      outcome.findings.push({
-        code: "PENDING_REVENUE_DRIFT",
-        detail: `unattested RevenueEvent total ${usd(pending)} vs App.pendingRevenueMicros ${usd(app.pendingRevenueMicros)}`,
-        appId: app.id,
-        slug: app.slug,
-        unattestedMicros: pending.toString(),
-        pendingRevenueMicros: app.pendingRevenueMicros.toString(),
       });
     }
   }

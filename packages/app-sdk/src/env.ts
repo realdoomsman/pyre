@@ -8,11 +8,11 @@ declare global {
 }
 
 /**
- * Fields the SDK cannot work without. `googleClientId`, `treasury` and `tokenAddress` are
- * deliberately absent: a local `vite dev`/`vite preview` host leaves them empty, and the SDK then
- * runs without Google sign-in / payments / holder gating instead of crashing the app.
+ * Fields the SDK cannot work without. `googleClientId` and `tokenAddress` are deliberately
+ * absent: a local `vite dev`/`vite preview` host leaves them empty, and the SDK then runs
+ * without Google sign-in / holder gating instead of crashing the app.
  */
-const REQUIRED: readonly (keyof PyreEnv)[] = ["appId", "slug", "usdg"];
+const REQUIRED: readonly (keyof PyreEnv)[] = ["appId", "slug"];
 
 let cached: PyreEnv | null = null;
 
@@ -44,7 +44,6 @@ export function pyreEnv(): PyreEnv {
     basePath: (raw.basePath ?? "").replace(/\/+$/, ""),
     chainId: raw.chainId ?? 4663,
     googleClientId: raw.googleClientId ?? "",
-    treasury: raw.treasury ?? "",
     tokenAddress: raw.tokenAddress ?? "",
     explorerUrl: (raw.explorerUrl ?? "https://robinhoodchain.blockscout.com").replace(/\/+$/, ""),
     apiOrigin: raw.apiOrigin ?? "",

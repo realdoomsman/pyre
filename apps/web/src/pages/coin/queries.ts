@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import {
   BuildEventType,
   type BountyDto,
   type BuildEventDto,
-  type BuybackDto,
   type CandleIntervalDto,
   type CandlesDto,
   type HolderDto,
@@ -22,7 +21,7 @@ import type { Page } from "../../api/types.js";
 /*
  * Coin-page data. Every hook here is keyed on the slug and owns its own
  * refetch policy; the SSE hook at the bottom feeds live frames into these
- * caches so a burn, a trade or a deploy shows up without a refetch.
+ * caches so a trade or a deploy shows up without a refetch.
  */
 
 export const keys = {
@@ -30,7 +29,6 @@ export const keys = {
   candles: (slug: string, interval: CandleIntervalDto) => ["coin", slug, "candles", interval] as const,
   trades: (slug: string) => ["coin", slug, "trades"] as const,
   holders: (slug: string) => ["coin", slug, "holders"] as const,
-  buybacks: (slug: string) => ["coin", slug, "buybacks"] as const,
   roadmap: (slug: string) => ["coin", slug, "roadmap"] as const,
   bounties: (slug: string) => ["coin", slug, "bounties"] as const,
 };
@@ -43,7 +41,6 @@ export interface FeedPage {
 export interface HoldersDto {
   holders: HolderDto[];
   supplyUnits: string;
-  burnedUnits: string;
 }
 
 export interface RoadmapDto {
@@ -84,15 +81,6 @@ export const useHolders = (slug: string) =>
   useQuery({
     queryKey: keys.holders(slug),
     queryFn: ({ signal }) => api.get<HoldersDto>(`/v1/apps/${slug}/holders${qs({ limit: 100 })}`, signal),
-    refetchInterval: 60_000,
-  });
-
-export const useBuybacks = (slug: string) =>
-  useInfiniteQuery({
-    queryKey: keys.buybacks(slug),
-    queryFn: ({ pageParam, signal }) => api.get<Page<BuybackDto>>(`/v1/apps/${slug}/buybacks${qs({ cursor: pageParam, limit: 50 })}`, signal),
-    initialPageParam: null as string | null,
-    getNextPageParam: (last) => last.nextCursor,
     refetchInterval: 60_000,
   });
 
@@ -173,33 +161,20 @@ export const useCustodialTrade = (slug: string) => {
 
 const STREAM_EVENTS = BuildEventType.options;
 
-/** Ids of buybacks that arrived over the stream in the last cooling window — rows animate on entry. */
 export interface LiveState {
   stream: SseState;
-  freshBuybacks: ReadonlySet<string>;
   /** Trades seen on the stream before the REST page caught up; prepended to the tape. */
   liveTrades: ReadonlyArray<TradeDto>;
 }
 
-const COOL_MS = 1400;
-
 /**
  * `/v1/apps/:slug/feed/stream`. Appends every frame to the feed cache and
- * fans the chain events out: TRADE → tape, BUYBACK → ledger (fresh for one
- * cooling window), DEPLOY / FEES / GRADUATED / LAUNCH → app detail refetch.
+ * fans the chain events out: TRADE → tape, DEPLOY / FEES / GRADUATED / LAUNCH
+ * → app detail refetch.
  */
 export const useAppStream = (slug: string, phase: number): LiveState => {
   const qc = useQueryClient();
-  const [freshBuybacks, setFresh] = useState<ReadonlySet<string>>(() => new Set());
   const [liveTrades, setLiveTrades] = useState<ReadonlyArray<TradeDto>>([]);
-  const timers = useRef<number[]>([]);
-
-  useEffect(
-    () => () => {
-      for (const t of timers.current) clearTimeout(t);
-    },
-    [],
-  );
 
   const onMessage = useCallback(
     (event: BuildEventDto) => {
@@ -223,27 +198,10 @@ export const useAppStream = (slug: string, phase: number): LiveState => {
             priceUsd: p.priceUsd,
             txHash: p.txHash,
             block: 0,
-            isBuyback: false,
             ts: event.createdAt,
           };
           setLiveTrades((cur) => (cur.some((t) => t.txHash === trade.txHash) ? cur : [trade, ...cur].slice(0, 200)));
           void qc.invalidateQueries({ queryKey: shared.app(slug) });
-          break;
-        }
-        case "BUYBACK": {
-          setFresh((cur) => new Set(cur).add(p.buybackId));
-          timers.current.push(
-            window.setTimeout(() => {
-              setFresh((cur) => {
-                const next = new Set(cur);
-                next.delete(p.buybackId);
-                return next;
-              });
-            }, COOL_MS),
-          );
-          void qc.invalidateQueries({ queryKey: keys.buybacks(slug) });
-          void qc.invalidateQueries({ queryKey: shared.app(slug) });
-          void qc.invalidateQueries({ queryKey: shared.burns });
           break;
         }
         case "DEPLOY":
@@ -270,7 +228,7 @@ export const useAppStream = (slug: string, phase: number): LiveState => {
   );
 
   const stream = useSse<BuildEventDto>(`/v1/apps/${slug}/feed/stream`, { onMessage, events: STREAM_EVENTS });
-  return { stream, freshBuybacks, liveTrades };
+  return { stream, liveTrades };
 };
 
 /** Every event across the fetched feed pages, oldest first. */

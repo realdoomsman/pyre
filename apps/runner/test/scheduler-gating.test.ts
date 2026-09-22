@@ -50,7 +50,6 @@ type DecisionApp = DecisionInput["app"];
 const app = (over: Partial<DecisionApp> = {}): DecisionApp => ({
   id: "app_1",
   budgetMicros: 100n * MICROS,
-  pendingRevenueMicros: 0n,
   firstBuildAt: new Date(NOW - 30 * 24 * HOUR),
   liveVersion: 3,
   ...(over as Partial<App>),
@@ -97,9 +96,7 @@ describe("first build threshold", () => {
 
   it("never marks a pre-MVP app dormant, however empty its budget", () => {
     expect(nextBuildDecision(fresh(0n)).kind).toBe("none");
-    expect(nextBuildDecision(input({ app: app({ firstBuildAt: null, liveVersion: 0, budgetMicros: 0n, pendingRevenueMicros: 0n }) })).kind).toBe(
-      "none",
-    );
+    expect(nextBuildDecision(input({ app: app({ firstBuildAt: null, liveVersion: 0, budgetMicros: 0n }) })).kind).toBe("none");
   });
 
   it("is blocked by the daily compute ceiling without going dormant", () => {
@@ -152,17 +149,16 @@ describe("iteration threshold", () => {
 });
 
 describe("dormancy", () => {
-  it("goes dormant when the budget is spent and no revenue is pending", () => {
-    expect(nextBuildDecision(input({ app: app({ budgetMicros: 0n, pendingRevenueMicros: 0n }) }))).toEqual({
+  it("goes dormant when the budget is spent", () => {
+    expect(nextBuildDecision(input({ app: app({ budgetMicros: 0n }) }))).toEqual({
       kind: "dormant",
       reason: "Build budget exhausted",
     });
   });
 
-  it("is revived by pending revenue rather than going dormant", () => {
-    // A single micro of unattested revenue is enough: the buyback/fee path will top the budget up.
-    expect(nextBuildDecision(input({ app: app({ budgetMicros: 0n, pendingRevenueMicros: 1n }) })).kind).toBe("none");
-    expect(nextBuildDecision(input({ app: app({ budgetMicros: MIN_ITER, pendingRevenueMicros: 0n }) })).kind).toBe("build");
+  it("builds again the moment the budget clears the iteration floor", () => {
+    expect(nextBuildDecision(input({ app: app({ budgetMicros: MIN_ITER - 1n }) })).kind).toBe("dormant");
+    expect(nextBuildDecision(input({ app: app({ budgetMicros: MIN_ITER }) })).kind).toBe("build");
   });
 
   it("uses a distinct reason when the MVP never shipped", () => {

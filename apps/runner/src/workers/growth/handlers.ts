@@ -1,20 +1,11 @@
-import { big, prisma } from "@pyre/db";
+import { prisma } from "@pyre/db";
 import { AppSpec } from "@pyre/shared";
 import type { Redis } from "ioredis";
 import type { Logger } from "pino";
 import { appLiveUrl } from "../../env.js";
-import {
-  burnedPctText,
-  burnedTokensText,
-  composeChangelog,
-  composeDeploy,
-  composeRevive,
-  GROWTH_APP_SELECT,
-  recentEvents,
-  type GrowthApp,
-} from "./compose.js";
+import { composeChangelog, composeDeploy, composeRevive, GROWTH_APP_SELECT, recentEvents, type GrowthApp } from "./compose.js";
 import { DAY_MS, MIN_GROWTH_BUDGET_MICROS, type GrowthJobData } from "./jobs.js";
-import { coinUrl, publishPost } from "./post.js";
+import { publishPost } from "./post.js";
 import { replyToMentions } from "./replies.js";
 import { fetchMentions, xClient } from "./x.js";
 
@@ -40,17 +31,12 @@ export async function loadGrowthApp(appId: string, log: Logger): Promise<GrowthA
   return app;
 }
 
-/** Deterministic milestone card. Revenue milestones carry a dollar figure; the MVP milestone links the live app. */
+/** Deterministic milestone card: the MVP milestone links the live app. */
 export function milestoneText(app: GrowthApp, milestone: string): string {
   const spec = AppSpec.safeParse(app.spec);
-  const amount = milestone.match(/\$?(\d[\d,]*(?:\.\d+)?)/);
-  if (/mvp|live/i.test(milestone) && !amount) {
-    return `$${app.ticker} is live — ${spec.success ? spec.data.oneLiner : app.name} — ${appLiveUrl(app.slug)}`;
-  }
-  const revenueUsd = amount ? Number(amount[1]!.replace(/,/g, "")) : Number(app.revenueMicros) / 1e6;
-  const revenue = Number.isInteger(revenueUsd) ? revenueUsd.toLocaleString("en-US") : revenueUsd.toFixed(2);
-  const burned = big(app.burnedTokens);
-  return `$${app.ticker} hit $${revenue} revenue — ${burnedTokensText(burned)} $${app.ticker} (${burnedPctText(burned)} of supply) bought back and burned so far — ${coinUrl(app.slug)}`;
+  const what = spec.success ? spec.data.oneLiner : app.name;
+  if (/mvp|live/i.test(milestone)) return `$${app.ticker} is live — ${what} — ${appLiveUrl(app.slug)}`;
+  return `$${app.ticker} reached ${milestone.replace(/_/g, " ")} — ${what} — ${appLiveUrl(app.slug)}`;
 }
 
 /** Changelog thread for the last 24h; at most one per app per 20h (Redis guard). */

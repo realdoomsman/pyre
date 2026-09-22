@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState, type ReactNode } from "react";
 import type { AppSpec, LaunchDraftDto, MeDto, StakeBody } from "@pyre/shared";
-import { FEE_SPLIT_BPS, PONS_GRADUATION_THRESHOLD_WEI, REVENUE_SPLIT_BPS, explorerAddressUrl } from "@pyre/shared";
+import { FEE_SPLIT_BPS, PONS_GRADUATION_THRESHOLD_WEI, explorerAddressUrl } from "@pyre/shared";
 import { useAuth } from "../../auth/useAuth.js";
 import { formatBps, formatEth } from "../../lib/format.js";
 import { Address, Button, Chip, Tabs } from "../../ui/index.js";
@@ -51,10 +51,9 @@ export const StepReview = ({ launch, spec, me, busy, error, onStake, onBack }: P
             <span className="num text-ink">{formatBps(FEE_SPLIT_BPS.PYRE_TOKEN)}</span> $PYRE burn · <span className="num text-ink">{formatBps(FEE_SPLIT_BPS.LAUNCHER)}</span> to you. The agent
             starts building at $50 of budget.
           </Fact>
-          <Fact n="04" title="Revenue burns the coin">
-            App revenue splits <span className="num text-ink">{formatBps(REVENUE_SPLIT_BPS.BUYBACK_BURN)}</span> buyback + burn of ${launch.ticker} ·{" "}
-            <span className="num text-ink">{formatBps(REVENUE_SPLIT_BPS.PYRE_TOKEN)}</span> $PYRE · <span className="num text-ink">{formatBps(REVENUE_SPLIT_BPS.PLATFORM_OPS)}</span> ops. Burns
-            reduce supply; nothing is paid to holders.
+          <Fact n="04" title="Fees burn PYRE">
+            The <span className="num text-ink">{formatBps(FEE_SPLIT_BPS.PYRE_TOKEN)}</span> PYRE share of every claim is pooled with every other coin's and, at $5, buys $PYRE and burns it. The app itself
+            is free to use; holders of ${launch.ticker} unlock its holder tier. Burns reduce supply; nothing is paid to holders.
           </Fact>
         </ol>
       </section>
@@ -164,8 +163,8 @@ const Summary = ({ launch, spec }: { launch: LaunchDraftDto; spec: AppSpec }) =>
     </div>
     <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-13 sm:grid-cols-4">
       <Row k="Template" v={spec.template.replace("_", " ").toLowerCase()} />
-      <Row k="Model" v={spec.monetization.model.replace(/_/g, " ").toLowerCase()} />
-      <Row k="Price" v={spec.monetization.priceUsd == null ? "free" : `$${spec.monetization.priceUsd}`} />
+      <Row k="Price" v="free" />
+      <Row k="Holder tier" v={spec.holderTier.enabled ? `${spec.holderTier.perks.length} perks` : "off"} />
       <Row k="MVP" v={`${spec.mvp.length} features`} />
     </dl>
     <div className="flex flex-wrap gap-1.5">

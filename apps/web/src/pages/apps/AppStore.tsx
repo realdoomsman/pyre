@@ -5,11 +5,11 @@ import { flatPages, useApps, useStats } from "../../api/queries.js";
 import { AppCard } from "../../components/AppCard.js";
 import { AppPreview, useLatestScreenshot } from "../../components/AppPreview.js";
 import { appUrl } from "../../env.js";
-import { formatEth, formatUsd, timeAgo } from "../../lib/format.js";
+import { formatEth, formatUsd, formatUsdCompact, timeAgo } from "../../lib/format.js";
 import { Avatar, Button, Chip, EmptyState, HeatGauge, ProofStrip, Skeleton, Tabs, cx } from "../../ui/index.js";
 
 type Category = "ALL" | AppSummaryDto["template"];
-type Sort = Extract<AppSort, "revenue" | "burning" | "new">;
+type Sort = Extract<AppSort, "trending" | "shipping" | "new">;
 
 const CATEGORIES: ReadonlyArray<{ id: Category; label: string }> = [
   { id: "ALL", label: "All" },
@@ -19,28 +19,28 @@ const CATEGORIES: ReadonlyArray<{ id: Category; label: string }> = [
 ];
 
 const SORTS: ReadonlyArray<{ id: Sort; label: string }> = [
-  { id: "revenue", label: "Revenue" },
-  { id: "burning", label: "Burn" },
+  { id: "trending", label: "Trending" },
+  { id: "shipping", label: "Shipping" },
   { id: "new", label: "New" },
 ];
 
 export const AppStore = () => {
   const [category, setCategory] = useState<Category>("ALL");
-  const [sort, setSort] = useState<Sort>("revenue");
+  const [sort, setSort] = useState<Sort>("trending");
   const stats = useStats();
   const apps = useApps(sort);
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Apps that pay to burn — Pyre";
+    document.title = "Apps built by coins — Pyre";
   }, []);
 
   const all = useMemo(() => flatPages(apps.data?.pages), [apps.data]);
   const filtered = useMemo(() => (category === "ALL" ? all : all.filter((a) => a.template === category)), [all, category]);
   const live = filtered.filter((a) => a.status === "LIVE");
   const ash = filtered.filter((a) => a.status === "DORMANT");
-  // The featured app is the top earner regardless of the active sort, so the editorial row stays put.
-  const featured = useMemo(() => [...all].filter((a) => a.status === "LIVE" && a.liveUrl).sort((a, b) => Number(BigInt(b.revenueMicros) - BigInt(a.revenueMicros)))[0], [all]);
+  // The featured app is the best-funded build regardless of the active sort, so the editorial row stays put.
+  const featured = useMemo(() => [...all].filter((a) => a.status === "LIVE" && a.liveUrl).sort((a, b) => Number(BigInt(b.budgetMicros) - BigInt(a.budgetMicros)))[0], [all]);
 
   const s = stats.data;
 
@@ -48,18 +48,18 @@ export const AppStore = () => {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
       <header className="flex flex-col gap-5">
         <h1 className="h1 max-w-3xl">
-          Apps that pay to <em>burn</em>.
+          Apps built by <em>coins</em>.
         </h1>
         <p className="body max-w-2xl text-ink-2">
-          Every app here was built by an agent funded by its coin's trading fees. What the app earns buys that coin back and destroys it. Open one, pay for it if it is worth
-          paying for, and watch the supply shrink.
+          Every app here was built by an agent funded by its coin's trading fees, and every one is free to use. Hold the coin to unlock its holder perks; 25% of every
+          coin's fees buys and burns PYRE.
         </p>
         {s ? (
           <ProofStrip
             items={[
               { id: "live", label: "apps live", value: s.appsLive },
-              { id: "rev", label: "revenue 30d", value: Number(BigInt(s.revenue30dMicros)) / 1e6, prefix: "$", format: { maximumFractionDigits: 0 } },
-              { id: "burn", label: "burned 30d", value: Number(BigInt(s.burnedEth30dWei)) / 1e18, suffix: " ETH", format: { maximumFractionDigits: 3 } },
+              { id: "building", label: "agents building", value: s.appsBuilding },
+              { id: "burn", label: "PYRE burned 30d", value: Number(BigInt(s.burnedEth30dWei)) / 1e18, suffix: " ETH", format: { maximumFractionDigits: 3 } },
             ]}
           />
         ) : (
@@ -141,7 +141,7 @@ export const AppStore = () => {
   );
 };
 
-/** Editorial row: the top-earning app with its one-liner set in the display face. */
+/** Editorial row: the best-funded app with its one-liner set in the display face. */
 const Featured = ({ app }: { app: AppSummaryDto }) => {
   const shot = useLatestScreenshot(app.slug);
   const url = app.liveUrl ?? appUrl(app.slug);
@@ -149,7 +149,7 @@ const Featured = ({ app }: { app: AppSummaryDto }) => {
     <section className="grid gap-6 rounded-card border border-line bg-surface p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
       <div className="flex flex-col justify-between gap-6">
         <div className="flex flex-col gap-4">
-          <div className="eyebrow">Featured · top revenue</div>
+          <div className="eyebrow">Featured · best funded</div>
           <p className="display text-28 leading-tight text-ink sm:text-36">
             <em>{app.oneLiner}</em>
           </p>
@@ -163,12 +163,12 @@ const Featured = ({ app }: { app: AppSummaryDto }) => {
         </div>
         <dl className="grid grid-cols-3 gap-4 text-13">
           <div>
-            <dt className="eyebrow">Revenue · all time</dt>
-            <dd className="num text-15 text-earn">{formatUsd(BigInt(app.revenueMicros), 0)}</dd>
+            <dt className="eyebrow">Fees → agent</dt>
+            <dd className="num text-15 text-earn">{formatUsd(BigInt(app.budgetMicros), 0)}</dd>
           </div>
           <div>
-            <dt className="eyebrow">Burned</dt>
-            <dd className="num text-15 text-burn">{formatEth(app.buybackWei)}</dd>
+            <dt className="eyebrow">Fees claimed</dt>
+            <dd className="num text-15 text-ink">{formatEth(app.feesWei)}</dd>
           </div>
           <div>
             <dt className="eyebrow">Heat</dt>
@@ -212,8 +212,8 @@ const AshCard = ({ app, onRelight }: { app: AppSummaryDto; onRelight: () => void
     <p className="small ash line-clamp-2 text-ink-3">{app.oneLiner}</p>
     <dl className="grid grid-cols-2 gap-3 text-12">
       <div>
-        <dt className="eyebrow">Earned before it cooled</dt>
-        <dd className="num text-ink-2">{formatUsd(BigInt(app.revenueMicros), 0)}</dd>
+        <dt className="eyebrow">Fees → agent</dt>
+        <dd className="num text-ink-2">{formatUsdCompact(app.budgetMicros)}</dd>
       </div>
       <div>
         <dt className="eyebrow">Last live</dt>

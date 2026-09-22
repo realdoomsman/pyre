@@ -1,5 +1,5 @@
 import type { BuildEventDto, BuildEventPayload } from "@pyre/shared";
-import { formatEth, formatPct, formatTokenUnits, formatUsd, shortAddress } from "../../lib/format.js";
+import { formatEth, formatTokenUnits, formatUsd, shortAddress } from "../../lib/format.js";
 import type { ConsoleRow, ConsoleKind } from "../../ui/index.js";
 
 /*
@@ -81,8 +81,6 @@ export const consoleRow = (e: BuildEventDto): ConsoleRow => {
       return { ...base, kind: "error", text: `launch gated: ${shortAddress(p.wallet)} cannot launch on PONS yet` };
     case "FEES":
       return { ...base, kind: "info", text: `fees claimed ${formatEth(p.wei)} (${formatUsd(p.usdMicros)}) · ${formatUsd(p.buildMicros)} to the agent` };
-    case "BUYBACK":
-      return { ...base, kind: "info", text: `buyback ${formatEth(p.ethWei)} → burned ${formatTokenUnits(p.burnedUnits)} (${formatPct(p.burnedPct / 100, 3)} of supply)` };
     case "TRADE":
       return { ...base, kind: "info", text: `${p.side.toLowerCase()} ${formatTokenUnits(p.tokenUnits)} for ${formatEth(p.quoteWei)} by ${shortAddress(p.wallet)}` };
     case "GRADUATED":
@@ -107,7 +105,6 @@ const THREAD_TYPES: Record<string, true> = {
   LAUNCH: true,
   LAUNCH_GATED: true,
   FEES: true,
-  BUYBACK: true,
   TRADE: true,
   GRADUATED: true,
   DEPLOY: true,
@@ -135,14 +132,6 @@ export const threadItem = (e: BuildEventDto, ticker: string, explorerTx: (hash: 
       return { ...base, tone: "warn", title: "Launch gated by PONS", detail: `${shortAddress(p.wallet)} is not allowed to launch yet; retrying.` };
     case "FEES":
       return { ...base, tone: "earn", title: `Creator fees claimed: ${formatEth(p.wei)}`, detail: `${formatUsd(p.buildMicros)} funded the agent`, href: explorerTx(p.txHash) };
-    case "BUYBACK":
-      return {
-        ...base,
-        tone: "burn",
-        title: `Burned ${formatTokenUnits(p.burnedUnits)} $${ticker}`,
-        detail: `${formatEth(p.ethWei)} of app revenue bought back ${formatPct(p.burnedPct / 100, 3)} of supply`,
-        href: p.burnTx ? explorerTx(p.burnTx) : p.swapTx ? explorerTx(p.swapTx) : undefined,
-      };
     case "TRADE":
       return {
         ...base,

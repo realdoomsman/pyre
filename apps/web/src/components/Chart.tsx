@@ -18,7 +18,7 @@ export type ChartUnit = "usd" | "eth";
 export interface ChartMarker {
   /** Unix seconds. */
   t: number;
-  kind: "burn" | "deploy";
+  kind: "deploy";
   label: string;
 }
 
@@ -70,7 +70,7 @@ const fmtAxis = (mode: ChartMode, unit: ChartUnit) => (v: number) => {
 
 /**
  * Candles + volume. The toolbar toggles interval, Price/MCap and USD/ETH;
- * burn and deploy markers sit under the candles. Reads colours from the
+ * deploy markers sit above the candles. Reads colours from the
  * tokens so it follows the theme.
  */
 export const Chart = ({
@@ -158,13 +158,7 @@ export const Chart = ({
     const ms: SeriesMarker<UTCTimestamp>[] = markers
       .filter((m) => m.t >= (series[0]?.time ?? 0))
       .sort((a, b) => a.t - b.t)
-      .map((m) => ({
-        time: m.t as UTCTimestamp,
-        position: m.kind === "burn" ? "belowBar" : "aboveBar",
-        shape: m.kind === "burn" ? "arrowUp" : "circle",
-        color: m.kind === "burn" ? t.down : t.build,
-        text: m.label,
-      }));
+      .map((m) => ({ time: m.t as UTCTimestamp, position: "aboveBar", shape: "circle", color: t.build, text: m.label }));
     cs.setMarkers(ms);
     chart.current?.timeScale().fitContent();
   }, [series, markers, mode, unit]);

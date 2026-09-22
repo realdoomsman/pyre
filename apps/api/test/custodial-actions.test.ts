@@ -177,7 +177,6 @@ vi.mock("../src/lib/dto.js", () => ({
   stakeDto: (s: unknown) => s,
   appSummary: () => ({}),
   appExtrasByApp: async () => ({}),
-  buybackDto: () => ({}),
   candleDto: () => ({}),
   eventDto: () => ({}),
   feeEventDto: () => ({}),
@@ -188,7 +187,6 @@ vi.mock("../src/lib/dto.js", () => ({
   tradeDto: () => ({}),
   userRef: () => ({}),
   APP_SUMMARY_SELECT: {},
-  BUYBACK_INCLUDE: {},
   USER_REF_SELECT: {},
 }));
 // Real env is fully populated by vitest.config, but PYRE_TOKEN is frozen at import; proxy it so the

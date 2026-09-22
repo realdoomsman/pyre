@@ -1,7 +1,7 @@
 {
   "name": "@pyre/app-sdk",
   "version": "0.1.0",
-  "description": "Browser SDK for apps hosted on Pyre: auth, key-value storage, server functions, USDG checkout on Robinhood Chain, holder gating and ads.",
+  "description": "Browser SDK for apps hosted on Pyre: Google sign-in, key-value storage, server functions and holder gating.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

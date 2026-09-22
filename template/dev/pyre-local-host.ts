@@ -8,47 +8,35 @@ import type { Plugin } from "vite";
  * Local stand-in for the platform endpoints an app talks to in production
  * (`/_pyre/*`). It exists so `npm run dev`, `npm run preview` and the Playwright
  * smoke test work on a laptop and inside the build sandbox, where there is no
- * Pyre host, no custodial wallet and no Robinhood Chain RPC.
+ * Pyre host and no Robinhood Chain RPC.
  *
  * It implements exactly the endpoints that need no secrets:
  *   GET  /_pyre/env.js        runtime env, built from pyre.manifest.json
  *   GET  /_pyre/me            always an anonymous session
  *   POST /_pyre/track         accepted, discarded
- *   GET  /_pyre/ad            204 (no ad network locally)
  *   GET  /_pyre/kv/app/:key   app-scope storage written by functions/*.js
  *   POST /_pyre/fn/:name      runs functions/<name>.js in this Node process
  *
- * Everything that needs a real wallet, session or treasury answers 503 with an
- * explanatory message instead of pretending to work.
+ * Everything that needs a real session answers 503 with an explanatory message
+ * instead of pretending to work.
  */
 
 const ROOT = process.cwd();
 const ENV_TAG = '<script src="/_pyre/env.js"></script>';
 
-/** Robinhood Chain facts. Payments cannot be made locally, but the addresses are public. */
+/** Robinhood Chain facts; the coin cannot be held locally, but the explorer is public. */
 const CHAIN_ID = 4663;
-const USDG_ADDRESS = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
 const EXPLORER_URL = "https://robinhoodchain.blockscout.com";
 
 interface ManifestFunction {
   name: string;
-  priceUsd: number;
   auth: boolean;
   holderOnly: boolean;
-}
-
-interface ManifestProduct {
-  id: string;
-  name: string;
-  priceUsd: number;
-  kind: "ONE_TIME" | "SUBSCRIPTION_MONTHLY";
 }
 
 interface Manifest {
   name: string;
   functions: ManifestFunction[];
-  products: ManifestProduct[];
-  adSlot: boolean;
   minHoldTokens: number;
 }
 
@@ -71,26 +59,14 @@ async function loadManifest(): Promise<Manifest> {
     const f = record(raw);
     return {
       name: String(f.name ?? ""),
-      priceUsd: typeof f.priceUsd === "number" ? f.priceUsd : 0,
       auth: f.auth === true,
       holderOnly: f.holderOnly === true,
-    };
-  });
-  const products: ManifestProduct[] = (Array.isArray(m.products) ? m.products : []).map((raw) => {
-    const p = record(raw);
-    return {
-      id: String(p.id ?? ""),
-      name: String(p.name ?? ""),
-      priceUsd: typeof p.priceUsd === "number" ? p.priceUsd : 0,
-      kind: p.kind === "SUBSCRIPTION_MONTHLY" ? "SUBSCRIPTION_MONTHLY" : "ONE_TIME",
     };
   });
   const tier = record(m.holderTier);
   return {
     name: typeof m.name === "string" && m.name !== "" ? m.name : "Pyre App",
     functions,
-    products,
-    adSlot: m.adSlot === true,
     minHoldTokens: typeof tier.minHoldTokens === "number" ? tier.minHoldTokens : 0,
   };
 }
@@ -162,18 +138,13 @@ function pyreRoutes(appKv: Map<string, unknown>) {
           name: manifest.name,
           ticker: "LOCAL",
           chainId: CHAIN_ID,
-          usdg: USDG_ADDRESS,
-          // Empty: no treasury, no coin and no Google project locally — the SDK runs without payments,
-          // holder gating and sign-in.
-          treasury: "",
+          // Empty: no coin and no Google project locally — the SDK runs without holder gating and sign-in.
           tokenAddress: "",
           explorerUrl: EXPLORER_URL,
           googleClientId: "",
           apiOrigin: "",
           basePath: "",
           holderMin: String(manifest.minHoldTokens),
-          adSlot: manifest.adSlot,
-          products: manifest.products,
           functions: manifest.functions,
         };
         res.statusCode = 200;
@@ -188,7 +159,6 @@ function pyreRoutes(appKv: Map<string, unknown>) {
         sendJson(res, 200, {
           user: null,
           holder: { isHolder: false, balance: "0", minHold: String(manifest.minHoldTokens) },
-          purchases: [],
         });
         return;
       }
@@ -198,9 +168,47 @@ function pyreRoutes(appKv: Map<string, unknown>) {
         return;
       }
 
-      if (path === "/_pyre/ad") {
-        res.statusCode = 204;
-        res.end();
+      // Live coin data exists only on the deployed host. Locally: a small, clearly synthetic set so
+      // pages render; the SDK docs tell apps to label it as example data.
+      if (path === "/_pyre/coins" || path.startsWith("/_pyre/coins/")) {
+        const now = Math.floor(Date.now() / 1000);
+        const example = (i: number) => ({
+          id: `example-${i}`,
+          slug: `example-${i}`,
+          name: `Example coin ${i}`,
+          ticker: `EX${i}`,
+          imageUrl: "",
+          tokenAddress: null,
+          priceUsd: 0.00001 * i,
+          marketCapUsd: 10_000 * i,
+          change24hPct: (i % 2 ? 1 : -1) * 3.5 * i,
+          volume24hUsd: 1_000 * i,
+          holdersCount: 10 * i,
+          launchPhase: 0,
+          progress: 0.1 * i,
+          agentState: "idle",
+          status: "LIVE",
+        });
+        const rest = path.slice("/_pyre/coins".length);
+        if (rest === "" || rest === "/") {
+          sendJson(res, 200, { items: [1, 2, 3, 4, 5].map(example), nextCursor: null });
+          return;
+        }
+        const [, slug, sub] = rest.split("/");
+        const n = Number((slug ?? "").replace("example-", ""));
+        if (!Number.isInteger(n) || n < 1 || n > 5) {
+          sendJson(res, 404, { error: "coin_not_found" });
+          return;
+        }
+        if (sub === "candles") {
+          const candles = Array.from({ length: 48 }, (_, k) => {
+            const c = 0.00001 * n * (1 + 0.02 * Math.sin(k / 5));
+            return { t: now - (48 - k) * 3600, o: c * 0.99, h: c * 1.02, l: c * 0.98, c, v: 100 + k };
+          });
+          sendJson(res, 200, { interval: "1h", candles, supply: 1_000_000_000 });
+          return;
+        }
+        sendJson(res, 200, { app: example(n) });
         return;
       }
 
@@ -235,12 +243,6 @@ function pyreRoutes(appKv: Map<string, unknown>) {
           sendJson(res, 404, { error: `functions/${name}.js is not declared in pyre.manifest.json` });
           return;
         }
-        if (declared.priceUsd > 0) {
-          sendJson(res, 503, {
-            error: `${name} costs $${declared.priceUsd} per call and can only be paid on the deployed app`,
-          });
-          return;
-        }
         const input = await readBody(req);
         const file = resolve(ROOT, "functions", `${name}.js`);
         // Runtime-selected specifier: the function name comes from the request path.
@@ -253,11 +255,6 @@ function pyreRoutes(appKv: Map<string, unknown>) {
         }
         const result: unknown = await handler(input, functionApi(input, appKv));
         sendJson(res, 200, { result: result === undefined ? null : result });
-        return;
-      }
-
-      if (path === "/_pyre/checkout" || path.startsWith("/_pyre/checkout/")) {
-        sendJson(res, 503, { error: "payments need the Pyre host and a custodial wallet; they only work on the deployed app" });
         return;
       }
 

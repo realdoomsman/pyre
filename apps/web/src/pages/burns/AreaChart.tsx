@@ -7,15 +7,8 @@ export interface AreaPoint {
   v: number;
 }
 
-export interface AreaMarker {
-  t: number;
-  label: string;
-}
-
 export interface AreaChartProps {
   points: ReadonlyArray<AreaPoint>;
-  /** Vertical rules with a label on hover (burns over a revenue series, say). */
-  markers?: ReadonlyArray<AreaMarker>;
   tone?: "burn" | "earn" | "accent";
   height?: number;
   formatValue: (v: number) => string;
@@ -37,9 +30,9 @@ const fmtStamp = (ms: number): string => new Date(ms).toLocaleString("en-US", { 
 
 /**
  * A cumulative series as an area with no gridlines: accent stroke, soft fill,
- * dashed marker rules, and a crosshair readout on hover. Scales to its box.
+ * and a crosshair readout on hover. Scales to its box.
  */
-export const AreaChart = ({ points, markers = [], tone = "burn", height = 200, formatValue, label, className }: AreaChartProps) => {
+export const AreaChart = ({ points, tone = "burn", height = 200, formatValue, label, className }: AreaChartProps) => {
   const id = useId();
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(640);
@@ -118,9 +111,6 @@ export const AreaChart = ({ points, markers = [], tone = "burn", height = 200, f
         </defs>
         <path d={geo.area} fill={`url(#${id})`} />
         <path d={geo.d} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        {markers.map((m, i) => (
-          <line key={i} x1={geo.x(m.t)} x2={geo.x(m.t)} y1={PAD.top} y2={PAD.top + geo.h} stroke="var(--color-burn)" strokeOpacity="0.45" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
-        ))}
         {ticks.map((t, i) => (
           <text key={i} x={geo.x(t)} y={height - 6} textAnchor={i === 0 ? "start" : i === 2 ? "end" : "middle"} className="fill-ink-3" style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>
             {fmtDate(t)}

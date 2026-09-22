@@ -15,7 +15,6 @@ const SORTS: ReadonlyArray<{ id: AppSort; label: string }> = [
   { id: "heating", label: "Heating" },
   { id: "graduated", label: "Graduated" },
   { id: "shipping", label: "Shipping" },
-  { id: "burning", label: "Burning" },
 ];
 
 const isSort = (s: string | null): s is AppSort => SORTS.some((x) => x.id === s);
@@ -26,8 +25,6 @@ const EMPTY_COPY: Record<AppSort, { title: string; body: string }> = {
   heating: { title: "nothing heating", body: "a coin heats up as its curve climbs toward 4.2 ETH." },
   graduated: { title: "no graduates yet", body: "a curve that raises 4.2 ETH moves to a uniswap v4 pool and shows up here." },
   shipping: { title: "no agent at work", body: "once a coin's fees reach $50 the agent starts building and the coin lands here." },
-  burning: { title: "nothing burning", body: "app revenue buys the coin back and burns it. the first burn lands here." },
-  revenue: { title: "no revenue yet", body: "apps that earn land here." },
 };
 
 /** Before the first launch: one empty state for the whole feed, no tabs of zeros. */
@@ -38,7 +35,7 @@ export const FeedEmpty = () => (
       nothing has launched <em>yet</em>. be first.
     </h2>
     <p className="body mx-auto mt-3 max-w-lg text-ink-2">
-      describe an app in a paragraph and stake {formatEth(LAUNCH_STAKE_WEI)}. the coin's trading fees pay an agent to build the app; the app's revenue buys the coin back and burns it.
+      describe an app in a paragraph and stake {formatEth(LAUNCH_STAKE_WEI)}. the coin's trading fees pay an agent to build the app; 25% of every coin's fees buys and burns PYRE.
     </p>
     <div className="mt-6 flex justify-center">
       <Button variant="primary" size="lg" href="/launch" iconRight={<IconArrowRight size={16} />}>

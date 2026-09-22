@@ -6,7 +6,6 @@ import {
   type Bounty,
   type BuildEvent,
   type BuildJob,
-  type Buyback,
   type Candle,
   type FeeEvent,
   type Notification,
@@ -14,6 +13,7 @@ import {
   type Proposal,
   type PullRequest,
   type PyreStake,
+  type PyreBurn,
   type Trade,
   type User,
 } from "@pyre/db";
@@ -28,7 +28,6 @@ import {
   type BountyDto,
   type BuildEventDto,
   type BuildJobDto,
-  type BuybackDto,
   type CandleDto,
   type FeeEventDto,
   type HolderDto,
@@ -36,6 +35,7 @@ import {
   type NotificationDto,
   type ProposalDto,
   type PullRequestDto,
+  type PyreBurnDto,
   type PyreStakeDto,
   type QueueItemDto,
   type TradeDto,
@@ -67,26 +67,21 @@ const address = (a: string | null): Address | null => a as Address | null;
 /* ─────────────────────────── Aggregates shared by list routes ─────────────────────────── */
 
 export interface AppExtras {
-  revenue24hMicros: bigint;
   fees24hWei: bigint;
 }
 
 const DAY_MS = 86_400_000;
 
 /**
- * Per-app 24h revenue and swept fees for a page of apps: two grouped aggregates regardless of
- * page size. These feed the heat index and the trending sort.
+ * Per-app 24h swept fees for a page of apps: one grouped aggregate regardless of page size.
+ * Feeds the heat index and the trending sort.
  */
 export const appExtrasByApp = async (appIds: string[]): Promise<Record<string, AppExtras>> => {
   const out: Record<string, AppExtras> = {};
   if (appIds.length === 0) return out;
   const since = new Date(Date.now() - DAY_MS);
-  const [rev, fees] = await Promise.all([
-    db.revenueEvent.groupBy({ by: ["appId"], where: { appId: { in: appIds }, createdAt: { gte: since } }, _sum: { usdMicros: true } }),
-    db.feeEvent.groupBy({ by: ["appId"], where: { appId: { in: appIds }, createdAt: { gte: since } }, _sum: { wei: true } }),
-  ]);
-  for (const id of appIds) out[id] = { revenue24hMicros: 0n, fees24hWei: 0n };
-  for (const r of rev) out[r.appId]!.revenue24hMicros = r._sum.usdMicros ?? 0n;
+  const fees = await db.feeEvent.groupBy({ by: ["appId"], where: { appId: { in: appIds }, createdAt: { gte: since } }, _sum: { wei: true } });
+  for (const id of appIds) out[id] = { fees24hWei: 0n };
   for (const f of fees) out[f.appId]!.fees24hWei = big(f._sum.wei);
   return out;
 };
@@ -94,26 +89,23 @@ export const appExtrasByApp = async (appIds: string[]): Promise<Record<string, A
 /* ─────────────────────────── Heat + agent state ─────────────────────────── */
 
 export interface HeatInputs {
-  revenue24hMicros: bigint;
   fees24hWei: bigint;
-  /** Revenue waiting for the next buyback: what the burn engine is about to spend. */
-  pendingRevenueMicros: bigint;
+  /** 24h trade volume in USD (the `App.volume24hUsd` the price worker refreshes). */
+  volume24hUsd: number;
   ethPriceUsd: number;
 }
 
 /**
- * Heat index in [0, 1): how much of the loop is turning right now. Three signals, each scaled to
- * a "warm" daily figure so a $50/day app sits around 0.5 and nothing saturates early, combined
- * 50/30/20 and squashed with 1 − e^(−x) so a runaway coin still stays below 1:
- *   - revenue in the last 24h   (weight .5, warm at $50)
- *   - creator fees swept in 24h (weight .3, warm at $50 of ETH)
- *   - buyback pressure          (weight .2, warm at $25 pending revenue)
+ * Heat index in [0, 1): how much of the loop is turning right now. Two signals, each scaled to
+ * a "warm" daily figure so nothing saturates early, combined 60/40 and squashed with 1 − e^(−x)
+ * so a runaway coin still stays below 1:
+ *   - creator fees swept in 24h (weight .6, warm at $50 of ETH: what is actually paying the agent)
+ *   - trade volume in 24h       (weight .4, warm at $5,000: the fees still accruing on the curve)
  */
 export const heatIndex = (h: HeatInputs): number => {
-  const revenue = usd(h.revenue24hMicros) / 50;
   const fees = (tokens(h.fees24hWei) * h.ethPriceUsd) / 50;
-  const pressure = usd(h.pendingRevenueMicros) / 25;
-  const x = 0.5 * revenue + 0.3 * fees + 0.2 * pressure;
+  const volume = h.volume24hUsd / 5_000;
+  const x = 0.6 * fees + 0.4 * volume;
   const heat = 1 - Math.exp(-x);
   return Number.isFinite(heat) ? Math.min(0.999, Math.max(0, heat)) : 0;
 };
@@ -212,12 +204,8 @@ export const APP_SUMMARY_SELECT = {
   change24hPct: true,
   volume24hUsd: true,
   holdersCount: true,
-  revenueMicros: true,
-  pendingRevenueMicros: true,
   budgetMicros: true,
   feesWei: true,
-  buybackWei: true,
-  burnedTokens: true,
   liveVersion: true,
   createdAt: true,
   launchedAt: true,
@@ -247,12 +235,8 @@ export type AppSummaryRow = Pick<
   | "change24hPct"
   | "volume24hUsd"
   | "holdersCount"
-  | "revenueMicros"
-  | "pendingRevenueMicros"
   | "budgetMicros"
   | "feesWei"
-  | "buybackWei"
-  | "burnedTokens"
   | "liveVersion"
   | "createdAt"
   | "launchedAt"
@@ -271,7 +255,6 @@ export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: num
     oneLiner: spec.success ? spec.data.oneLiner : "",
     status: a.status,
     template: a.template,
-    monetization: spec.success ? spec.data.monetization.model : null,
     tokenAddress: address(a.tokenAddress),
     curveAddress: address(a.curveAddress),
     poolId: a.poolId,
@@ -282,14 +265,9 @@ export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: num
     change24hPct: a.tokenAddress ? a.change24hPct : null,
     volume24hUsd: a.volume24hUsd,
     holders: a.holdersCount,
-    revenueMicros: a.revenueMicros.toString(),
-    revenue24hMicros: extras.revenue24hMicros.toString(),
     budgetMicros: a.budgetMicros.toString(),
     feesWei: big(a.feesWei).toString(),
-    buybackWei: big(a.buybackWei).toString(),
-    burnedUnits: big(a.burnedTokens).toString(),
-    burnedPct: pctOfSupply(big(a.burnedTokens)),
-    heat: heatIndex({ ...extras, pendingRevenueMicros: a.pendingRevenueMicros, ethPriceUsd }),
+    heat: heatIndex({ ...extras, volume24hUsd: a.volume24hUsd, ethPriceUsd }),
     agentState: agentState(a.status, a.jobs[0]),
     liveVersion: a.liveVersion,
     liveUrl: SERVABLE[a.status] && a.liveVersion > 0 ? liveUrl(a.slug) : null,
@@ -319,30 +297,21 @@ export const feeEventDto = (f: FeeEvent): FeeEventDto => ({
   createdAt: f.createdAt.toISOString(),
 });
 
-export type BuybackRow = Buyback & { app: Pick<App, "slug" | "ticker">; _count: { revenueEvents: number } };
-
-export const BUYBACK_INCLUDE = { app: { select: { slug: true, ticker: true } }, _count: { select: { revenueEvents: true } } } as const;
-
-export const buybackDto = (b: BuybackRow): BuybackDto => {
-  const burned = big(b.burnedUnits ?? b.tokensBurned);
+/** A settled (or in-flight) $PYRE burn; `createdAt` is the settlement time once BURNED. */
+export const pyreBurnDto = (b: PyreBurn): PyreBurnDto => {
+  const units = big(b.burnedUnits ?? b.tokensBurned);
   return {
     id: b.id,
-    appId: b.appId,
-    slug: b.app.slug,
-    ticker: b.app.ticker,
-    status: b.status,
-    revenueMicros: b.revenueMicros.toString(),
+    usdMicros: b.usdMicros.toString(),
     ethWei: big(b.ethWei).toString(),
     tokensBoughtUnits: big(b.tokensBought).toString(),
-    tokensBurnedUnits: burned.toString(),
-    burnedPctOfSupply: pctOfSupply(burned),
-    swapTx: b.swapTx as BuybackDto["swapTx"],
-    burnTx: b.burnTx as BuybackDto["burnTx"],
-    attestTx: b.attestTx as BuybackDto["attestTx"],
+    burnedUnits: units.toString(),
+    burnedPctOfSupply: pctOfSupply(units),
+    swapTx: b.swapTx as PyreBurnDto["swapTx"],
+    burnTx: b.burnTx as PyreBurnDto["burnTx"],
+    attestTx: b.attestTx as PyreBurnDto["attestTx"],
     attestHash: b.attestHash,
-    revenueEventIds: b._count.revenueEvents,
-    createdAt: b.createdAt.toISOString(),
-    completedAt: iso(b.completedAt),
+    createdAt: (b.completedAt ?? b.createdAt).toISOString(),
   };
 };
 
@@ -357,7 +326,6 @@ export const tradeDto = (t: Trade): TradeDto => ({
   priceUsd: t.priceUsd,
   txHash: t.txHash as TradeDto["txHash"],
   block: Number(t.block),
-  isBuyback: t.wallet === TREASURY_WALLET,
   ts: t.ts.toISOString(),
 });
 
@@ -509,7 +477,6 @@ export const launchDto = (a: App): LaunchDraftDto => ({
   stakeTo: TREASURY_WALLET,
   budgetMicros: a.budgetMicros.toString(),
   feesWei: big(a.feesWei).toString(),
-  revenueMicros: a.revenueMicros.toString(),
   liveVersion: a.liveVersion,
   liveUrl: SERVABLE[a.status] && a.liveVersion > 0 ? liveUrl(a.slug) : null,
   twitterUrl: a.twitterUrl,

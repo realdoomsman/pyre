@@ -3,7 +3,7 @@ import { cx } from "./cx.js";
 import { clamp01, heatColor, heatGradient, useHeatRamp, HEAT_STEPS } from "./heat.js";
 
 export interface HeatGaugeProps {
-  /** 0–1: buyback pressure derived from app revenue. */
+  /** 0–1: the coin's heat index (curve progress, fee velocity, build activity). */
   value: number;
   variant?: "bar" | "arc";
   /** Bar width / arc diameter in px. */

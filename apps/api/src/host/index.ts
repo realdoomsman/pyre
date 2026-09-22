@@ -1,18 +1,15 @@
 import type { Request, RequestHandler, Response } from "express";
-import { usdgAddress } from "@pyre/chain";
 import { ROBINHOOD_CHAIN_ID } from "@pyre/shared";
 import { env } from "../env.js";
 import { HttpError } from "../lib/errors.js";
 import { enforceSameOrigin } from "../lib/origin.js";
 import { clientIp, consumeRate, type RateBucket } from "../lib/ratelimit.js";
-import { TREASURY_WALLET } from "../lib/treasury.js";
 import { serveStatic } from "./files.js";
 import { applySecurityHeaders } from "./headers.js";
 import { renderBuildingPage, renderDormantPage, renderKilledPage, renderNotFoundPage } from "./pages.js";
 import { matchAppRequest, resolveApp, type HostContext, type RouteMatch } from "./resolve.js";
-import { adClickRoute, adRoute } from "./routes/ad.js";
 import { authExchange, authLogout } from "./routes/auth.js";
-import { checkoutStart } from "./routes/checkout.js";
+import { coinsRoute } from "./routes/coins.js";
 import { callDepth, fnRoute } from "./routes/fn.js";
 import { kvAppRoute, kvUserRoute } from "./routes/kv.js";
 import { meRoute } from "./routes/me.js";
@@ -24,8 +21,7 @@ const PYRE_PREFIX = "/_pyre/";
 /**
  * Runtime env for the app shell. Served as a file (not inline) because the app CSP is `script-src 'self'`.
  * `basePath` lets the SDK build same-origin URLs whether the app is host-routed or path-routed.
- * Chain facts (`chainId`, `usdg`, `treasury`, `tokenAddress`, `explorerUrl`) are informational: the
- * browser never signs, every payment is settled server-side from the user's custodial wallet.
+ * Chain facts (`chainId`, `tokenAddress`, `explorerUrl`) are informational: the browser never signs.
  */
 function envScript(ctx: HostContext): string {
   const manifest = ctx.deployment?.manifest;
@@ -35,8 +31,6 @@ function envScript(ctx: HostContext): string {
     name: ctx.app.name,
     ticker: ctx.app.ticker,
     chainId: ROBINHOOD_CHAIN_ID,
-    usdg: usdgAddress(),
-    treasury: TREASURY_WALLET,
     tokenAddress: ctx.app.tokenAddress ?? "",
     explorerUrl: env.BLOCKSCOUT_URL,
     googleClientId: env.GOOGLE_CLIENT_ID,
@@ -44,11 +38,9 @@ function envScript(ctx: HostContext): string {
     basePath: ctx.basePath,
     version: ctx.deployment?.version ?? 0,
     holderMin: manifest?.holderTier?.minHoldTokens ?? 0,
-    adSlot: manifest?.adSlot ?? false,
-    products: manifest?.products ?? [],
     functions: manifest?.functions ?? [],
   };
-  // `</script>` can never appear in the payload, even if a product name tries.
+  // `</script>` can never appear in the payload, even if an app name tries.
   return `window.__PYRE__ = ${JSON.stringify(payload).replace(/</g, "\\u003c")};\nObject.freeze(window.__PYRE__);\n`;
 }
 
@@ -90,10 +82,6 @@ async function limitPyre(ctx: HostContext, req: Request, res: Response, head: st
     // App-to-app `ship.fetch` hops all share the API's egress IP; the per-app bucket already bounds
     // them. Only a hop the platform signed counts — a bare header is refused, not trusted.
     if (callDepth(req, ctx.app.slug, name ?? "") === 0) await charge("appFnCaller", `${ctx.app.id}:`);
-    return;
-  }
-  if (head === "checkout" && req.method === "POST") {
-    await charge("checkout", `${ctx.app.id}:`);
     return;
   }
   if (req.method === "GET" || req.method === "HEAD") {
@@ -146,21 +134,15 @@ async function handlePyre(ctx: HostContext, req: Request, res: Response, pathnam
     return kvUserRoute(ctx, req, res, second);
   } else if (head === "kv" && segments.length === 3 && second === "app" && third !== undefined) {
     return kvAppRoute(ctx, req, res, third);
-  } else if (head === "checkout" && segments.length === 1) {
-    requireMethod(req, res, "POST");
-    return checkoutStart(ctx, req, res);
   } else if (head === "fn" && segments.length === 2 && second !== undefined) {
     requireMethod(req, res, "POST");
     return fnRoute(ctx, req, res, second);
-  } else if (head === "ad" && segments.length === 1) {
-    requireMethod(req, res, "GET");
-    return adRoute(ctx, req, res);
-  } else if (head === "ad" && segments.length === 3 && second === "click" && third !== undefined) {
-    requireMethod(req, res, "GET");
-    return adClickRoute(ctx, req, res, third);
   } else if (head === "track" && segments.length === 1) {
     requireMethod(req, res, "POST");
     return trackRoute(ctx, req, res);
+  } else if (head === "coins" && segments.length <= 3 && (third === undefined || third === "candles")) {
+    requireMethod(req, res, "GET");
+    return coinsRoute(ctx, req, res, second, third);
   }
   throw new HttpError(404, "unknown platform endpoint");
 }

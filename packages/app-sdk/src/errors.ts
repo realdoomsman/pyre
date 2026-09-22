@@ -18,28 +18,3 @@ export class NotAuthenticatedError extends PyreError {
     this.name = "NotAuthenticatedError";
   }
 }
-
-/**
- * A payment could not be completed because the user's custodial Pyre wallet is short of USDG.
- * The platform charges the wallet server-side (the wallet never needs ETH for gas), so the fix is
- * to send USDG on Robinhood Chain to `depositAddress` — there is nothing for the app to sign.
- */
-export class InsufficientFundsError extends PyreError {
-  /** Price of the product/function call in USD, when the platform reported it. */
-  readonly priceUsd: number | null;
-  /** Current USDG balance of the custodial wallet in USD, when the platform reported it. */
-  readonly balanceUsd: number | null;
-  /** The user's custodial Robinhood Chain address to top up with USDG, when the platform reported it. */
-  readonly depositAddress: string | null;
-
-  constructor(priceUsd: number | null = null, balanceUsd: number | null = null, depositAddress: string | null = null) {
-    super("insufficient funds — top up your Pyre wallet with USDG to complete this payment", {
-      status: 402,
-      code: "insufficient_funds",
-    });
-    this.name = "InsufficientFundsError";
-    this.priceUsd = priceUsd;
-    this.balanceUsd = balanceUsd;
-    this.depositAddress = depositAddress;
-  }
-}

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { AppDetailDto } from "@pyre/shared";
 import { env } from "../../env.js";
-import { formatPct, formatUsdCompact } from "../../lib/format.js";
+import { formatUsdCompact } from "../../lib/format.js";
 import { Button, Field, Input, Select, Sheet, Textarea, toast } from "../../ui/index.js";
 import { useReport, type ReportBody } from "./queries.js";
 import { describeError } from "./trade.js";
@@ -82,7 +82,7 @@ const copy = async (text: string, label: string) => {
 
 export const ShareSheet = ({ app, open, onClose }: { app: AppDetailDto; open: boolean; onClose: () => void }) => {
   const url = `${env.siteUrl}/c/${app.slug}`;
-  const line = `$${app.ticker} on Pyre — ${formatUsdCompact(BigInt(Math.round(app.mcapUsd * 1e6)))} mcap, ${formatPct(app.burnedPct / 100, 2)} of supply burned by app revenue. not financial advice.`;
+  const line = `$${app.ticker} on Pyre — ${formatUsdCompact(BigInt(Math.round(app.mcapUsd * 1e6)))} mcap, ${formatUsdCompact(app.budgetMicros)} of fees paid to the agent building ${app.name}. not financial advice.`;
   const intent = `https://x.com/intent/post?${new URLSearchParams({ text: line, url }).toString()}`;
   const card = `/c/${app.slug}/card`;
   return (

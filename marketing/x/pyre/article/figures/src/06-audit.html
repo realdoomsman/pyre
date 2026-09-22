@@ -30,20 +30,21 @@
 
   <div id="g">
     <div class="card">
-      <h2>production feature audit · 68 features</h2>
-      <div class="n">62<small>pass</small></div>
+      <!-- counts: fill from the first post-cutover feature-audit run recorded in docs/go-live.md before rendering; the 2026-09-21 run (62/68) included two payment checks that no longer exist -->
+      <h2>production feature audit · — features</h2>
+      <div class="n">—<small>pass</small></div>
       <div id="cells">
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i>
       </div>
-      <div class="leg"><span>62 pass</span><span class="b">6 blocked on treasury funding</span></div>
-      <div class="cap">the 6 blocked checks need ETH in the treasury and nothing else: custodial stake, bounty escrow and payout, top-up, usdg checkout and per-call payment each reach their funding gate and refuse cleanly.</div>
+      <div class="leg"><span>— pass</span><span class="b">— blocked on treasury funding</span></div>
+      <div class="cap">the blocked checks need ETH in the treasury and nothing else: custodial stake, bounty escrow and payout, and the build-budget top-up each reach their funding gate and refuse cleanly.</div>
     </div>
     <div class="side">
       <div class="row">
-        <div class="card"><h2>unit tests</h2><div class="n">408</div><div class="cap">no network, db, redis, rpc or model access in the suite.</div></div>
+        <div class="card"><h2>unit tests</h2><div class="n">—</div><div class="cap">no network, db, redis, rpc or model access in the suite.</div></div>
         <div class="card"><h2>perimeter security check</h2><div class="n" style="font-size:40px">passes<small>without a hosted app</small></div><div class="cap">csrf, csp and cookie flags, cors, webhook hmac, rpc proxy, wallet auth, model proxy, rate limits. the app-origin checks run again when the first app deploys.</div></div>
       </div>
       <div class="card"><h2>independent security review</h2>

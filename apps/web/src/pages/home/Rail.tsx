@@ -40,43 +40,43 @@ const MiniList = ({ title, href, apps, right, tone }: { title: string; href: str
   </section>
 );
 
-/** Live tape, the five hottest burns, the five best-earning apps. */
+/** Live tape, the five hottest coins, the five coins shipping right now. */
 export const Rail = () => {
   const { rows, push, setPaused, seed: seedTape } = useTape();
   const state = useLiveFrames(push);
-  const burning = useApps("burning");
-  const revenue = useApps("revenue");
+  const heating = useApps("heating");
+  const shipping = useApps("shipping");
   const burns = useBurns();
 
-  // Seed the tape with the newest burns so it is not blank on arrival.
+  // Seed the tape with the newest PYRE burns so it is not blank on arrival.
   const seed = burns.data?.pages[0]?.items;
   useEffect(() => {
     if (!seed || seed.length === 0) return;
     const seeded: TapeRow[] = seed.slice(0, 12).map((b) => ({
       id: `seed:${b.id}`,
-      at: b.completedAt ?? b.createdAt,
-      slug: b.slug,
-      ticker: b.ticker,
+      at: b.createdAt,
+      slug: "pyre",
+      ticker: "PYRE",
       kind: "burn",
-      amount: formatTokenUnits(b.tokensBurnedUnits),
+      amount: formatTokenUnits(b.burnedUnits),
       detail: formatEth(b.ethWei),
-      href: `/c/${b.slug}?tab=burns`,
+      href: "/burns",
     }));
     seedTape((prev) => (prev.length === 0 ? seeded : prev));
   }, [seed, seedTape]);
 
   const top5 = (data: { pages: AppsPageDto[] } | undefined) => (data ? flatPages(data.pages).slice(0, 5) : undefined);
-  const burningTop = useMemo(() => top5(burning.data), [burning.data]);
-  const revenueTop = useMemo(() => top5(revenue.data), [revenue.data]);
+  const heatingTop = useMemo(() => top5(heating.data), [heating.data]);
+  const shippingTop = useMemo(() => top5(shipping.data), [shipping.data]);
 
   return (
     <aside className="flex flex-col gap-4" aria-label="Live">
       <LiveTape rows={rows} live={state === "open"} onPause={setPaused} height={320} />
-      <MiniList title="burning now" href="/burns" apps={burningTop} tone="burn" right={(a) => `${a.burnedPct.toFixed(2)}%`} />
-      <MiniList title="top revenue apps" href="/apps" apps={revenueTop} tone="earn" right={(a) => formatUsdCompact(a.revenueMicros)} />
+      <MiniList title="heating up" href="/?sort=heating" apps={heatingTop} tone="burn" right={(a) => `${Math.round(a.heat * 100)}°`} />
+      <MiniList title="shipping now" href="/?sort=shipping" apps={shippingTop} tone="earn" right={(a) => formatUsdCompact(a.budgetMicros)} />
       {seed && seed[0] && (
         <p className="num px-1 text-12 text-ink-3">
-          last burn {timeAgo(seed[0].completedAt ?? seed[0].createdAt)} · {burns.data?.pages[0]?.totals.buybacks ?? 0} burns total
+          last PYRE burn {timeAgo(seed[0].createdAt)} · {burns.data?.pages[0]?.totals.burns ?? 0} burns total
         </p>
       )}
     </aside>

@@ -29,7 +29,7 @@ const r = await launchPonsToken(t.account, {
   name: "Pyre",
   symbol: "PYRE",
   logo: "https://pyre.fun/icon-512.png",
-  description: "the coin that funds every app on pyre.fun and burns with their revenue",
+  description: "the coin that funds every app on pyre.fun and burns with a share of every coin's fees",
   socials: { website: "https://pyre.fun", twitter: "https://x.com/PyreFun" },
   creatorFeeRecipient: t.address,
 });

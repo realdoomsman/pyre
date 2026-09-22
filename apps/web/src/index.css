@@ -166,7 +166,6 @@
   --animate-proof-flash: proof-flash var(--duration-tick) var(--ease-ui) both;
   --animate-cool: cool var(--duration-heat) var(--ease-heat) both;
   --animate-cool-text: cool-text var(--duration-heat) var(--ease-heat) both;
-  --animate-collapse: collapse var(--duration-reveal) var(--ease-reveal) both;
 
   @keyframes fade-in {
     from {
@@ -289,15 +288,6 @@
     100% {
       color: var(--color-accent);
       text-shadow: none;
-    }
-  }
-  /* Supply Kiln: a layer's fill drains as it is hollowed. */
-  @keyframes collapse {
-    from {
-      fill-opacity: 1;
-    }
-    to {
-      fill-opacity: 0;
     }
   }
 }

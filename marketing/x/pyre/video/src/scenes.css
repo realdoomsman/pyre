@@ -104,7 +104,7 @@ body { overflow: hidden; }
 #s-launch .launchline { margin-top: 24px; font-size: 56px; opacity: 0; }
 .sq #s-launch .launchline { font-size: 46px; }
 
-/* ── fees / revenue ── */
+/* ── fees / share ── */
 .h2 { font-size: 72px; margin: 10px 0 0; }
 .sq .h2 { font-size: 60px; }
 .split { position: relative; height: 34px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,.05); margin-top: 26px; }
@@ -158,12 +158,12 @@ body { overflow: hidden; }
 #s-app .field .in { flex: 1; height: 54px; border-radius: 12px; background: var(--canvas); border: 1px solid var(--line); display: flex; align-items: center; padding: 0 18px; font-family: "Geist Mono", monospace; font-size: 16px; color: var(--ink); }
 #s-app .field .btn { height: 54px; padding: 0 22px; border-radius: 12px; background: var(--accent2); color: #fff; display: flex; align-items: center; font-weight: 500; font-size: 17px; white-space: nowrap; }
 #s-app .field .btn.paid { background: var(--earn); color: #062a20; }
-#s-app .checkout { position: absolute; left: 56px; right: 56px; bottom: 44px; padding: 22px 26px; border-radius: 16px; background: var(--raised); border: 1px solid var(--line); transform: translateY(40px); opacity: 0; }
-#s-app .checkout .r { display: flex; justify-content: space-between; align-items: center; font-size: 17px; height: 40px; border-top: 1px solid var(--line); }
-#s-app .checkout .r:first-child { border-top: 0; font-size: 22px; height: 46px; }
-#s-app .checkout .r .m { font-family: "Geist Mono", monospace; color: var(--ink2); font-size: 15px; }
-#s-app .checkout .r .ok { color: var(--earn); }
-#s-app .checkout .r .st { color: var(--ink3); }
+#s-app .tier { position: absolute; left: 56px; right: 56px; bottom: 44px; padding: 22px 26px; border-radius: 16px; background: var(--raised); border: 1px solid var(--line); transform: translateY(40px); opacity: 0; }
+#s-app .tier .r { display: flex; justify-content: space-between; align-items: center; font-size: 17px; height: 40px; border-top: 1px solid var(--line); }
+#s-app .tier .r:first-child { border-top: 0; font-size: 22px; height: 46px; }
+#s-app .tier .r .m { font-family: "Geist Mono", monospace; color: var(--ink2); font-size: 15px; }
+#s-app .tier .r .ok { color: var(--earn); }
+#s-app .tier .r .st { color: var(--ink3); }
 #s-app .under { position: absolute; left: 50%; bottom: 62px; transform: translateX(-50%); display: flex; gap: 12px; opacity: 0; white-space: nowrap; }
 .sq #s-app .under { bottom: 34px; flex-direction: column; align-items: center; gap: 8px; }
 .sq #s-app .under .chip { font-size: 12px; padding: 0 10px; }

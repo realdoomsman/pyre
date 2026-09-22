@@ -37,7 +37,7 @@ export type AuditAction =
 export interface AuditInput {
   actor: AuditActor;
   action: AuditAction;
-  /** Prisma model name of the subject: App | BuildJob | FeeEvent | Buyback | Bounty | ReconcileRun | JobToken. */
+  /** Prisma model name of the subject: App | BuildJob | FeeEvent | PyreBurn | Bounty | ReconcileRun | JobToken. */
   targetType: string;
   targetId: string;
   meta?: unknown;

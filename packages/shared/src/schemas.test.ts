@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AppChainDto, BountyBody, BuildEventPayload, CreateLaunchBody, EvmAddress, LAUNCH_PHASE, MAX_CHARGE_USD, PyreManifest, TopupBody, TxHash, WithdrawBody } from "./index.js";
+import { AppChainDto, BountyBody, BuildEventPayload, CreateLaunchBody, EvmAddress, LAUNCH_PHASE, TopupBody, TxHash, WithdrawBody } from "./index.js";
 
 const USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
 const HASH = "0x248e5cec83428ef05995702ff514acd1b7c472422c98e8c3e611ea07415af4b3";
@@ -86,19 +86,6 @@ describe("CreateLaunchBody", () => {
   });
 });
 
-describe("PyreManifest prices", () => {
-  it("caps every product and paid function at MAX_CHARGE_USD", () => {
-    const manifest = (priceUsd: number) => ({
-      name: "demo",
-      products: [{ id: "pro", name: "Pro", priceUsd, kind: "ONE_TIME" }],
-      functions: [{ name: "summarize", priceUsd }],
-    });
-    expect(PyreManifest.safeParse(manifest(MAX_CHARGE_USD)).success).toBe(true);
-    expect(PyreManifest.safeParse(manifest(MAX_CHARGE_USD + 0.01)).success).toBe(false);
-    expect(PyreManifest.safeParse({ name: "demo", products: [{ id: "pro", name: "Pro", priceUsd: 1_000_000, kind: "ONE_TIME" }] }).success).toBe(false);
-  });
-});
-
 describe("AppChainDto", () => {
   const live = {
     tokenAddress: "0x69C70006c20914435560F62220F867B71003785f",
@@ -108,7 +95,6 @@ describe("AppChainDto", () => {
     phase: LAUNCH_PHASE.CURVE,
     stakeEth: 0.05,
     feesEth: 0.361944,
-    buybackEth: 0,
     progress: 0.023,
     graduationThresholdEth: 4.2,
     ponsUrl: "https://www.ponsfamily.com/launchpad/0x69C70006c20914435560F62220F867B71003785f",

@@ -25,7 +25,6 @@ import {
   Skeleton,
   Sparkline,
   StatusLed,
-  SupplyKiln,
   Table,
   Tabs,
   Textarea,
@@ -114,8 +113,6 @@ export const UiGallery = () => {
   const agentHours = 1_206 + tick * 2;
   const mcapMicros = 184_320_000_000n + BigInt(tick % 5) * 1_950_000_000n - BigInt(tick % 3) * 2_100_000_000n;
 
-  // Supply Kiln burn demo.
-  const [burned, setBurned] = useState(0.23);
   // Heat gauge.
   const [heat, setHeat] = useState(0.62);
   // Tabs.
@@ -178,7 +175,7 @@ export const UiGallery = () => {
       Array.from({ length: 8 }, (_, i) => ({
         id: `b${i}`,
         at: Date.now() - i * 37 * 60_000,
-        coin: ["$SPLIT", "$KILN", "$LEDGR", "$RECPT"][i % 4],
+        coin: ["$SPLIT", "$FORGE", "$LEDGR", "$RECPT"][i % 4],
         burnedUnits: BigInt(2_140_000 - i * 113_000) * 10n ** 18n,
         pct: 0.00214 - i * 0.000113,
         ethWei: 41_000_000_000_000_000n - BigInt(i) * 2_300_000_000_000_000n,
@@ -190,7 +187,7 @@ export const UiGallery = () => {
   const commandItems = useMemo(
     () => [
       { id: "split", label: "Splitwise", hint: "$SPLIT", group: "Coins", keywords: ["split", "receipts"], onSelect: () => toast.info("Open $SPLIT") },
-      { id: "kiln", label: "Kilnwatch", hint: "$KILN", group: "Coins", keywords: ["kiln"], onSelect: () => toast.info("Open $KILN") },
+      { id: "forge", label: "Forgewatch", hint: "$FORGE", group: "Coins", keywords: ["forge"], onSelect: () => toast.info("Open $FORGE") },
       { id: "ledgr", label: "Ledgr", hint: "$LEDGR", group: "Coins", onSelect: () => toast.info("Open $LEDGR") },
       { id: "launch", label: "Launch a coin", hint: <Kbd keys={["L"]} />, group: "Actions", onSelect: () => toast.success("Launch tray") },
       { id: "account", label: "Account", group: "Actions", onSelect: () => toast.info("Account") },
@@ -276,16 +273,16 @@ export const UiGallery = () => {
         <Section id="type" title="Type" note="Serif display 400 with tightening tracking; UI weights capped at 600; mono +0.04em labels.">
           <div className="space-y-5">
             <div className="display text-88">Pyre 88</div>
-            <div className="display text-64">Aa Supply Kiln 64</div>
+            <div className="display text-64">Aa Obsidian and ink 64</div>
             <div className="display text-48">
-              The app pays to <em>burn</em> 48
+              Every fee pays to <em>burn</em> 48
             </div>
             <div className="display text-36">Tempered violet on obsidian 36</div>
             <div className="text-28 font-medium">Geist 28 medium — coins that build apps</div>
-            <div className="text-22 font-medium">Geist 22 medium — fees fund the build, revenue funds the burn</div>
+            <div className="text-22 font-medium">Geist 22 medium — fees fund the build, fees fund the burn</div>
             <div className="h3">Geist 18 semibold — a card title</div>
             <p className="body max-w-2xl">
-              Geist 15 body. Launch a coin and its trading fees pay an AI agent to build a real app. The app's revenue buys back and burns the coin. Every
+              Geist 15 body. Launch a coin and its trading fees pay an AI agent to build a real app. A quarter of every coin's fees buys and burns PYRE. Every
               number on this page is real, mono and tabular.
             </p>
             <p className="text-14 text-ink-2">Geist 14 secondary — metadata and helper text.</p>
@@ -368,7 +365,7 @@ export const UiGallery = () => {
               <div className="num text-12 text-ink-2">inset · mono-bg · dense</div>
             </Card>
             <Card tone="earn">
-              <CardHeader eyebrow="earn" title="Revenue arrived" />
+              <CardHeader eyebrow="earn" title="Fees claimed" />
               <div className="figure figure-lg text-earn">{formatUsd(4_213_550_000n)}</div>
             </Card>
             <Card tone="burn">
@@ -381,7 +378,7 @@ export const UiGallery = () => {
             </Card>
             <Card ash>
               <CardHeader eyebrow="ash" title="Dormant coin" />
-              <p className="small">No revenue in 30 days.</p>
+              <p className="small">No fees in 30 days.</p>
             </Card>
           </div>
         </Section>
@@ -422,7 +419,7 @@ export const UiGallery = () => {
         <Section id="table" title="Table" note="Dense ledger: sticky mono header, numeric cells right-aligned in tabular mono.">
           <Card padding={0}>
             <Table
-              caption="Burn ledger"
+              caption="PYRE burn ledger"
               maxHeight={260}
               dense
               rows={ledger}
@@ -441,7 +438,7 @@ export const UiGallery = () => {
           </Card>
           <div className="mt-4">
             <Card padding={0}>
-              <Table columns={[{ key: "a", header: "Column", render: () => null }]} rows={[]} rowKey={() => ""} empty="No burns yet — the app has not earned." />
+              <Table columns={[{ key: "a", header: "Column", render: () => null }]} rows={[]} rowKey={() => ""} empty="No burns yet — the ledger has not cleared $5." />
             </Card>
           </div>
         </Section>
@@ -510,7 +507,7 @@ export const UiGallery = () => {
                   </GraduationRing>
                 ))}
                 <GraduationRing progress={1} graduated size={56}>
-                  <Avatar name="Kilnwatch" size={46} />
+                  <Avatar name="Forgewatch" size={46} />
                 </GraduationRing>
               </Row>
               <div className="mt-4 text-12 text-ink-3">8% · 42% · 87% · graduated (4.2 ETH)</div>
@@ -525,23 +522,6 @@ export const UiGallery = () => {
                 <Sparkline data={[]} />
               </Row>
             </Card>
-          </div>
-        </Section>
-
-        <Section id="kiln" title="Supply Kiln" note="Each burn hollows a layer to wireframe (400ms easeOutQuart). The newest burn cools white-hot → accent.">
-          <div className="flex flex-wrap items-end gap-10">
-            <SupplyKiln burnedFraction={burned} layers={10} width={180} />
-            <SupplyKiln burnedFraction={0.0} layers={8} width={120} />
-            <SupplyKiln burnedFraction={0.55} layers={12} width={120} />
-            <SupplyKiln burnedFraction={1} layers={6} width={100} label="all burned" />
-            <div className="flex flex-col gap-2">
-              <Button size="sm" variant="secondary" onClick={() => setBurned((b) => Math.min(1, b + 0.1))}>
-                Burn 10%
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setBurned(0.23)}>
-                Reset
-              </Button>
-            </div>
           </div>
         </Section>
 
@@ -563,12 +543,12 @@ export const UiGallery = () => {
                   <Chip tone="build" size="sm" dot>
                     Deploying
                   </Chip>
-                  <Chip size="sm">First revenue</Chip>
+                  <Chip size="sm">First fees</Chip>
                 </>
               }
             />
             <div className="grid gap-4">
-              <ConsoleFrame title="$KILN · build 1" session="s_01j7aa" status="done" rows={rows.slice(0, 4)} height={120} />
+              <ConsoleFrame title="$FORGE · build 1" session="s_01j7aa" status="done" rows={rows.slice(0, 4)} height={120} />
               <ConsoleFrame title="$LEDGR" status="idle" rows={[]} height={120} />
             </div>
           </div>
@@ -652,18 +632,17 @@ export const UiGallery = () => {
             <Field label="Amount" htmlFor="f-amount" meta="balance 0.4821 ETH" hint="Minimum 0.001 ETH.">
               <Input id="f-amount" mono inputMode="decimal" placeholder="0.00" suffix="ETH" />
             </Field>
-            <Field label="Price" htmlFor="f-price">
-              <Input id="f-price" mono prefix="$" defaultValue="4.99" />
+            <Field label="Min holding" htmlFor="f-hold" hint="Whole tokens">
+              <Input id="f-hold" mono defaultValue="1000" />
             </Field>
             <Field label="Ticker" htmlFor="f-ticker" error="Ticker is taken." required>
               <Input id="f-ticker" invalid defaultValue="SPLIT" />
             </Field>
-            <Field label="Monetization" htmlFor="f-model">
-              <Select id="f-model" defaultValue="per-call">
-                <option value="checkout">Checkout</option>
-                <option value="per-call">Per call</option>
-                <option value="holder">Holder tier</option>
-                <option value="ads">Ads</option>
+            <Field label="Template" htmlFor="f-model">
+              <Select id="f-model" defaultValue="web-tool">
+                <option value="web-tool">Web tool</option>
+                <option value="game">Game</option>
+                <option value="agent-api">Agent API</option>
               </Select>
             </Field>
             <Field label="Disabled" htmlFor="f-dis">
@@ -690,7 +669,7 @@ export const UiGallery = () => {
               <Label>Avatar</Label>
               <Row>
                 <Avatar name="$SPLIT" size={24} />
-                <Avatar name="Kilnwatch" size={32} />
+                <Avatar name="Forgewatch" size={32} />
                 <Avatar name="Ledgr" size={40} />
                 <Avatar name="receipt bot" size={48} shape="square" />
                 <Avatar name="$BROKEN" src="https://pyre.fun/does-not-exist.png" size={40} />
@@ -717,7 +696,7 @@ export const UiGallery = () => {
             <Card>
               <Label>Tooltip</Label>
               <Row>
-                <Tooltip content="Market cap ÷ annualised revenue.">
+                <Tooltip content="Market cap at the last fill.">
                   <Button variant="secondary" size="sm">
                     Hover (top)
                   </Button>
@@ -752,11 +731,11 @@ export const UiGallery = () => {
                 <Skeleton className="h-9 flex-1" rounded="card" />
               </div>
             </Card>
-            <EmptyState title="No burns yet" body="The app has not earned revenue. Burns appear here as buybacks execute." action={<Button size="sm">Open app</Button>} />
+            <EmptyState title="No burns yet" body="The PYRE_TOKEN ledger has not cleared $5. Burns appear here as the treasury executes them." action={<Button size="sm">Open $PYRE</Button>} />
             <EmptyState
               variant="ash"
               title="$LEDGR is ash"
-              body="No revenue in 30 days. The agent is paused until the creator relights it."
+              body="No fees in 30 days. The agent is paused until the creator relights it."
               onRelight={() => toast.success("Relit $LEDGR", { description: "Agent funded for one more iteration." })}
             />
           </div>
@@ -770,7 +749,7 @@ const FilterChips = () => {
   const [sel, setSel] = useState("trending");
   return (
     <>
-      {["trending", "new", "heating", "graduated", "shipping", "burning"].map((f) => (
+      {["trending", "new", "heating", "graduated", "shipping"].map((f) => (
         <Chip key={f} selected={sel === f} onClick={() => setSel(f)}>
           {f}
         </Chip>

@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { dec, prisma } from "@pyre/db";
+import { prisma } from "@pyre/db";
 import { getEthPriceUsd, getPrice, getTokenInfo, readLaunch } from "@pyre/chain";
 import { MARKET_SNAPSHOT_KEY, type MarketSnapshot } from "@pyre/shared";
 import type { Logger } from "pino";
@@ -88,7 +88,6 @@ export async function runPriceRefresh(ctx: ChainWorkerContext): Promise<void> {
             priceUsd: snapshot.priceUsd,
             marketCapUsd: snapshot.mcapUsd,
             progress: snapshot.progress,
-            burnedTokens: dec(snapshot.burnedUnits),
             ...(change === null ? {} : { change24hPct: change }),
             lastPriceAt: new Date(),
           },

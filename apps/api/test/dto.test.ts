@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { dec } from "@pyre/db";
-import { AppSummaryDto, BuybackDto, HolderDto, TradeDto, PONS_TOTAL_SUPPLY } from "@pyre/shared";
+import { AppSummaryDto, HolderDto, PyreBurnDto, TradeDto, PONS_TOTAL_SUPPLY } from "@pyre/shared";
 
 /**
  * DTO builders are the API's public contract with the web: every row → JSON mapping here is
@@ -23,7 +23,7 @@ vi.mock("@pyre/chain", () => ({
   treasury: () => ({ address: "0x0000000000000000000000000000000000000001", account: {} }),
 }));
 
-import { agentState, appSummary, buybackDto, heatIndex, holderDto, tradeDto, type AppSummaryRow } from "../src/lib/dto.js";
+import { agentState, appSummary, heatIndex, holderDto, pyreBurnDto, tradeDto, type AppSummaryRow } from "../src/lib/dto.js";
 
 const ETH = 10n ** 18n;
 const NOW = new Date("2026-09-21T12:00:00.000Z");
@@ -41,9 +41,7 @@ const row = (over: Partial<AppSummaryRow> = {}): AppSummaryRow => ({
     title: "Cool",
     oneLiner: "Does the thing",
     whatItDoes: "It does the thing you asked for, reliably, every time.",
-    whoPays: "People who need the thing done.",
     mvp: ["do the thing"],
-    monetization: { model: "ONE_TIME", priceUsd: 5, priceDescription: "$5 once" },
     holderTier: { enabled: false, minHoldTokens: null },
   },
   tokenAddress: TOKEN,
@@ -56,12 +54,8 @@ const row = (over: Partial<AppSummaryRow> = {}): AppSummaryRow => ({
   change24hPct: 3.5,
   volume24hUsd: 250,
   holdersCount: 12,
-  revenueMicros: 50_000_000n,
-  pendingRevenueMicros: 5_000_000n,
   budgetMicros: 30_000_000n,
   feesWei: dec(ETH / 10n),
-  buybackWei: dec(ETH / 20n),
-  burnedTokens: dec(PONS_TOTAL_SUPPLY / 100n),
   liveVersion: 3,
   createdAt: NOW,
   launchedAt: NOW,
@@ -71,7 +65,7 @@ const row = (over: Partial<AppSummaryRow> = {}): AppSummaryRow => ({
   ...over,
 });
 
-const extras = { revenue24hMicros: 10_000_000n, fees24hWei: ETH / 100n };
+const extras = { fees24hWei: ETH / 100n };
 
 describe("appSummary", () => {
   it("produces a valid AppSummaryDto with bigints as strings and derived fields", () => {
@@ -79,11 +73,7 @@ describe("appSummary", () => {
     expect(AppSummaryDto.parse(dto)).toEqual(dto);
     expect(dto).toMatchObject({
       oneLiner: "Does the thing",
-      monetization: "ONE_TIME",
-      revenueMicros: "50000000",
-      revenue24hMicros: "10000000",
       feesWei: (ETH / 10n).toString(),
-      burnedPct: 1,
       progress: 0.42,
       phase: 0,
       agentState: "idle",
@@ -108,9 +98,9 @@ describe("appSummary", () => {
   });
 
   it("degrades a missing spec and an unlaunched coin to empty/null fields", () => {
-    const dto = appSummary(row({ spec: null, tokenAddress: null, curveAddress: null }), { revenue24hMicros: 0n, fees24hWei: 0n }, 2000);
+    const dto = appSummary(row({ spec: null, tokenAddress: null, curveAddress: null }), { fees24hWei: 0n }, 2000);
     expect(AppSummaryDto.parse(dto)).toEqual(dto);
-    expect(dto).toMatchObject({ oneLiner: "", monetization: null, tokenAddress: null, ponsUrl: null, explorerUrl: null, change24hPct: null });
+    expect(dto).toMatchObject({ oneLiner: "", tokenAddress: null, ponsUrl: null, explorerUrl: null, change24hPct: null });
   });
 });
 
@@ -128,49 +118,45 @@ describe("agentState", () => {
 
 describe("heatIndex", () => {
   it("is 0 for a cold app, grows with every signal, and never reaches 1", () => {
-    const cold = heatIndex({ revenue24hMicros: 0n, fees24hWei: 0n, pendingRevenueMicros: 0n, ethPriceUsd: 2000 });
+    const cold = heatIndex({ fees24hWei: 0n, volume24hUsd: 0, ethPriceUsd: 2000 });
     expect(cold).toBe(0);
-    const warm = heatIndex({ revenue24hMicros: 50_000_000n, fees24hWei: 0n, pendingRevenueMicros: 0n, ethPriceUsd: 2000 });
-    expect(warm).toBeCloseTo(1 - Math.exp(-0.5), 6);
-    const withFees = heatIndex({ revenue24hMicros: 50_000_000n, fees24hWei: ETH / 40n, pendingRevenueMicros: 0n, ethPriceUsd: 2000 });
-    expect(withFees).toBeGreaterThan(warm);
-    const hot = heatIndex({ revenue24hMicros: 1_000_000_000_000n, fees24hWei: 1000n * ETH, pendingRevenueMicros: 10_000_000_000n, ethPriceUsd: 2000 });
+    // $50 of fees in a day is the "warm" figure: 0.6 weight → 1 − e^(−0.6).
+    const warm = heatIndex({ fees24hWei: ETH / 40n, volume24hUsd: 0, ethPriceUsd: 2000 });
+    expect(warm).toBeCloseTo(1 - Math.exp(-0.6), 6);
+    const withVolume = heatIndex({ fees24hWei: ETH / 40n, volume24hUsd: 2_500, ethPriceUsd: 2000 });
+    expect(withVolume).toBeGreaterThan(warm);
+    const hot = heatIndex({ fees24hWei: 1000n * ETH, volume24hUsd: 10_000_000, ethPriceUsd: 2000 });
     expect(hot).toBeLessThan(1);
     expect(hot).toBeGreaterThan(0.99);
   });
 });
 
-describe("buybackDto", () => {
-  it("prefers the on-chain totalSupply delta over the requested burn and counts attested events", () => {
-    const dto = buybackDto({
-      id: "bb1",
-      appId: "app1",
+describe("pyreBurnDto", () => {
+  it("prefers the on-chain totalSupply delta over the requested burn and dates the row at settlement", () => {
+    const dto = pyreBurnDto({
+      id: "pb1",
       status: "BURNED",
-      revenueMicros: 12_000_000n,
+      usdMicros: 12_000_000n,
       ethWei: dec(ETH / 200n),
       tokensBought: dec(1_000n * ETH),
       tokensBurned: dec(1_000n * ETH),
       burnedUnits: dec(999n * ETH),
-      pyreMicros: 1_200_000n,
-      opsMicros: 600_000n,
       attestHash: "ab".repeat(32),
       swapTx: "0x" + "01".repeat(32),
       burnTx: "0x" + "02".repeat(32),
       attestTx: "0x" + "03".repeat(32),
       error: null,
-      createdAt: NOW,
+      createdAt: new Date("2026-09-20T12:00:00.000Z"),
       completedAt: NOW,
-      app: { slug: "cool", ticker: "COOL" },
-      _count: { revenueEvents: 7 },
     });
-    expect(BuybackDto.parse(dto)).toEqual(dto);
-    expect(dto).toMatchObject({ tokensBurnedUnits: (999n * ETH).toString(), revenueEventIds: 7, slug: "cool", ticker: "COOL" });
+    expect(PyreBurnDto.parse(dto)).toEqual(dto);
+    expect(dto).toMatchObject({ burnedUnits: (999n * ETH).toString(), usdMicros: "12000000", createdAt: NOW.toISOString() });
     expect(dto.burnedPctOfSupply).toBeCloseTo(Number(999n * ETH * 100n * 10_000n / PONS_TOTAL_SUPPLY) / 10_000, 6);
   });
 });
 
 describe("tradeDto + holderDto", () => {
-  it("marks treasury fills as buybacks and tags protocol-owned holder rows", () => {
+  it("maps a fill row and tags protocol-owned holder rows", () => {
     const trade = tradeDto({
       id: "t1",
       appId: "app1",
@@ -186,7 +172,6 @@ describe("tradeDto + holderDto", () => {
       createdAt: NOW,
     });
     expect(TradeDto.parse(trade)).toEqual(trade);
-    expect(trade.isBuyback).toBe(true);
     expect(trade.block).toBe(99);
 
     const ctx = { curveAddress: "0x4444444444444444444444444444444444444444", launcherWallet: "0x84F8E5a324466Deb7447048C014CF0245ce04afA" };

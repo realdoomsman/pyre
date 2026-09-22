@@ -14,14 +14,14 @@ Posting notes:
 |---|---|---|---|
 | 01 | 1 | the loop, end to end | `visuals/01-loop.png` |
 | 02 | 4 | creator fee split with numbers | `visuals/02-fee-split.png` |
-| 03 | 2 | revenue split and the burn | `visuals/03-revenue-burn.png` |
+| 03 | 2 | the PYRE burn | `visuals/03-pyre-burn.png` |
 | 04 | 7 | attestation calldata bytes | `visuals/04-attestation.png` |
 | 05 | 10 | why pons v2 | `visuals/05-pons-v2.png` |
 | 06 | 6 | what the agent can and cannot touch | `visuals/06-agent-scope.png` |
 | 07 | 5 | the build gate | `visuals/07-build-gate.png` |
 | 08 | 12 | dormant and relight | `visuals/08-ash.png` |
-| 09 | 13 | ranking by dollars earned | `visuals/09-ranked.png` |
-| 10 | 17 | custodial and external wallets, no gas for payments | `visuals/10-wallets.png` |
+| 09 | 13 | ranking by what moved through the loop | `visuals/09-ranked.png` |
+| 10 | 17 | custodial and external wallets | `visuals/10-wallets.png` |
 | 11 | 11 | the reviewer agent's hard blocks | `visuals/11-hard-blocks.png` |
 | 12 | 16 | the reconcile worker | `visuals/12-reconcile.png` |
 | 13 | 14 | the independent security review and the High | `visuals/13-security-review.png` |
@@ -39,14 +39,14 @@ Posting notes:
 - purpose: the loop, end to end
 - day: 1
 - visual: `visuals/01-loop.png`
-- alt text: diagram: eight steps in a loop, from writing one sentence to an 85 percent buyback and burn
+- alt text: diagram: eight steps in a loop, from writing one sentence to a free app and a PYRE burn
 - link: none in the post; first reply: https://pyre.fun
-- count: 274 / 280
+- count: 265 / 280
 
 ```
-the loop: write one sentence. an intake agent writes the spec. stake 0.05 ETH, refundable. the coin launches on pons v2. its creator fees pay an agent to build the app. users pay in USDG. 85% of revenue buys the coin back and burns it.
+the loop: write one sentence. an intake agent writes the spec. stake 0.05 ETH, refundable. the coin launches on pons v2. its creator fees pay an agent to build the app. the app is free. 25% of every fee buys PYRE and burns it.
 
-supply falls because the app earned.
+supply falls because the coin traded.
 ```
 
 ## 02 · fee-split
@@ -68,21 +68,21 @@ each claim splits: 60% build budget · 25% PYRE buyback · 15% to whoever launch
 nothing on the fee side goes to us.
 ```
 
-## 03 · revenue-burn
+## 03 · pyre-burn
 
-- purpose: revenue split and the burn
+- purpose: the PYRE burn
 - day: 2
-- visual: `visuals/03-revenue-burn.png`
-- alt text: three columns sized 85, 10 and 5 percent, and a four-step sequence ending in burn() and an attestation
+- visual: `visuals/03-pyre-burn.png`
+- alt text: one column sized 25 percent flowing from every coin into a single pool, and a four-step sequence ending in burn() and an attestation
 - link: none; first reply: https://pyre.fun/burns
 - count: 276 / 280
 
 ```
-app revenue, in USDG, splits three ways: 85% buys the coin back and burns it · 10% PYRE · 5% ops.
+25% of every coin's creator fees goes to one place: a PYRE buyback that is burned.
 
-the buyback runs every 10 minutes once $5 is pending. burn() is called on the coin itself, so totalSupply actually falls.
+it runs every 10 minutes once $5 is pooled. burn() is called on PYRE itself, so totalSupply actually falls. app coins are never bought back.
 
-nothing is sent to holders. supply just gets smaller.
+nothing goes to holders. supply just gets smaller.
 ```
 
 ## 04 · attestation
@@ -92,14 +92,14 @@ nothing is sent to holders. supply just gets smaller.
 - visual: `visuals/04-attestation.png`
 - alt text: 37 hex byte cells: 50 59 52 45, 01, then a 32-byte sha256, with a worked example
 - link: none; first reply: the article {ARTICLE_URL}
-- count: 278 / 280
+- count: 249 / 280
 
 ```
 every burn ends with an attestation tx: a zero-value self-transfer from the treasury whose calldata is
 
-0x5059524501 ‖ sha256(revenue event ids)
+0x5059524501 ‖ sha256(fee entry ids)
 
-"PYRE", a version byte, a hash. take the ids from the coin page, sort, join, hash, compare. anyone can tie the burn to the payments.
+"PYRE", a version byte, a hash. the burn ledger shows the hash; compare it with the calldata on blockscout.
 ```
 
 ## 05 · pons-v2
@@ -124,14 +124,14 @@ no pre-mine. the creator is the app.
 - visual: `visuals/06-agent-scope.png`
 - alt text: two-column table of what the agent writes and never writes, plus csp, quickjs, reviewer and budget facts
 - link: none; first reply: https://github.com/realdoomsman/pyre/tree/main/packages/app-sdk
-- count: 278 / 280
+- count: 269 / 280
 
 ```
 what the agent writes: the app.
 
-what it never writes: auth, wallet or payment code. those are platform-hosted behind @pyre/app-sdk. generated apps ship under a strict csp with no outbound network. server functions run in QuickJS, 64 MB, 5 s.
+what it never writes: auth, wallet code or anything that asks for money. auth sits behind @pyre/app-sdk; apps are free. it ships under a strict csp with no outbound network. server functions: QuickJS, 64 MB, 5 s.
 
-a prompted app cannot reach a key.
+it cannot reach a key.
 ```
 
 ## 07 · build-gate
@@ -158,44 +158,44 @@ any gate fails, nothing ships. the live version stays.
 - visual: `visuals/08-ash.png`
 - alt text: a heated tile marked live and an unlit tile marked dormant with the transitions between them
 - link: none; first reply: https://pyre.fun/apps
-- count: 274 / 280
+- count: 239 / 280
 
 ```
-when a coin's build budget runs out and nothing is pending, it goes dormant. we call it ash.
+when a coin's build budget runs out, it goes dormant. we call it ash.
 
-the app stays up, keeps serving, keeps earning. only the agent stops.
+the app stays up and keeps serving. only the agent stops.
 
 the next fee claim that lifts the budget back over the $10 iteration minimum relights it. no vote, no button.
 ```
 
 ## 09 · ranked
 
-- purpose: ranking by dollars earned
+- purpose: ranking by what moved through the loop
 - day: 13
 - visual: `visuals/09-ranked.png`
-- alt text: a table of what ranks and what does not: dollars earned, burned supply and fees claimed rank; trading volume and market cap do not
+- alt text: a table of what ranks and what does not: fees claimed, trade volume and what the agent shipped rank; market cap does not
 - link: none; first reply: https://pyre.fun/apps
-- count: 176 / 280
+- count: 238 / 280
 
 ```
-the app store ranks by dollars earned, not volume. an app that earns $0 sits under one that earns $12, whatever traded.
+the front page ranks by what moved through the loop: the fees a coin produced and what its agent shipped, not market cap. a coin whose app never got built sits under one that shipped v3.
 
 the coin is the consequence. the app is the point.
 ```
 
 ## 10 · wallets
 
-- purpose: custodial and external wallets, no gas for payments
+- purpose: custodial and external wallets
 - day: 17
 - visual: `visuals/10-wallets.png`
-- alt text: two sign-in panels, google custodial and external wallet, and a sequence diagram of an eip-3009 payment relayed by the treasury
+- alt text: two sign-in panels, google custodial and external wallet, and a note that apps are free and never ask either wallet for money
 - link: none
-- count: 280 / 280
+- count: 271 / 280
 
 ```
 two ways in. google sign-in gives you a custodial hd wallet on robinhood chain (m/44'/60'). or sign in with your own wallet via an eip-191 challenge, siwe-style.
 
-paying an app in USDG needs no gas either way: the wallet signs an eip-3009 authorization and the treasury relays it.
+neither wallet is ever charged inside an app. apps are free; holding a coin is the only thing an app checks.
 ```
 
 ## 11 · hard-blocks
@@ -252,19 +252,21 @@ fixed: the tx must be mined, to the treasury, worth the stake, from the launcher
 - purpose: test and audit numbers
 - day: 15
 - visual: `visuals/14-numbers.png`
-- alt text: three large numbers: 408 unit tests, 62 of 68 production features passing, 1 high and 5 medium review findings fixed
+- alt text: three large numbers: unit tests, production features passing, and 1 high and 5 medium review findings fixed
 - link: none; first reply: https://github.com/realdoomsman/pyre
-- count: 258 / 280
+- count: fill after the post-cutover audit
 
 ```
 where the engineering stands.
 
-408 unit tests, no network.
-production feature audit: 62 of 68 pass; the other 6 wait only on treasury funding.
+{TESTS} unit tests, no network.
+production feature audit: {PASS} of {TOTAL} pass; the rest wait only on treasury funding.
 independent security review: 1 high, 5 medium, all fixed.
 
 every number is reproducible from the public repo.
 ```
+
+Fill `{TESTS}`, `{PASS}` and `{TOTAL}` from the first post-cutover run recorded in `docs/go-live.md`; the 408 / 62 / 68 figures from 2026-09-21 include two payment checks that no longer exist and must not be reposted.
 
 ## 15 · design
 
@@ -288,13 +290,13 @@ every coin's supply is a kiln: blocks that hollow out as burns land. instrument 
 - visual: `visuals/16-launch-trays.png`
 - alt text: three tray mockups: coin, agent brief, review and launch, with the fields labelled and empty
 - link: none; first reply: https://pyre.fun/launch
-- count: 272 / 280
+- count: 274 / 280
 
 ```
 launching is three trays.
 
 01 coin: name, ticker, one sentence on what to build.
-02 agent brief: an intake agent writes the spec: what it does, who pays, the mvp, the price. you approve it.
+02 agent brief: an intake agent writes the spec: what it does, who it is for, mvp, holder tier. you approve it.
 03 review and launch: stake 0.05 ETH, refunded at the first build.
 
 then pons v2.
@@ -307,12 +309,12 @@ then pons v2.
 - visual: `visuals/17-verify-burn.png`
 - alt text: four numbered steps to verify a burn: open the ledger row, check totalSupply on the burn tx, read the attestation calldata, recompute the hash
 - link: none; first reply: https://pyre.fun/burns
-- count: 279 / 280
+- count: 261 / 280
 
 ```
 how to check a pyre burn yourself.
 
-open the burn ledger, pick a row. burn tx: on blockscout the coin's totalSupply drops by the burned amount, nothing moves to a wallet. attestation tx: calldata starts 0x5059524501, the rest is sha256 of that row's revenue event ids. recompute.
+open the burn ledger, pick a row. burn tx: on blockscout PYRE's totalSupply drops by the burned amount, nothing moves to a wallet. attestation tx: calldata starts 0x5059524501, the rest is the hash shown on that row. compare.
 ```
 
 ## 18 · live-next
@@ -322,12 +324,12 @@ open the burn ledger, pick a row. burn tx: on blockscout the coin's totalSupply 
 - visual: `visuals/18-live-next.png`
 - alt text: two lists, live and next; the next list says PYRE launches soon with no contract address yet
 - link: none
-- count: 276 / 280
+- count: 272 / 280
 
 ```
 live: the site, the api, the launch flow, the build pipeline, the burn ledger and attestation, the public repo.
 
-next: PYRE launches soon. the treasury gets funded, which clears the six audit checks waiting on it.
+next: PYRE launches soon. the treasury gets funded, which clears the audit checks waiting on it.
 
 no contract address exists yet. anyone posting one is not us.
 ```
@@ -339,14 +341,14 @@ no contract address exists yet. anyone posting one is not us.
 - visual: `visuals/19-faq.png`
 - alt text: large serif question, is a buyback a payout, answered no, with three shorter questions below
 - link: none; first reply: https://pyre.fun/legal/terms
-- count: 261 / 280
+- count: 275 / 280
 
 ```
 is a buyback a payout? no.
 
-nothing is sent to holders, ever. app revenue buys the coin on the open curve or pool and burn() destroys it. supply falls; that is the whole effect.
+nothing is sent to holders, ever. 25% of every coin's fees buys PYRE and burn() destroys it. app coins are never bought back. supply falls; that is the whole effect.
 
-not yield, not a dividend, not revenue share. the terms say so because it is true.
+not yield, not a dividend, not a fee share. the terms say so because it is true.
 ```
 
 ## 20 · open-source
@@ -373,14 +375,14 @@ github.com/realdoomsman/pyre
 - visual: `visuals/21-founder.png`
 - alt text: three short serif paragraphs on why pyre was built
 - link: none; quote the pinned post instead of linking
-- count: 269 / 280
+- count: 273 / 280
 
 ```
 why we built this.
 
 launchpads solved launching and skipped the part where something gets built. a coin would trade for a day and leave nothing behind.
 
-we wanted a coin whose supply falls because its app earned, with receipts on chain. pyre is that. small, real, open.
+we wanted a coin whose fees build something real and burn PYRE, with receipts on chain. pyre is that. small, real, open.
 ```
 
 ## published state (2026-09-21)
@@ -392,6 +394,6 @@ we wanted a coin whose supply falls because its app earned, with receipts on cha
 - Profile set: avatar `pfp.png`, header `banner.png`, bio/location/website per profile.md.
 - Replies posted (5): to @Captainweb01, @PaydRH, @portgost, @MIOnMinara, @lemondotfun (see replies.md for the voice rules).
 
-**Stale scheduled posts (production purged 2026-09-21).** The scheduled copies of posts 08, 09, 14, 16 and 17 were uploaded with visuals or lines that showed the seeded demo apps or the earlier audit numbers. Replace them in the scheduler with the copy and the re-rendered visuals in this file before their day: 17 (day 8, Sep 29), 16 (day 9, Sep 30), 08 (day 12, Oct 3), 09 (day 13, Oct 4), 14 (day 15, Oct 6).
+**Stale scheduled posts (production purged 2026-09-21; apps made free 2026-09-22).** Every scheduled copy of posts 02–21 was uploaded with the earlier loop (in-app payments and an app-coin buyback) or the earlier audit numbers. Replace each one in the scheduler with the copy and the re-rendered visual in this file before its day; post 01 (already published) is superseded by the pinned post's replacement.
 
 **Cashtag warning.** X's composer auto-resolves the `$PYRE` cashtag to an unrelated asset (`robinhood:0x0d11e308e40c15e1181aed4f4bbfc4744e9deeed`) and shows that in the post. Until our coin is live and X maps the cashtag to it, write `PYRE` (no `$`) in posts; posts 02, 03 and 18 were scheduled that way.

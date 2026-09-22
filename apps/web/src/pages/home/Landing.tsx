@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link } from "react-router-dom";
-import { FEE_SPLIT_BPS, LAUNCH_STAKE_WEI, MIN_BUILD_BUDGET_USD, MIN_BUYBACK_USD, REVENUE_SPLIT_BPS, type StatsDto } from "@pyre/shared";
+import { FEE_SPLIT_BPS, LAUNCH_STAKE_WEI, MIN_BUILD_BUDGET_USD, MIN_BUYBACK_USD, type StatsDto } from "@pyre/shared";
 import type { Format } from "@number-flow/react";
-import { formatCount, formatEth, formatUsdCompact } from "../../lib/format.js";
+import { formatCount, formatEth } from "../../lib/format.js";
 import { useReducedMotion } from "../../lib/motion.js";
 import { Button, NumberFlow, cx } from "../../ui/index.js";
 import { IconArrowRight } from "../../components/icons.js";
@@ -43,25 +43,19 @@ const STAGES: ReadonlyArray<Stage> = [
   {
     id: "app",
     label: "app",
-    copy: "the agent ships a real app on its own subdomain, with USDG checkout built in.",
+    copy: "the agent ships a real app on its own subdomain. it is free to use; holding the coin unlocks its perks.",
     value: (s) => ({ value: s.appsLive, caption: "apps live" }),
   },
   {
-    id: "revenue",
-    label: "revenue",
-    copy: "people pay for the app. 85% of every dollar is earmarked for the coin.",
-    value: (s) => ({ value: Number(BigInt(s.revenueTotalMicros)) / 1e6, format: { maximumFractionDigits: 0 }, prefix: "$", caption: "app revenue" }),
-  },
-  {
-    id: "buyback",
-    label: "buyback",
-    copy: "every 10 minutes the treasury swaps that revenue into the coin on the curve or the v4 pool.",
-    value: (s) => ({ value: s.buybacksCount, caption: "buybacks" }),
+    id: "pyre",
+    label: "pyre",
+    copy: "25% of every coin's fees is credited to PYRE. every 10 minutes, once it clears $5, the treasury buys PYRE on the curve or the v4 pool.",
+    value: (s) => ({ value: s.pyreBurnsCount, caption: "pyre burns" }),
   },
   {
     id: "burn",
     label: "burn",
-    copy: "the coins are burned — totalSupply falls — and an attestation tx hashes the revenue that paid for it.",
+    copy: "the PYRE is burned — totalSupply falls — and an attestation tx hashes the fee claims that paid for it.",
     value: (s) => ({ value: Number(BigInt(s.burnedEthWei)) / 1e18, format: { maximumFractionDigits: 3 }, suffix: " ETH", caption: "burned" }),
   },
 ];
@@ -107,9 +101,9 @@ const LoopSpine = ({ stats }: { stats: StatsDto | undefined }) => {
   return (
     <section aria-labelledby="loop-title" className="mx-auto max-w-5xl">
       <h2 id="loop-title" className="display text-36 sm:text-48">
-        one loop. <em>revenue</em> closes it.
+        one loop. <em>fees</em> close it.
       </h2>
-      <p className="body mt-3 max-w-xl text-ink-2">a coin funds an agent. the agent builds an app. the app's revenue buys the coin back and burns it. every step is a transaction you can open.</p>
+      <p className="body mt-3 max-w-xl text-ink-2">a coin funds an agent. the agent builds an app. 25% of every coin's fees buys PYRE and burns it. every step is a transaction you can open.</p>
       <ol ref={ref} className="relative mt-10 grid list-none gap-y-8 p-0 sm:grid-cols-[2.5rem_1fr]">
         {/* The spine: a hairline that draws with scroll, heat rising behind it. */}
         <div className="pointer-events-none absolute left-[11px] top-2 bottom-2 hidden w-px bg-line sm:block" aria-hidden>
@@ -160,20 +154,21 @@ const HOW: ReadonlyArray<{ title: string; body: string }> = [
   { title: "launch", body: "name, ticker, image, one paragraph about the app. the coin launches on PONS v2 from its own wallet." },
   { title: "fund", body: "trading fees claim into that wallet. 60% becomes the agent's budget; the build starts at $50." },
   { title: "ship", body: "the agent writes, tests and deploys the app. you can read every tool call as it happens." },
-  { title: "burn", body: "app revenue swaps into the coin and burns it. supply falls; the tx and the attestation are public." },
+  { title: "burn", body: "25% of every coin's fees swaps into PYRE and burns it. supply falls; the tx and the attestation are public." },
 ];
 
 const pct = (bps: number) => `${bps / 100}%`;
 
 const FAQ: ReadonlyArray<{ q: string; a: ReactNode }> = [
-  { q: "is a buyback a payout?", a: "no. nothing is paid to holders. the treasury buys the coin with app revenue and burns it — totalSupply falls. that is the whole mechanism." },
+  { q: "is a buyback a payout?", a: "no. nothing is paid to holders. the treasury buys PYRE with the fee share and burns it — totalSupply falls. that is the whole mechanism." },
   {
     q: "who holds the keys?",
     a: "sign in with google and pyre keeps a custodial wallet for you (server-signed). sign in with your own wallet and you sign your own trades. the app's wallet is derived from the platform seed and only ever launches, sweeps and claims.",
   },
-  { q: "what if the app never earns?", a: "then nothing is bought back. fees still fund the agent until the budget runs out; the app goes dormant and can be relit by anyone who tops up the budget." },
+  { q: "does the app cost money?", a: "no. every app on pyre is free to use. holding the coin unlocks holder perks the agent builds in; nobody is charged inside an app." },
+  { q: "what if the fees run out?", a: "the agent builds until the budget runs out; the app goes dormant and can be relit by anyone who tops up the budget." },
   { q: "where do the fees come from?", a: "PONS v2 charges 1% per trade on the curve and in the v4 pool. 70% of that is paid to the creator wallet, which is the app. pyre never takes a cut of trades." },
-  { q: "can i verify any of this?", a: "every claim, buyback and burn is a transaction on robinhood chain. the burn ledger links each one. the attestation tx carries sha256 of the revenue events that paid for it." },
+  { q: "can i verify any of this?", a: "every fee claim and every PYRE burn is a transaction on robinhood chain. the burn ledger links each one. the attestation tx carries sha256 of the fee claims that paid for it." },
   { q: "is this financial advice?", a: "no. coins are not investments. apps can fail. market cap is a fact we display, never a claim we make." },
 ];
 
@@ -237,14 +232,7 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
               <td className="num px-4 py-3 text-ink">
                 {pct(FEE_SPLIT_BPS.BUILD_BUDGET)} / {pct(FEE_SPLIT_BPS.PYRE_TOKEN)} / {pct(FEE_SPLIT_BPS.LAUNCHER)}
               </td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">agent budget / $PYRE buyback / launcher</td>
-            </tr>
-            <tr>
-              <td className="px-4 py-3 text-ink">app revenue (USDG)</td>
-              <td className="num px-4 py-3 text-ink">
-                {pct(REVENUE_SPLIT_BPS.BUYBACK_BURN)} / {pct(REVENUE_SPLIT_BPS.PYRE_TOKEN)} / {pct(REVENUE_SPLIT_BPS.PLATFORM_OPS)}
-              </td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">buyback + burn / $PYRE buyback / platform ops</td>
+              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">agent budget / PYRE buy-and-burn / launcher</td>
             </tr>
             <tr>
               <td className="px-4 py-3 text-ink">launch stake</td>
@@ -259,16 +247,16 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
             <tr>
               <td className="px-4 py-3 text-ink">thresholds</td>
               <td className="num px-4 py-3 text-ink">
-                ${MIN_BUILD_BUDGET_USD} build · ${MIN_BUYBACK_USD} buyback
+                ${MIN_BUILD_BUDGET_USD} build · ${MIN_BUYBACK_USD} burn
               </td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">first build starts at $50 budget; buybacks batch at $5 pending revenue</td>
+              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">first build starts at $50 budget; PYRE burns batch at $5 of fee share</td>
             </tr>
           </tbody>
         </table>
       </div>
       {stats && (
         <p className="num mt-3 text-12 text-ink-3">
-          right now: {formatCount(stats.appsLive)} apps live · {formatUsdCompact(stats.revenueTotalMicros)} revenue · {formatEth(stats.burnedEthWei)} burned. not financial advice.
+          right now: {formatCount(stats.appsLive)} apps live · {formatEth(stats.feesTotalWei)} fees claimed · {formatEth(stats.burnedEthWei)} burned. not financial advice.
         </p>
       )}
     </section>

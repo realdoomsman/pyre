@@ -5,20 +5,10 @@
   "functions": [
     {
       "name": "hello",
-      "priceUsd": 0,
       "auth": false,
       "holderOnly": false
     }
   ],
-  "products": [
-    {
-      "id": "pro-unlock",
-      "name": "Pro unlock",
-      "priceUsd": 5,
-      "kind": "ONE_TIME"
-    }
-  ],
-  "adSlot": true,
   "holderTier": {
     "minHoldTokens": 100000
   }

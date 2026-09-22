@@ -30,7 +30,6 @@ import { db } from "../lib/metrics.js";
 import { executeTrade, quoteTrade, recordTrade } from "../lib/trade.js";
 import { TREASURY_ACCOUNT } from "../lib/treasury.js";
 import { tradeDto } from "../lib/dto.js";
-import { SUPPLY_BASE_UNITS } from "../lib/votes.js";
 import { env } from "../env.js";
 
 export const me = Router();
@@ -87,15 +86,12 @@ const positionsOf = async (wallets: Address[], ethPriceUsd: number): Promise<Pos
   const extras = await appExtrasByApp(Object.keys(byApp));
   return Object.values(byApp)
     .filter((p) => p.units > 0n)
-    .map((p) => {
-      const remaining = SUPPLY_BASE_UNITS - big(p.app.burnedTokens);
-      return {
-        app: appSummary(p.app, extras[p.app.id]!, ethPriceUsd),
-        units: p.units.toString(),
-        valueUsd: tokens(p.units) * p.app.priceUsd,
-        shareOfRemainingPct: remaining > 0n ? Number((p.units * 1_000_000n) / remaining) / 10_000 : pctOfSupply(p.units),
-      };
-    });
+    .map((p) => ({
+      app: appSummary(p.app, extras[p.app.id]!, ethPriceUsd),
+      units: p.units.toString(),
+      valueUsd: tokens(p.units) * p.app.priceUsd,
+      shareOfRemainingPct: pctOfSupply(p.units),
+    }));
 };
 
 const WITHDRAW_CAP_MICROS = BigInt(WITHDRAW_DAILY_CAP_USD) * 1_000_000n;

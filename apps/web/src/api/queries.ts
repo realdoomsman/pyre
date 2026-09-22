@@ -85,10 +85,7 @@ export const useGlobalStream = (onFrame?: (frame: GlobalFrame) => void, enabled 
       void qc.invalidateQueries({ queryKey: ["apps"] });
       if (frame.slug) void qc.invalidateQueries({ queryKey: keys.app(frame.slug) });
       const t = frame.event?.payload.type;
-      if (t === "BUYBACK" || t === "FEES" || t === "DEPLOY" || t === "JOB_FINISHED" || t === "GRADUATED") {
-        void qc.invalidateQueries({ queryKey: keys.stats });
-        if (t === "BUYBACK") void qc.invalidateQueries({ queryKey: keys.burns });
-      }
+      if (t === "FEES" || t === "DEPLOY" || t === "JOB_FINISHED" || t === "GRADUATED") void qc.invalidateQueries({ queryKey: keys.stats });
     },
     [qc, onFrame],
   );

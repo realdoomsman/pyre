@@ -7,7 +7,7 @@
  * `mcapUsd`, `heat`, percentages) are plain JSON numbers. Timestamps are ISO-8601 strings.
  */
 import { z } from "zod";
-import { EvmAddress, LaunchPhase, TxHash, AppSpec, BuildEventPayload, MonetizationModel } from "./schemas.js";
+import { EvmAddress, LaunchPhase, TxHash, AppSpec, BuildEventPayload } from "./schemas.js";
 
 /* ─────────────────────────── Primitives ─────────────────────────── */
 
@@ -26,7 +26,7 @@ export type AppStatusDto = z.infer<typeof AppStatusDto>;
 export const AgentState = z.enum(["idle", "building", "reviewing", "deploying", "dormant"]);
 export type AgentState = z.infer<typeof AgentState>;
 
-export const AppSort = z.enum(["trending", "new", "heating", "graduated", "shipping", "burning", "revenue"]);
+export const AppSort = z.enum(["trending", "new", "heating", "graduated", "shipping"]);
 export type AppSort = z.infer<typeof AppSort>;
 
 export const CandleIntervalDto = z.enum(["1m", "5m", "15m", "1h", "4h", "1d"]);
@@ -56,7 +56,6 @@ export const AppSummaryDto = z.object({
   oneLiner: z.string(),
   status: AppStatusDto,
   template: z.enum(["WEB_TOOL", "GAME", "AGENT_API"]),
-  monetization: MonetizationModel.nullable(),
   tokenAddress: EvmAddress.nullable(),
   curveAddress: EvmAddress.nullable(),
   poolId: Bytes32.nullable(),
@@ -68,14 +67,8 @@ export const AppSummaryDto = z.object({
   change24hPct: z.number().nullable(),
   volume24hUsd: z.number(),
   holders: z.number().int(),
-  revenueMicros: BigIntString,
-  revenue24hMicros: BigIntString,
   budgetMicros: BigIntString,
   feesWei: BigIntString,
-  buybackWei: BigIntString,
-  burnedUnits: BigIntString,
-  /** Burned ÷ PONS_TOTAL_SUPPLY, 0..100. */
-  burnedPct: z.number().min(0).max(100),
   /** Heat index 0..1 — see `heatIndex` in apps/api/src/lib/dto.ts. */
   heat: z.number().min(0).max(1),
   agentState: AgentState,
@@ -115,45 +108,6 @@ export const BuildEventDto = z.object({
 });
 export type BuildEventDto = z.infer<typeof BuildEventDto>;
 
-export const BuybackDto = z.object({
-  id: z.string(),
-  appId: z.string(),
-  slug: z.string(),
-  ticker: z.string(),
-  status: z.enum(["PENDING", "SWAPPING", "SWAPPED", "BURNED", "FAILED"]),
-  revenueMicros: BigIntString,
-  ethWei: BigIntString,
-  tokensBoughtUnits: BigIntString,
-  tokensBurnedUnits: BigIntString,
-  burnedPctOfSupply: z.number().min(0).max(100),
-  swapTx: TxHash.nullable(),
-  burnTx: TxHash.nullable(),
-  attestTx: TxHash.nullable(),
-  attestHash: z.string(),
-  revenueEventIds: z.number().int(),
-  createdAt: IsoDate,
-  completedAt: IsoDate.nullable(),
-});
-export type BuybackDto = z.infer<typeof BuybackDto>;
-
-/** Global burn ledger row: a BuybackDto plus running totals as of that row (newest first). */
-export const BurnLedgerRowDto = BuybackDto.extend({
-  cumulativeEthWei: BigIntString,
-  cumulativeRevenueMicros: BigIntString,
-});
-export type BurnLedgerRowDto = z.infer<typeof BurnLedgerRowDto>;
-
-export const BurnsPageDto = z.object({
-  items: z.array(BurnLedgerRowDto),
-  nextCursor: z.string().nullable(),
-  totals: z.object({
-    ethWei: BigIntString,
-    revenueMicros: BigIntString,
-    buybacks: z.number().int(),
-    coins: z.number().int(),
-  }),
-});
-export type BurnsPageDto = z.infer<typeof BurnsPageDto>;
 
 /** One fill on the curve or the v4 pool. Mirrors the `Trade` table the runner's indexer fills. */
 export const TradeDto = z.object({
@@ -168,8 +122,6 @@ export const TradeDto = z.object({
   priceUsd: z.number(),
   txHash: TxHash,
   block: z.number().int(),
-  /** True when the platform's buyback executor was the trader. */
-  isBuyback: z.boolean(),
   ts: IsoDate,
 });
 export type TradeDto = z.infer<typeof TradeDto>;
@@ -201,8 +153,6 @@ export const CandlesDto = z.object({
   candles: z.array(CandleDto),
   /** Circulating supply (display tokens) used for the MCap toggle. */
   supply: z.number(),
-  /** Burn markers for the chart (unix seconds + burned units). */
-  burns: z.array(z.object({ t: z.number().int(), units: BigIntString, txHash: TxHash.nullable() })),
 });
 export type CandlesDto = z.infer<typeof CandlesDto>;
 
@@ -285,16 +235,6 @@ export const FeeEventDto = z.object({
 });
 export type FeeEventDto = z.infer<typeof FeeEventDto>;
 
-export const RevenueEventDto = z.object({
-  id: z.string(),
-  source: z.enum(["CHECKOUT", "SUBSCRIPTION", "X402", "AD", "EXTERNAL_SDK"]),
-  usdMicros: BigIntString,
-  reference: z.string().nullable(),
-  buybackId: z.string().nullable(),
-  createdAt: IsoDate,
-});
-export type RevenueEventDto = z.infer<typeof RevenueEventDto>;
-
 export const AppSocialsDto = z.object({
   twitter: z.string().nullable(),
   website: z.string().nullable(),
@@ -313,7 +253,6 @@ export const AppDetailDto = AppSummaryDto.extend({
   stakeRefundTx: TxHash.nullable(),
   launchTx: TxHash.nullable(),
   spentMicros: BigIntString,
-  pendingRevenueMicros: BigIntString,
   usersCount: z.number().int(),
   uptimeBps: z.number().int(),
   healthy: z.boolean(),
@@ -322,13 +261,10 @@ export const AppDetailDto = AppSummaryDto.extend({
   escrowWei: BigIntString,
   /** 60/25/15 creator-fee split (bps). */
   feeSplit: z.object({ buildBudget: z.number().int(), pyreToken: z.number().int(), launcher: z.number().int() }),
-  /** 85/10/5 app-revenue split (bps). */
-  revenueSplit: z.object({ buybackBurn: z.number().int(), pyreToken: z.number().int(), platformOps: z.number().int() }),
   graduationThresholdWei: BigIntString,
   /** Newest fee events first (build-budget history). */
   budgetHistory: z.array(FeeEventDto),
   lastBuild: BuildJobDto.nullable(),
-  lastBuyback: BuybackDto.nullable(),
   lastEvent: BuildEventDto.nullable(),
   roadmap: z.object({ open: z.number().int(), scheduled: z.number().int(), done: z.number().int(), top: z.array(QueueItemDto) }),
   bounties: z.object({ open: z.number().int(), openWei: BigIntString }),
@@ -391,16 +327,13 @@ export const StatsDto = z.object({
   appsLive: z.number().int(),
   appsBuilding: z.number().int(),
   appsTotal: z.number().int(),
-  revenueTotalMicros: BigIntString,
-  revenue24hMicros: BigIntString,
   feesTotalWei: BigIntString,
   burnedEthWei: BigIntString,
   burnedEth24hWei: BigIntString,
   burnedEth30dWei: BigIntString,
-  revenue30dMicros: BigIntString,
   /** Total rows each `GET /v1/apps?sort=` would return. */
   counts: z.record(AppSort, z.number().int()),
-  buybacksCount: z.number().int(),
+  pyreBurnsCount: z.number().int(),
   /** Agent compute hours in the current UTC day (from BuildJob runtimes). */
   agentHoursToday: z.number(),
   ethPriceUsd: z.number(),
@@ -430,7 +363,7 @@ export const PositionDto = z.object({
   app: AppSummaryDto,
   units: BigIntString,
   valueUsd: z.number(),
-  /** Share of remaining (unburned) supply, 0..100. */
+  /** Share of supply, 0..100. */
   shareOfRemainingPct: z.number(),
 });
 export type PositionDto = z.infer<typeof PositionDto>;
@@ -461,7 +394,6 @@ export const LaunchDraftDto = z.object({
   stakeTo: EvmAddress,
   budgetMicros: BigIntString,
   feesWei: BigIntString,
-  revenueMicros: BigIntString,
   liveVersion: z.number().int(),
   liveUrl: z.string().nullable(),
   twitterUrl: z.string().nullable(),
@@ -569,10 +501,8 @@ export const OpsDto = z.object({
   money: z.object({
     feesTotalWei: BigIntString,
     fees24hWei: BigIntString,
-    revenueTotalMicros: BigIntString,
-    revenue24hMicros: BigIntString,
-    buybacksPending: z.number().int(),
-    buybacksStuck: z.number().int(),
+    pyreBurnsPending: z.number().int(),
+    pyreBurnsStuck: z.number().int(),
     creditFundingsStuck: z.number().int(),
     ledger: z.record(z.string(), BigIntString),
   }),
@@ -587,7 +517,7 @@ export type OpsDto = z.infer<typeof OpsDto>;
 
 /* ─────────────────────────── $PYRE ─────────────────────────── */
 
-/** One treasury buy-and-burn of $PYRE (its 25% fee share + 10% revenue share), attested on chain. */
+/** One treasury buy-and-burn of $PYRE (its 25% share of every coin's creator fees), attested on chain. */
 export const PyreBurnDto = z.object({
   id: z.string(),
   usdMicros: BigIntString,
@@ -602,6 +532,24 @@ export const PyreBurnDto = z.object({
   createdAt: IsoDate,
 });
 export type PyreBurnDto = z.infer<typeof PyreBurnDto>;
+
+/** Global burn ledger row: a PyreBurnDto plus running totals as of that row (newest first). */
+export const BurnLedgerRowDto = PyreBurnDto.extend({
+  cumulativeEthWei: BigIntString,
+  cumulativeUsdMicros: BigIntString,
+});
+export type BurnLedgerRowDto = z.infer<typeof BurnLedgerRowDto>;
+
+export const BurnsPageDto = z.object({
+  items: z.array(BurnLedgerRowDto),
+  nextCursor: z.string().nullable(),
+  totals: z.object({
+    ethWei: BigIntString,
+    usdMicros: BigIntString,
+    burns: z.number().int(),
+  }),
+});
+export type BurnsPageDto = z.infer<typeof BurnsPageDto>;
 
 /** One $PYRE stake on an app (custodial wallet → treasury stake vault). */
 export const PyreStakeDto = z.object({
@@ -641,16 +589,15 @@ export const PyrePageDto = z.object({
       explorerUrl: z.string(),
     })
     .nullable(),
-  /** Ledger account PYRE_TOKEN: fee share (25%) + revenue share (10%) accrued, and what was burned. */
+  /** Ledger account PYRE_TOKEN: the 25% fee share accrued, and what was burned. */
   ledger: z.object({
     accruedMicros: BigIntString,
     burnedMicros: BigIntString,
     pendingMicros: BigIntString,
   }),
   feeShareBps: z.number().int(),
-  revenueShareBps: z.number().int(),
   stakes: z.object({ totalUnits: BigIntString, stakers: z.number().int(), earnedMicros: BigIntString }),
-  /** $PYRE's own buy-and-burns (from the treasury; no per-app Buyback row), newest first. */
+  /** $PYRE's own buy-and-burns (from the treasury), newest first. */
   burns: z.array(PyreBurnDto),
   proposals: z.object({ open: z.number().int(), shipped: z.number().int() }),
   topStakes: z.array(z.object({ appId: z.string(), appSlug: z.string(), appName: z.string(), appTicker: z.string(), units: BigIntString, stakers: z.number().int() })),

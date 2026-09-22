@@ -3,7 +3,6 @@ import {
   FEE_SPLIT_BPS,
   FORK_ROYALTY_BPS,
   ITERATION_BUDGET_USD,
-  REVENUE_SPLIT_BPS,
   STAKERS_OF_LAUNCHER_BPS,
   WEI_PER_ETH,
   bps,
@@ -201,11 +200,11 @@ describe("FeeEvent field set", () => {
   });
 });
 
-describe("buyback attestation hash", () => {
-  const ids = ["rev_c", "rev_a", "rev_b"];
+describe("burn attestation hash", () => {
+  const ids = ["led_c", "led_a", "led_b"];
 
   it("is order independent and does not mutate the caller's array", () => {
-    const sorted = attestationHash(["rev_a", "rev_b", "rev_c"]);
+    const sorted = attestationHash(["led_a", "led_b", "led_c"]);
     expect(attestationHash(ids)).toBe(sorted);
     expect(attestationHash([...ids].reverse())).toBe(sorted);
     const input = [...ids];
@@ -215,34 +214,24 @@ describe("buyback attestation hash", () => {
 
   it("changes when the event set changes, including a duplicate id", () => {
     const base = attestationHash(ids);
-    expect(attestationHash([...ids, "rev_d"])).not.toBe(base);
-    expect(attestationHash(["rev_a", "rev_b"])).not.toBe(base);
-    expect(attestationHash([...ids, "rev_a"])).not.toBe(base);
+    expect(attestationHash([...ids, "led_d"])).not.toBe(base);
+    expect(attestationHash(["led_a", "led_b"])).not.toBe(base);
+    expect(attestationHash([...ids, "led_a"])).not.toBe(base);
   });
 
   it("is a pinned 0x sha256 of the comma-joined sorted ids", () => {
-    // Anyone auditing a burn recomputes this from the public RevenueEvent ids and the attestation
-    // calldata (0x5059524501 || hash), so the recipe must not drift.
+    // Anyone auditing a $PYRE burn recomputes this from the PYRE_TOKEN ledger credit ids and the
+    // attestation calldata (0x5059524501 || hash), so the recipe must not drift.
     expect(attestationHash(["rev_c", "rev_a", "rev_b"])).toBe("0x78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723");
     expect(attestationHash([])).toBe("0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
   });
 });
 
-describe("revenue split feeding the buyback", () => {
-  it("splits pending revenue 85/10/5 with the remainder on ops", () => {
-    const revenueMicros = 4_213_550_000n;
-    const buyback = bps(revenueMicros, REVENUE_SPLIT_BPS.BUYBACK_BURN);
-    const pyre = bps(revenueMicros, REVENUE_SPLIT_BPS.PYRE_TOKEN);
-    const ops = revenueMicros - buyback - pyre;
-    expect(buyback).toBe(3_581_517_500n);
-    expect(pyre).toBe(421_355_000n);
-    expect(ops).toBe(210_677_500n);
-  });
-
-  it("converts the buyback share to wei at the quoted ETH price", () => {
-    const buybackMicros = 3_581_517_500n;
-    const wei = weiFromUsdMicros(buybackMicros, ETH_PRICE);
-    expect(wei).toBe((buybackMicros * WEI_PER_ETH) / BigInt(Math.round(ETH_PRICE * 1e6)));
+describe("fee share feeding the $PYRE buyback", () => {
+  it("converts the accrued PYRE_TOKEN balance to wei at the quoted ETH price", () => {
+    const pendingMicros = 3_581_517_500n;
+    const wei = weiFromUsdMicros(pendingMicros, ETH_PRICE);
+    expect(wei).toBe((pendingMicros * WEI_PER_ETH) / BigInt(Math.round(ETH_PRICE * 1e6)));
     // Sanity: $3,581 of ETH at $4,187.42 is ~0.855 ETH.
     expect(Number(wei) / 1e18).toBeCloseTo(0.855, 2);
   });

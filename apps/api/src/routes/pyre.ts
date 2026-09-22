@@ -4,12 +4,12 @@ import { z } from "zod";
 import type { Address } from "viem";
 import { big, dec, prisma, type App } from "@pyre/db";
 import { TransactionUnconfirmedError, getEthPriceUsd, transferErc20, transferEth, explorerTxUrl } from "@pyre/chain";
-import { FEE_SPLIT_BPS, PyreStakeBody, REVENUE_SPLIT_BPS, TOKEN_DECIMALS, decimalToUnits, explorerTokenUrl, ponsUrl, weiFromUsdMicros, type PyrePageDto } from "@pyre/shared";
+import { FEE_SPLIT_BPS, PyreStakeBody, TOKEN_DECIMALS, decimalToUnits, explorerTokenUrl, ponsUrl, weiFromUsdMicros, type PyrePageDto } from "@pyre/shared";
 import { optionalAuth, requireAuth } from "../lib/auth.js";
 import { writeAudit } from "../lib/audit.js";
 import { APPS_TAG, cached } from "../lib/cache.js";
 import { custodialAccount, custodialEthBalance, GAS_RESERVE_WEI } from "../lib/custodial.js";
-import { pctOfSupply, stakeDto } from "../lib/dto.js";
+import { pctOfSupply, pyreBurnDto, stakeDto } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
 import { sendCached } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
@@ -26,9 +26,8 @@ const APP_REF = { id: true, slug: true, name: true, ticker: true } as const;
 
 /** Platform-wide $PYRE aggregates: identical for every viewer, so cached and shared. */
 const loadOverview = async (): Promise<Omit<PyrePageDto, "viewer">> => {
-  const [fees, revenue, balance, burned, staked, stakers, top, burns, proposalsOpen, proposalsShipped] = await db.$transaction([
+  const [fees, balance, burned, staked, stakers, top, burns, proposalsOpen, proposalsShipped] = await db.$transaction([
     db.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN", refType: "FeeEvent" }, _sum: { deltaMicros: true } }),
-    db.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN", refType: { in: ["RevenueEvent", "Buyback"] }, deltaMicros: { gt: 0n } }, _sum: { deltaMicros: true } }),
     // What is still to be bought: the running PYRE_TOKEN balance, net of every debit already claimed by a burn.
     db.ledgerEntry.aggregate({ where: { account: "PYRE_TOKEN" }, _sum: { deltaMicros: true } }),
     // Only settled burns count as burned: a failed or in-flight PyreBurn has debited the ledger but burned nothing yet.
@@ -48,7 +47,7 @@ const loadOverview = async (): Promise<Omit<PyrePageDto, "viewer">> => {
   const snapshot = market?.pyreToken ?? null;
   const appById: Record<string, AppRef> = {};
   for (const a of topApps) appById[a.id] = a;
-  const accrued = (fees._sum.deltaMicros ?? 0n) + (revenue._sum.deltaMicros ?? 0n);
+  const accrued = fees._sum.deltaMicros ?? 0n;
   const burnedMicros = burned._sum.usdMicros ?? 0n;
   const burnedUnits = snapshot ? BigInt(snapshot.burnedUnits) : 0n;
   return {
@@ -74,28 +73,12 @@ const loadOverview = async (): Promise<Omit<PyrePageDto, "viewer">> => {
       : null,
     ledger: { accruedMicros: accrued.toString(), burnedMicros: burnedMicros.toString(), pendingMicros: (balance._sum.deltaMicros ?? 0n).toString() },
     feeShareBps: FEE_SPLIT_BPS.PYRE_TOKEN,
-    revenueShareBps: REVENUE_SPLIT_BPS.PYRE_TOKEN,
     stakes: {
       totalUnits: big(staked._sum.amount).toString(),
       stakers: Number(stakers[0]?.count ?? 0n),
       earnedMicros: (staked._sum.earnedMicros ?? 0n).toString(),
     },
-    burns: burns.map((b) => {
-      const units = big(b.burnedUnits ?? b.tokensBurned);
-      return {
-        id: b.id,
-        usdMicros: b.usdMicros.toString(),
-        ethWei: big(b.ethWei).toString(),
-        tokensBoughtUnits: big(b.tokensBought).toString(),
-        burnedUnits: units.toString(),
-        burnedPctOfSupply: pctOfSupply(units),
-        swapTx: b.swapTx as PyrePageDto["burns"][number]["swapTx"],
-        burnTx: b.burnTx as PyrePageDto["burns"][number]["burnTx"],
-        attestTx: b.attestTx as PyrePageDto["burns"][number]["attestTx"],
-        attestHash: b.attestHash,
-        createdAt: (b.completedAt ?? b.createdAt).toISOString(),
-      };
-    }),
+    burns: burns.map(pyreBurnDto),
     proposals: { open: proposalsOpen, shipped: proposalsShipped },
     topStakes: top.flatMap((t) => {
       const a = appById[t.appId];

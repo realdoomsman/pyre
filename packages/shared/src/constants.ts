@@ -16,13 +16,6 @@ export const FEE_SPLIT_BPS = {
   LAUNCHER: 1500,
 } as const;
 
-/** App revenue split. Sums to 10_000. */
-export const REVENUE_SPLIT_BPS = {
-  BUYBACK_BURN: 8500,
-  PYRE_TOKEN: 1000,
-  PLATFORM_OPS: 500,
-} as const;
-
 /** Forks route this share of their fees upstream to the original app, forever. */
 export const FORK_ROYALTY_BPS = 1000;
 
@@ -53,9 +46,6 @@ export const LAUNCH_STAKE_WEI = 50_000_000_000_000_000n;
 /** Tiny budget used for the intake spec generation before any coin exists. Paid by platform. */
 export const SPEC_INTAKE_BUDGET_USD = 0.5;
 
-/** Revenue milestones (USD). Each posts to feed + X automatically. */
-export const REVENUE_MILESTONES_USD = [1, 1_000, 10_000, 100_000] as const;
-
 /** Governance: token-weighted with per-wallet cap (share of circulating supply, bps). */
 export const VOTE_WALLET_CAP_BPS = 200; // 2% of supply max weight per wallet
 export const PROMPT_QUEUE_MIN_HOLD_BPS = 10; // hold ≥0.1% of supply to submit a task
@@ -69,12 +59,8 @@ export const PLATFORM_PROPOSAL_QUORUM_BPS = 1000; // 10% of supply
 export const PLATFORM_PROPOSAL_STALE_DAYS = 21;
 /** Per-user daily withdrawal cap (USD): blast-radius limit if a session is compromised. */
 export const WITHDRAW_DAILY_CAP_USD = 25_000;
-/** Largest single in-app charge (checkout product or x402 call) in USD; manifests above it are rejected. */
-export const MAX_CHARGE_USD = 250;
-/** Per-user, per-app daily in-app spend cap (USD): an app can never drain a wallet in one sitting. */
-export const DAILY_CHARGE_CAP_USD = 1_000;
 
-/** Buyback executor: minimum accumulated revenue before a swap is worth the fees. */
+/** PYRE buy-and-burn executor: minimum accumulated fee share before a swap is worth the fees. */
 export const MIN_BUYBACK_USD = 5;
 
 /* ─────────────────────────── PONS v2 launch facts ─────────────────────────── */

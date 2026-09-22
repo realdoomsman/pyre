@@ -12,15 +12,12 @@ import { BurnsPageDto, PONS_TOTAL_SUPPLY } from "@pyre/shared";
 
 type BurnRow = {
   id: string;
-  appId: string;
   status: "BURNED";
-  revenueMicros: bigint;
+  usdMicros: bigint;
   ethWei: bigint;
   tokensBought: bigint;
   tokensBurned: bigint;
   burnedUnits: bigint | null;
-  pyreMicros: bigint;
-  opsMicros: bigint;
   attestHash: string;
   swapTx: string | null;
   burnTx: string | null;
@@ -28,15 +25,13 @@ type BurnRow = {
   error: string | null;
   createdAt: Date;
   completedAt: Date;
-  app: { slug: string; ticker: string };
-  _count: { revenueEvents: number };
 };
 
 const fx = vi.hoisted(() => {
   const rows: BurnRow[] = [];
   const sorted = () => [...rows].sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime() || (b.id < a.id ? -1 : 1));
   const sum = (list: BurnRow[]) => ({
-    _sum: { ethWei: list.reduce((a, r) => a + r.ethWei, 0n), revenueMicros: list.reduce((a, r) => a + r.revenueMicros, 0n) },
+    _sum: { ethWei: list.reduce((a, r) => a + r.ethWei, 0n), usdMicros: list.reduce((a, r) => a + r.usdMicros, 0n) },
     _count: { _all: list.length },
   });
   return {
@@ -52,13 +47,12 @@ const fx = vi.hoisted(() => {
       const [strict, tie] = or as [{ completedAt: { lt: Date } }, { completedAt: Date; id: { lt: string } }];
       return sum(rows.filter((r) => r.completedAt < strict.completedAt.lt || (r.completedAt.getTime() === tie.completedAt.getTime() && r.id < tie.id.lt)));
     }),
-    groupBy: vi.fn(async () => [...new Set(rows.map((r) => r.appId))].map((appId) => ({ appId }))),
     fetch: vi.fn(async (_url: string, init: { body: string }) => ({ ok: true, text: async () => JSON.stringify({ jsonrpc: "2.0", id: JSON.parse(init.body).id, result: "0x1" }) })),
   };
 });
 
 vi.mock("@pyre/db", async (importOriginal) => ({ ...(await importOriginal<object>()), prisma: {} }));
-vi.mock("../src/lib/metrics.js", () => ({ db: { buyback: { findMany: fx.findMany, aggregate: fx.aggregate, groupBy: fx.groupBy } } }));
+vi.mock("../src/lib/metrics.js", () => ({ db: { pyreBurn: { findMany: fx.findMany, aggregate: fx.aggregate } } }));
 vi.mock("../src/lib/cache.js", () => ({ APPS_TAG: "apps", cacheKey: (...p: unknown[]) => p.join(":"), cached: <T,>(_k: unknown, _t: unknown, fn: () => Promise<T>) => fn() }));
 vi.mock("../src/lib/redis.js", () => ({ redis: {} }));
 vi.mock("../src/lib/queues.js", () => ({ queues: {} }));
@@ -118,15 +112,12 @@ const invoke = async (router: { stack: Array<{ route?: { path: string; methods: 
 
 const burn = (i: number, ethWei: bigint, at: string): BurnRow => ({
   id: `burn_${String(i).padStart(4, "0")}`,
-  appId: i % 2 ? "appA" : "appB",
   status: "BURNED",
-  revenueMicros: ethWei / 10n ** 9n,
+  usdMicros: ethWei / 10n ** 9n,
   ethWei,
   tokensBought: 0n,
   tokensBurned: PONS_TOTAL_SUPPLY / 1000n,
   burnedUnits: null,
-  pyreMicros: 0n,
-  opsMicros: 0n,
   attestHash: "ab".repeat(32),
   swapTx: null,
   burnTx: null,
@@ -134,8 +125,6 @@ const burn = (i: number, ethWei: bigint, at: string): BurnRow => ({
   error: null,
   createdAt: new Date(at),
   completedAt: new Date(at),
-  app: { slug: "cool", ticker: "COOL" },
-  _count: { revenueEvents: 1 },
 });
 
 beforeEach(() => {
@@ -151,7 +140,7 @@ describe("GET /v1/burns", () => {
     const page1 = await invoke(publicRoutes, "get", "/burns", { query: { limit: "2" } });
     const body1 = BurnsPageDto.parse(page1.body);
     expect(body1.items.map((b) => b.id)).toEqual(["burn_0005", "burn_0004"]);
-    expect(body1.totals).toMatchObject({ ethWei: (15n * 10n ** 15n).toString(), buybacks: 5, coins: 2 });
+    expect(body1.totals).toMatchObject({ ethWei: (15n * 10n ** 15n).toString(), usdMicros: (15n * 10n ** 6n).toString(), burns: 5 });
     // Newest row carries everything; the second carries everything but the newest.
     expect(body1.items[0]!.cumulativeEthWei).toBe((15n * 10n ** 15n).toString());
     expect(body1.items[1]!.cumulativeEthWei).toBe((10n * 10n ** 15n).toString());
@@ -174,7 +163,7 @@ describe("GET /v1/burns", () => {
   it("returns an empty, valid page with zero totals before any burn", async () => {
     const page = await invoke(publicRoutes, "get", "/burns", {});
     const body = BurnsPageDto.parse(page.body);
-    expect(body).toEqual({ items: [], nextCursor: null, totals: { ethWei: "0", revenueMicros: "0", buybacks: 0, coins: 0 } });
+    expect(body).toEqual({ items: [], nextCursor: null, totals: { ethWei: "0", usdMicros: "0", burns: 0 } });
   });
 });
 

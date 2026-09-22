@@ -18,7 +18,6 @@ export { Sheet, Tray, type SheetProps } from "./Sheet.js";
 export { Skeleton } from "./Skeleton.js";
 export { Sparkline, type SparklineProps } from "./Sparkline.js";
 export { StatusLed, type LedTone } from "./StatusLed.js";
-export { SupplyKiln, type SupplyKilnProps } from "./SupplyKiln.js";
 export { Table, type Column, type TableProps } from "./Table.js";
 export { Tabs, panelId, tabId, type TabItem, type TabsProps } from "./Tabs.js";
 export { TickFlash, type TickFlashProps } from "./TickFlash.js";

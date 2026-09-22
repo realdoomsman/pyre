@@ -149,7 +149,7 @@ const Hero = ({ app }: { app: AppDetailDto }) => {
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
         <Stat label="24h volume" value={formatUsdCompact(BigInt(Math.round(app.volume24hUsd * 1e6)))} />
         <Stat label="Holders" value={formatCount(app.holders)} />
-        <Stat label="Burned" value={formatPct(app.burnedPct / 100, 2)} tone="burn" />
+        <Stat label="Fees → agent" value={formatUsdCompact(app.budgetMicros)} tone="earn" />
         <div>
           <dt className="eyebrow">Heat</dt>
           <dd className="mt-1">
@@ -161,9 +161,9 @@ const Hero = ({ app }: { app: AppDetailDto }) => {
   );
 };
 
-const Stat = ({ label, value, tone }: { label: string; value: string; tone?: "burn" | "earn" }) => (
+const Stat = ({ label, value, tone }: { label: string; value: string; tone?: "earn" }) => (
   <div>
     <dt className="eyebrow">{label}</dt>
-    <dd className={cx("num mt-1 text-15 font-medium", tone === "burn" ? "text-burn" : tone === "earn" ? "text-earn" : "text-ink")}>{value}</dd>
+    <dd className={cx("num mt-1 text-15 font-medium", tone === "earn" ? "text-earn" : "text-ink")}>{value}</dd>
   </div>
 );

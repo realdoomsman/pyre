@@ -29,12 +29,12 @@ export const AppCard = ({ app, className }: AppCardProps) => {
         <p className="mt-3 line-clamp-2 text-13 text-ink-2">{app.oneLiner}</p>
         <dl className="mt-4 grid grid-cols-3 gap-2 text-12">
           <div>
-            <dt className="eyebrow">revenue</dt>
-            <dd className="num text-ink">{formatUsdCompact(app.revenueMicros)}</dd>
+            <dt className="eyebrow">fees → agent</dt>
+            <dd className="num text-earn">{formatUsdCompact(app.budgetMicros)}</dd>
           </div>
           <div>
-            <dt className="eyebrow">24h</dt>
-            <dd className="num text-earn">{formatUsdCompact(app.revenue24hMicros)}</dd>
+            <dt className="eyebrow">mcap</dt>
+            <dd className="num text-ink">{formatUsdCompact(BigInt(Math.round(app.mcapUsd * 1e6)))}</dd>
           </div>
           <div>
             <dt className="eyebrow">holders</dt>

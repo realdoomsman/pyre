@@ -67,8 +67,6 @@ export const feedLine = (p: Payload): string => {
       return `launch gated for ${shortAddress(p.wallet)} — PONS whitelist pending`;
     case "FEES":
       return `fees claimed ${formatEth(p.wei)} · ${formatUsd(p.buildMicros)} to the build budget`;
-    case "BUYBACK":
-      return `bought back ${formatEth(p.ethWei)} · burned ${formatTokenUnits(p.burnedUnits)} (${p.burnedPct.toFixed(2)}% of supply)`;
     case "TRADE":
       return `${p.side.toLowerCase()} ${formatTokenUnits(p.tokenUnits)} for ${formatEth(p.quoteWei)} by ${shortAddress(p.wallet)}`;
     case "GRADUATED":
@@ -101,7 +99,6 @@ const KIND: Record<Payload["type"], ConsoleKind> = {
   LAUNCH: "deploy",
   LAUNCH_GATED: "error",
   FEES: "info",
-  BUYBACK: "info",
   TRADE: "info",
   GRADUATED: "deploy",
 };
@@ -119,7 +116,7 @@ const TOOL_KIND: Record<string, ConsoleKind> = {
 
 /** Only build-loop events belong in a console; chain and social events render elsewhere. */
 export const isBuildEvent = (p: Payload): boolean =>
-  p.type !== "TRADE" && p.type !== "FEES" && p.type !== "BUYBACK" && p.type !== "GROWTH_POST" && p.type !== "LAUNCH" && p.type !== "GRADUATED";
+  p.type !== "TRADE" && p.type !== "FEES" && p.type !== "GROWTH_POST" && p.type !== "LAUNCH" && p.type !== "GRADUATED";
 
 export const consoleRow = (e: BuildEventDto): ConsoleRow => {
   const p = e.payload;
@@ -136,7 +133,6 @@ const TONE: Partial<Record<Payload["type"], ChipTone>> = {
   SELF_HEAL: "warn",
   FEES: "earn",
   BUDGET: "earn",
-  BUYBACK: "burn",
   MILESTONE: "accent",
   LAUNCH: "accent",
   GRADUATED: "accent",
@@ -170,7 +166,6 @@ const LABEL: Record<Payload["type"], string> = {
   LAUNCH: "launch",
   LAUNCH_GATED: "gated",
   FEES: "fees",
-  BUYBACK: "burn",
   TRADE: "trade",
   GRADUATED: "graduated",
 };
@@ -290,30 +285,6 @@ const Body = ({ p }: { p: Payload }) => {
         <>
           claimed <span className="num text-earn">{formatEth(p.wei)}</span> ({formatUsd(p.usdMicros)}) · <span className="num">{formatUsd(p.buildMicros)}</span> to the build budget · tx{" "}
           <TxLink hash={p.txHash} copy={false} />
-        </>
-      );
-    case "BUYBACK":
-      return (
-        <>
-          bought back <span className="num">{formatEth(p.ethWei)}</span> · burned <span className="num text-burn">{formatTokenUnits(p.burnedUnits)}</span> (
-          <span className="num">{p.burnedPct.toFixed(2)}%</span> of supply)
-          <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-12 text-ink-3">
-            {p.swapTx && (
-              <span>
-                swap <TxLink hash={p.swapTx} copy={false} />
-              </span>
-            )}
-            {p.burnTx && (
-              <span>
-                burn <TxLink hash={p.burnTx} copy={false} />
-              </span>
-            )}
-            {p.attestTx && (
-              <span>
-                attest <TxLink hash={p.attestTx} copy={false} />
-              </span>
-            )}
-          </span>
         </>
       );
     case "TRADE":

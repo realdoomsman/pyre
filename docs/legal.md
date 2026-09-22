@@ -4,9 +4,9 @@ Internal notes on how the product is structured and why. This is not legal advic
 
 ## Buybacks are not distributions
 
-- App revenue funds on-chain purchases of the app's coin that are immediately burned (`token.burn`, so `totalSupply` falls). No holder ever receives tokens, ETH, or USDG from the platform because they hold the coin. There is no dividend, yield, claim, or redemption right.
-- The platform executes buybacks from its own treasury as a product feature; the amount, timing, and existence of buybacks are at the platform's discretion and can be paused (`PlatformSetting`, admin settings endpoint). Each buyback is attested on-chain (a zero-value treasury self-transaction carrying `0x5059524501 || sha256(revenueEventIds)`) so the record is verifiable without trusting the site.
-- Public copy must not describe buybacks as returns, income, rewards, or "value accrual to holders". Approved language: "revenue buys back and burns the coin". The growth worker's system prompt forbids price talk and the reviewer rejects it inside apps.
+- 25% of every coin's creator fees funds on-chain purchases of $PYRE that are immediately burned (`token.burn`, so `totalSupply` falls). App coins are never bought back by the platform. No holder ever receives tokens or ETH from the platform because they hold a coin. There is no dividend, yield, claim, or redemption right.
+- The platform executes the $PYRE buyback from its own treasury as a product feature; the amount, timing, and existence of buybacks are at the platform's discretion and can be paused (`PlatformSetting`, admin settings endpoint). Each buyback is attested on-chain (a zero-value treasury self-transaction carrying `0x5059524501 || sha256(fee-share ledger entry ids)`) so the record is verifiable without trusting the site.
+- Public copy must not describe buybacks as returns, income, rewards, or "value accrual to holders". Approved language: "fees pay an agent to build the app; 25% of every coin's fees buys and burns PYRE". The growth worker's system prompt forbids price talk and the reviewer rejects it inside apps.
 - Launcher payments (15% of creator fees) and bounty payouts (ETH escrowed in the treasury, released on a merged PR) are compensation for work: launching and specifying an app, and merged pull requests. There is no contributor carve-out of the fee stream. $PYRE staker slices are paid for providing scheduler priority to an app, not for holding.
 - PONS's own creator-tax and holder-fee-sharing features are switched off for every Pyre launch (`creatorTaxBps = 0`, `buybackEnabled = false`), so the only fee that flows is the venue's base 1%, 70% of which lands in the app wallet.
 
@@ -17,12 +17,11 @@ Internal notes on how the product is structured and why. This is not legal advic
 - Withdrawals are capped per user per day (`WITHDRAW_DAILY_CAP_USD`) as a blast-radius limit for a stolen session, and the cap is published in the terms and on the account page.
 - Deleting an account retires the derived key; the account page tells users to withdraw first.
 
-## Merchant of record
+## Apps take no money
 
-- For USDG checkouts, subscriptions, and per-request calls the platform treasury is the payee and the merchant of record. The app launcher does not receive the funds; revenue is routed per `REVENUE_SPLIT_BPS`.
-- Custodial users pay by signing an EIP-3009 `transferWithAuthorization` that the treasury relays (the treasury pays gas); external wallets pay by ordinary transfer verified by receipt. Either way the receipt is purchase id + transaction hash.
-- Consequences: the platform issues receipts, handles refunds for broken deliveries, and is responsible for sales-tax/VAT determination where applicable. Keep a refund policy in the terms and a way to request one (reports endpoint, kind `OTHER`).
-- Ads: internal only. Advertisers are other Pyre apps paying from their own build budget; no third-party advertiser accounts, no payouts to app operators.
+- Hosted apps are free to use. There is no checkout, subscription, per-request charge, purchase, or ad slot in any Pyre app, and `@pyre/app-sdk` exposes no way to ask a user for money. The platform is therefore not a merchant of record for anything, issues no receipts, and has nothing to refund.
+- The only coin-linked feature inside an app is a holder tier: a feature that opens when the signed-in wallet holds at least N of the app's coin, decided by a `balanceOf` read. Holding is never charged and never pays out; it is a product feature, not a purchase or a return.
+- The money a user can move on Pyre is limited to buying and selling coins on the public venue, staking the refundable launch stake, topping up an app's build budget in ETH, and depositing to or withdrawing from a custodial wallet. Every one of those is described in `docs/economics.md` and the terms.
 
 ## Code licensing
 
@@ -33,7 +32,7 @@ Internal notes on how the product is structured and why. This is not legal advic
 ## Moderation and takedowns
 
 - Intake: every prompt passes a classifier (`ModerationVerdict`: SCAM, PHISHING, GAMBLING, ILLEGAL, IMPERSONATION, ADULT, HATE, OTHER). Rejected prompts never become apps.
-- Deploy: a reviewer model blocks diffs that add auth/wallet/payment code, external scripts, raw network access, exfiltration, or violate the content policy.
+- Deploy: a reviewer model blocks diffs that add auth/wallet code, anything that asks users for money, external scripts, raw network access, exfiltration, or violate the content policy.
 - Reports: `POST /v1/reports` (ABUSE, DMCA, IMPERSONATION, OTHER). Admins action reports and can kill an app (`KILLED` → 410, coin untouched).
 - DMCA: designate an agent, publish the contact in `docs/privacy.md`/terms, follow the flow in `docs/runbook.md`. Counter-notices restore within the statutory window.
 

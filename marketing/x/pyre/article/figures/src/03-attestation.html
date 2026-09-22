@@ -20,23 +20,23 @@
   <div id="heat"></div>
   <img id="lockup" src="../../../../../brand/pyre/lockup.svg">
   <div id="eyebrow">figure 3 · the attestation</div>
-  <h1>37 bytes that tie a burn to the <em>revenue</em> that paid for it.</h1>
-  <div class="sub">after every buyback-and-burn the treasury sends a zero-value transaction to itself. its calldata is a fixed prefix, a version byte and a sha256 of the revenue-event ids consumed.</div>
+  <h1>37 bytes that tie a burn to the <em>fees</em> that paid for it.</h1>
+  <div class="sub">after every PYRE buyback-and-burn the treasury sends a zero-value transaction to itself. its calldata is a fixed prefix, a version byte and a sha256 of the ids of the fee-share entries consumed.</div>
 
   <div id="strip">
     <div class="seg" style="width:120px"><div class="by">0x</div><div class="nm">hex</div><div class="ex">calldata field of the tx</div></div>
     <div class="seg p" style="width:330px"><span class="len">4 bytes</span><div class="by">50 59 52 45</div><div class="nm">magic</div><div class="ex">ascii "P" "Y" "R" "E". marks the tx as a pyre attestation.</div></div>
     <div class="seg v" style="width:190px"><span class="len">1 byte</span><div class="by">01</div><div class="nm">version</div><div class="ex">scheme v1. any other value is not an attestation.</div></div>
-    <div class="seg h"><span class="len">32 bytes</span><div class="by">sha256( sorted ids, joined by "," )</div><div class="nm">revenue hash</div><div class="ex">the revenue-event ids the buyback consumed, sorted, comma-joined, hashed. order-independent; any change to the set changes the hash.</div></div>
+    <div class="seg h"><span class="len">32 bytes</span><div class="by">sha256( sorted ids, joined by "," )</div><div class="nm">fee hash</div><div class="ex">the ids of the 25% fee-share entries the burn consumed, sorted, comma-joined, hashed. order-independent; any change to the set changes the hash.</div></div>
   </div>
 
   <div id="ex">
-    <div class="r"><div class="k">worked example · ids</div><div class="v">["rev_c", "rev_a", "rev_b"]</div></div>
-    <div class="r"><div class="k">sorted, joined</div><div class="v">"rev_a,rev_b,rev_c"</div></div>
-    <div class="r"><div class="k">sha256</div><div class="v"><s>78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723</s></div></div>
-    <div class="r"><div class="k">calldata (37 bytes)</div><div class="v">0x<i>50595245</i><u>01</u><s>78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723</s></div></div>
+    <div class="r"><div class="k">worked example · ids</div><div class="v">["fee_c", "fee_a", "fee_b"]</div></div>
+    <div class="r"><div class="k">sorted, joined</div><div class="v">"fee_a,fee_b,fee_c"</div></div>
+    <div class="r"><div class="k">sha256</div><div class="v"><s>78c765bfe203a34a74f05feedda83d64557e5c48541215e45acecbb7666329ff</s></div></div>
+    <div class="r"><div class="k">calldata (37 bytes)</div><div class="v">0x<i>50595245</i><u>01</u><s>78c765bfe203a34a74f05feedda83d64557e5c48541215e45acecbb7666329ff</s></div></div>
     <div class="r"><div class="k">tx</div><div class="v">from: treasury · to: treasury · value: 0 · sent after burnTx confirms</div></div>
   </div>
-  <div class="foot">verify: take the revenue-event ids the ledger row lists, sort, join with ",", sha256, prepend 0x5059524501, compare with the attest tx calldata on robinhoodchain.blockscout.com. the example ids are illustrative; the hash is real.</div>
+  <div class="foot">verify: take the hash the burn ledger row shows, prepend 0x5059524501, compare with the attest tx calldata on robinhoodchain.blockscout.com; then open the burn tx and check totalSupply fell. the example ids are illustrative; the hash is real.</div>
   <div id="lip"></div>
 </div>

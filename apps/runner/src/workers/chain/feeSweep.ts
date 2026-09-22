@@ -246,7 +246,7 @@ async function refundStakes(ctx: ChainWorkerContext, log: Logger): Promise<void>
 
 /**
  * $PYRE's own creator fees. The treasury launched $PYRE, so it is the creatorFeeRecipient: sweep
- * and claim from the treasury and the ETH simply lands there — platform revenue, no per-app
+ * and claim from the treasury and the ETH simply lands there — platform income, no per-app
  * split. A failure never aborts the pass.
  */
 async function sweepPlatformFees(log: Logger): Promise<void> {

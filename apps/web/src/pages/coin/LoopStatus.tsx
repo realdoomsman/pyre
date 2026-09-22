@@ -1,13 +1,13 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { AppDetailDto } from "@pyre/shared";
-import { formatEth, formatPct, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
-import { Card, CardHeader, EthFlow, NumberFlow, TickFlash, UsdFlow, cx } from "../../ui/index.js";
+import { formatEth, formatPct, formatUsd, timeAgo } from "../../lib/format.js";
+import { Card, CardHeader, EthFlow, TickFlash, UsdFlow, cx } from "../../ui/index.js";
 import { agentChip } from "./CoinHeader.js";
 
 /*
- * The loop, as six live numbers: Fees accrued → Agent budget → Build state →
- * App revenue → Buyback pending → Burned. Each cell shows the number, the
- * next thing that will happen to it, and when it last moved.
+ * The loop, as four live numbers: Fees accrued → Agent budget → Build state →
+ * PYRE share burned. Each cell shows the number, the next thing that will
+ * happen to it, and when it last moved.
  */
 
 interface Cell {
@@ -21,15 +21,15 @@ interface Cell {
   tone?: "earn" | "build" | "burn";
 }
 
-export const LoopStatus = ({ app, updatedAt }: { app: AppDetailDto; updatedAt: number }) => {
+export const LoopStatus = ({ app }: { app: AppDetailDto }) => {
   const feesWei = BigInt(app.feesWei);
   const unswept = BigInt(app.unsweptWei);
   const escrow = BigInt(app.escrowWei);
-  const pending = BigInt(app.pendingRevenueMicros);
   const lastFee = app.budgetHistory[0]?.createdAt ?? null;
   const build = app.lastBuild;
-  const buyback = app.lastBuyback;
-  const buybackThreshold = 5_000_000n; // $5 in micros — the runner's buyback trigger
+  // This coin's 25% share of every fee claim, booked in USD at claim time; it funds the PYRE buy-and-burn.
+  const pyreMicros = useMemo(() => app.budgetHistory.reduce((s, f) => s + BigInt(f.pyreMicros), 0n), [app.budgetHistory]);
+  const pyreWei = (feesWei * BigInt(app.feeSplit.pyreToken)) / 10_000n;
   const cells: Cell[] = [
     {
       key: "fees",
@@ -75,53 +75,24 @@ export const LoopStatus = ({ app, updatedAt }: { app: AppDetailDto; updatedAt: n
       tone: "build",
     },
     {
-      key: "revenue",
-      label: "App revenue",
-      value: <UsdFlow micros={BigInt(app.revenueMicros)} />,
-      tick: app.revenueMicros,
+      key: "pyre",
+      label: "PYRE share burned",
+      value: <UsdFlow micros={pyreMicros} />,
+      tick: pyreMicros,
       sub: (
         <>
-          {formatUsd(app.revenue24hMicros)} <span className="text-ink-3">last 24h · {app.usersCount.toLocaleString("en-US")} users</span>
+          {formatEth(pyreWei)} <span className="text-ink-3">· {formatPct(app.feeSplit.pyreToken / 10_000, 0)} of every fee claim buys and burns PYRE</span>
         </>
       ),
-      updatedAt: new Date(updatedAt).toISOString(),
-      tone: "earn",
-    },
-    {
-      key: "buyback",
-      label: "Buyback pending",
-      value: <UsdFlow micros={pending} />,
-      tick: pending,
-      sub:
-        pending >= buybackThreshold ? (
-          <span className="text-earn">above the $5 trigger · next pass buys and burns</span>
-        ) : (
-          <>
-            <span className="text-ink-3">fires at $5 ·</span> {formatPct(app.revenueSplit.buybackBurn / 10_000, 0)} of revenue
-          </>
-        ),
-      updatedAt: buyback?.createdAt ?? null,
-      tone: "burn",
-    },
-    {
-      key: "burned",
-      label: "Burned",
-      value: <NumberFlow value={app.burnedPct} format={{ minimumFractionDigits: 3, maximumFractionDigits: 3 }} suffix="%" />,
-      tick: app.burnedUnits,
-      sub: (
-        <>
-          {formatTokenUnits(app.burnedUnits)} tokens <span className="text-ink-3">· {formatEth(app.buybackWei)} bought back</span>
-        </>
-      ),
-      updatedAt: buyback?.completedAt ?? null,
+      updatedAt: lastFee,
       tone: "burn",
     },
   ];
 
   return (
     <Card as="section" padding="md" aria-label="Loop status">
-      <CardHeader eyebrow="The loop" title="Fees → agent → app → revenue → buyback → burn" />
-      <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <CardHeader eyebrow="The loop" title="Fees → agent → app → PYRE burn" />
+      <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cells.map((c, i) => (
           <li key={c.key} className="min-w-0">
             <TickFlash value={c.tick} as="div" className="rounded-control border border-line bg-canvas/40 p-3">

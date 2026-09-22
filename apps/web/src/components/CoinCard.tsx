@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { AgentState, AppSummaryDto, CandlesDto } from "@pyre/shared";
 import { api } from "../api/client.js";
-import { formatUsdCompact, timeAgo } from "../lib/format.js";
+import { formatCount, formatUsdCompact, timeAgo } from "../lib/format.js";
 import { useWatchlist } from "../lib/watchlist.js";
 import { Avatar, Button, Card, Chip, GraduationRing, HeatGauge, Sparkline, TickFlash, cx, type ChipTone } from "../ui/index.js";
 import { Delta } from "./Money.js";
@@ -115,7 +115,7 @@ export const CoinCard = ({ app, rank, onTrade, className }: CoinCardProps) => {
             fees → agent <span className="num text-ink-2">{formatUsdCompact(app.budgetMicros)}</span>
           </span>
           <span className="text-ink-3">
-            burned <span className="num text-burn">{app.burnedPct.toFixed(app.burnedPct >= 10 ? 1 : 2)}%</span>
+            holders <span className="num text-ink-2">{formatCount(app.holders)}</span>
           </span>
           <HeatGauge value={app.heat} size={44} label={`heat index ${Math.round(app.heat * 100)}`} className="ml-auto" />
         </div>

@@ -32,7 +32,7 @@ export const Palette = ({ open, onClose }: { open: boolean; onClose: () => void 
     const actions: CommandItem[] = [
       { id: "go:launch", group: "go to", label: "Launch a coin", hint: "/launch", icon: <IconLaunch />, keywords: ["launch", "new", "create"], onSelect: go("/launch") },
       { id: "go:apps", group: "go to", label: "App store", hint: "/apps", icon: <IconApps />, keywords: ["apps", "store"], onSelect: go("/apps") },
-      { id: "go:burns", group: "go to", label: "Burn ledger", hint: "/burns", icon: <IconBurn />, keywords: ["burns", "ledger", "buyback"], onSelect: go("/burns") },
+      { id: "go:burns", group: "go to", label: "PYRE burns", hint: "/burns", icon: <IconBurn />, keywords: ["burns", "ledger", "pyre"], onSelect: go("/burns") },
       { id: "go:pyre", group: "go to", label: "$PYRE", hint: "/pyre", icon: <IconPyre />, keywords: ["pyre", "token"], onSelect: go("/pyre") },
       { id: "go:me", group: "go to", label: "Your account", hint: "/me", icon: <IconUser />, keywords: ["me", "account", "wallet", "balances"], onSelect: go("/me") },
     ];

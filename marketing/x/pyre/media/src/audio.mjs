@@ -23,9 +23,9 @@ const srtTime = (s) => {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")},${String(r).padStart(3, "0")}`;
 };
 
-/** Illustrative revenue event ids and their real attestation hash (sorted, comma-joined, sha256). */
+/** Illustrative fee-entry ids and their real attestation hash (sorted, comma-joined, sha256). */
 const attest = () => {
-  const ids = ["rev_example_003", "rev_example_001", "rev_example_002"];
+  const ids = ["fee_example_003", "fee_example_001", "fee_example_002"];
   const hash = `0x${createHash("sha256").update([...ids].sort().join(",")).digest("hex")}`;
   return { ids, hash };
 };

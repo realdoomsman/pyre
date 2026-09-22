@@ -27,7 +27,7 @@ const UNSTAKED_PRIORITY = 1000;
 const TICK_LOCK_TTL_SECONDS = 120;
 /** Fed to the agent when an iteration has no holder tasks queued. */
 const NO_TASKS_INSTRUCTION =
-  "No holder tasks are queued. Improve the product: fix rough edges, tighten the core flow, improve conversion toward the monetization model, and expand test coverage.";
+  "No holder tasks are queued. Improve the product: fix rough edges, tighten the core flow, polish the Pyre design system usage, and expand test coverage.";
 
 const min = (a: bigint, b: bigint) => (a < b ? a : b);
 
@@ -81,7 +81,7 @@ export type BuildDecision =
   | { kind: "build"; stage: JobStage; budgetMicros: bigint; taskIds: string[]; instruction?: string; firstBuild: boolean };
 
 export interface DecisionInput {
-  app: Pick<App, "id" | "budgetMicros" | "pendingRevenueMicros" | "firstBuildAt" | "liveVersion">;
+  app: Pick<App, "id" | "budgetMicros" | "firstBuildAt" | "liveVersion">;
   /** A QUEUED or RUNNING BuildJob already exists for this app. */
   hasActiveJob: boolean;
   paused: boolean;
@@ -103,9 +103,8 @@ export interface DecisionInput {
  * The per-app scheduling decision, pure so the money gates are testable. Branch order
  * is load-bearing: active/paused, first build, MVP retry, then iteration.
  *
- * Dormancy is gated only on budget and pending revenue — the daily compute ceiling
- * (`computeOk`) blocks building but never marks an app dormant, and a paused platform
- * decides nothing at all.
+ * Dormancy is gated only on budget — the daily compute ceiling (`computeOk`) blocks building
+ * but never marks an app dormant, and a paused platform decides nothing at all.
  */
 export const nextBuildDecision = (input: DecisionInput): BuildDecision => {
   const { app } = input;
@@ -134,9 +133,7 @@ export const nextBuildDecision = (input: DecisionInput): BuildDecision => {
         firstBuild: false,
       };
     }
-    if (app.budgetMicros < MIN_ITER && app.pendingRevenueMicros === 0n) {
-      return { kind: "dormant", reason: "Build budget exhausted before the MVP shipped" };
-    }
+    if (app.budgetMicros < MIN_ITER) return { kind: "dormant", reason: "Build budget exhausted before the MVP shipped" };
     return { kind: "none" };
   }
 
@@ -153,11 +150,10 @@ export const nextBuildDecision = (input: DecisionInput): BuildDecision => {
       firstBuild: false,
     };
   }
-  if (app.pendingRevenueMicros === 0n) return { kind: "dormant", reason: "Build budget exhausted" };
-  return { kind: "none" };
+  return { kind: "dormant", reason: "Build budget exhausted" };
 };
 
-type TickApp = Pick<App, "id" | "slug" | "budgetMicros" | "pendingRevenueMicros" | "firstBuildAt" | "liveVersion">;
+type TickApp = Pick<App, "id" | "slug" | "budgetMicros" | "firstBuildAt" | "liveVersion">;
 
 /**
  * Loads only the rows the app's branch actually needs: the newest job for an

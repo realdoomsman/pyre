@@ -10,7 +10,7 @@ import { consoleRow, isBuildEvent } from "../../components/FeedEvent.js";
 import { AGENT_CHIP } from "../../components/CoinCard.js";
 import { IconArrowRight } from "../../components/icons.js";
 import { useLiveFrames } from "../../layout/LiveContext.js";
-import { formatUsdCompact, timeAgo } from "../../lib/format.js";
+import { formatCount, formatUsdCompact, timeAgo } from "../../lib/format.js";
 import { Button, Chip, ConsoleFrame, EmptyState, Skeleton, useIsMobile, type ConsoleRow } from "../../ui/index.js";
 
 interface FeedPage {
@@ -146,12 +146,12 @@ export const BuildHero = () => {
           </div>
           <dl className="grid grid-cols-2 gap-2 text-12">
             <div>
-              <dt className="eyebrow">revenue</dt>
-              <dd className="num text-ink">{formatUsdCompact(app.revenueMicros)}</dd>
-            </div>
-            <div>
               <dt className="eyebrow">fees → agent</dt>
               <dd className="num text-ink">{formatUsdCompact(app.budgetMicros)}</dd>
+            </div>
+            <div>
+              <dt className="eyebrow">holders</dt>
+              <dd className="num text-ink">{formatCount(app.holders)}</dd>
             </div>
           </dl>
           <div className="mt-auto flex items-center gap-2">

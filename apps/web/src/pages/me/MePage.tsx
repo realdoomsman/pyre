@@ -92,7 +92,7 @@ export const MePage = () => {
             <h2 className="h3 mb-1">Sign in with your own wallet</h2>
             <p className="small text-ink-2">
               Prove the address with one signed message. You sign every transaction yourself, in your wallet, on chain 4663. Pyre never holds a key for you. You still get a
-              custodial balance for app purchases if you want one.
+              custodial balance for one-click stakes and trades if you want one.
             </p>
           </Card>
         </div>

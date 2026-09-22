@@ -29,8 +29,6 @@ export const tapeRow = (f: GlobalFrame): TapeRow | null => {
   switch (p.type) {
     case "TRADE":
       return { ...base, kind: "trade", side: p.side, amount: formatEth(p.quoteWei), detail: `${formatTokenUnits(p.tokenUnits)} tokens` };
-    case "BUYBACK":
-      return { ...base, kind: "burn", amount: formatTokenUnits(p.burnedUnits), detail: `${p.burnedPct.toFixed(2)}%`, href: `/c/${f.slug}?tab=burns` };
     case "DEPLOY":
       return { ...base, kind: "deploy", amount: `v${p.version}`, href: p.url };
     case "FEES":

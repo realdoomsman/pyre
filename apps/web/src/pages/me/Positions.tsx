@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import type { PositionDto } from "@pyre/shared";
-import { keys, useGlobalStream } from "../../api/queries.js";
-import type { GlobalFrame } from "../../api/types.js";
 import { useReducedMotion } from "../../lib/motion.js";
 import { formatPriceUsd, formatTokenUnits, formatUsd } from "../../lib/format.js";
 import { Avatar, Button, EmptyState, Table, TickFlash, cx, type Column } from "../../ui/index.js";
 
 /**
- * Share of remaining supply as a ring. Every burn shrinks the denominator, so the ring grows
- * without the holder doing anything; a mono `+0.0012%` tick marks each step — the only
- * celebratory motion in the product, tied to a real on-chain burn.
+ * Share of supply as a ring. A mono `+0.0012%` tick marks each step up — the only
+ * celebratory motion in the product, tied to a real on-chain fill.
  */
 const ShareRing = ({ pct }: { pct: number }) => {
   const reduced = useReducedMotion();
@@ -36,7 +32,7 @@ const ShareRing = ({ pct }: { pct: number }) => {
 
   return (
     <span className="relative inline-flex items-center gap-2">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" role="img" aria-label={`${pct.toFixed(4)}% of remaining supply`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" role="img" aria-label={`${pct.toFixed(4)}% of supply`}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-line-2)" strokeWidth={stroke} />
         <circle
           cx={size / 2}
@@ -63,14 +59,6 @@ const ShareRing = ({ pct }: { pct: number }) => {
 
 export const Positions = ({ positions }: { positions: PositionDto[] }) => {
   const navigate = useNavigate();
-  const qc = useQueryClient();
-  const latest = useRef(positions);
-  latest.current = positions;
-
-  // A burn of a coin we hold → refetch /v1/me so the share rings step up.
-  useGlobalStream((frame: GlobalFrame) => {
-    if (frame.event?.payload.type === "BUYBACK" && latest.current.some((p) => p.app.id === frame.appId)) void qc.invalidateQueries({ queryKey: keys.me });
-  });
 
   if (positions.length === 0) {
     return (
@@ -112,14 +100,7 @@ export const Positions = ({ positions }: { positions: PositionDto[] }) => {
         </TickFlash>
       ),
     },
-    {
-      key: "burned",
-      header: "Burned",
-      numeric: true,
-      collapse: true,
-      render: (p) => <span className="text-burn">{p.app.burnedPct.toFixed(2)}%</span>,
-    },
-    { key: "share", header: "Share of remaining", numeric: true, render: (p) => <ShareRing pct={p.shareOfRemainingPct} /> },
+    { key: "share", header: "Share of supply", numeric: true, render: (p) => <ShareRing pct={p.shareOfRemainingPct} /> },
   ];
 
   return <Table columns={columns} rows={positions} rowKey={(p) => p.app.id} onRowClick={(p) => navigate(`/c/${p.app.slug}`)} caption="Your coin positions" />;

@@ -1,25 +1,24 @@
 # Privacy Policy
 
-_Last updated: 21 September 2026_
+_Last updated: 22 September 2026_
 
-This policy explains what Pyre collects, why we collect it, who else sees it, and how long we keep it. It covers this website, the API, and every app hosted on a Pyre domain or path. Apps built on Pyre use our login, our storage, and our payments, so this one policy applies inside them too — an app cannot collect more than what is listed here, because the SDK is the only way it can store or read anything.
+This policy explains what Pyre collects, why we collect it, who else sees it, and how long we keep it. It covers this website, the API, and every app hosted on a Pyre domain or path. Apps built on Pyre use our login and our storage, so this one policy applies inside them too — an app cannot collect more than what is listed here, because the SDK is the only way it can store or read anything.
 
 ## What we collect
 
 - **Account identifiers from Google Sign-In.** We use Google Sign-In to log you in. We receive your Google account id, email address, name, and avatar. If you sign in with a wallet instead, we receive the wallet address and a one-time signed message that proves you control it. **We never receive your Google password, private keys, or seed phrase.**
 - **Your custodial Pyre wallet.** When you sign in, Pyre derives and holds a Robinhood Chain wallet on your behalf and signs every on-chain transaction for you; you can deposit to it and withdraw from it. This is a **custodial wallet** — we custody its private key on our servers and never expose that private key to your browser, but we do hold it. If you instead connect your own external wallet, you keep sole control of that wallet's keys and sign your own transactions.
-- **Wallet addresses and on-chain data.** Public addresses, coin balances for Pyre coins, and transaction hashes. This data is already public on Robinhood Chain; we index it to compute holder tiers, vote weight, staking positions, and to verify that a payment or a stake actually happened.
+- **Wallet addresses and on-chain data.** Public addresses, coin balances for Pyre coins, and transaction hashes. This data is already public on Robinhood Chain; we index it to compute holder tiers, vote weight, staking positions, and to verify that a stake, a top-up, or a deposit actually happened.
 - **What you submit when launching.** Your prompt, the generated spec, the app name, ticker, and image. Prompts go to an AI model for moderation and spec generation and end up in the app's public repository, so treat them as public. The name, ticker, and image are written to the chain at launch and cannot be removed from it.
 - **App usage counters.** Inside a hosted app we record the app id, your user id, a first-seen and last-seen timestamp, and the key-value data the app stores for you through `pyre.kv`. Counters are how the app store shows user numbers. An app can read only the values it wrote for you; it cannot read another user's values or another app's data.
-- **Payments.** Product id, price, paying wallet, transaction hash, and status for every purchase, subscription, and per-request charge. We keep these because Pyre is the merchant of record.
 - **Technical logs.** IP address, user agent, and request metadata, used for security, abuse detection, and rate limiting.
 - **Reports and correspondence.** What you send us when you report an app or email us, including the contact details you provide.
 
-We do **not** collect card numbers, bank details, government identifiers, biometrics, or precise location. We do not run third-party analytics or advertising trackers. Ads inside apps are served by Pyre from other Pyre apps and record only a per-campaign impression and click count — no profile of you.
+We do **not** collect card numbers, bank details, government identifiers, biometrics, or precise location. We do not run third-party analytics or advertising trackers, and there are no ads inside apps.
 
 ## Why we use it
 
-- **To run the platform:** sign you in, host apps, verify payments, execute the trades and withdrawals you ask for, apply holder perks, count votes, and track staking.
+- **To run the platform:** sign you in, host apps, verify stakes and top-ups, execute the trades and withdrawals you ask for, apply holder features, count votes, and track staking.
 - **To build apps:** your prompt, your queue tasks, and votes are inputs to the automated build agent.
 - **To keep it safe:** moderation of launches, the pre-deploy reviewer, abuse detection, rate limiting, withdrawal limits, and legal compliance.
 - **To show public activity:** the feed, the app store, build feeds, burn ledgers, contributor lists, staking tables, and holder lists display wallet addresses, X handles, and amounts. All of it is either already public on-chain or was submitted to be published.
@@ -44,7 +43,7 @@ The website keeps you signed in with a session token stored in your browser (loc
 
 ## How long we keep it
 
-- **Account, launch, ledger, purchase, staking, and build history:** for as long as Pyre operates. These records document money movements and public build history, so they are not deleted on request.
+- **Account, launch, ledger, staking, and build history:** for as long as Pyre operates. These records document money movements and public build history, so they are not deleted on request.
 - **Technical logs (IP, user agent, request metadata):** 30 days, then deleted.
 - **App key-value data:** until you delete it through the app, the app is deleted, or your account is deleted.
 - **Reports and correspondence:** 2 years after the matter is closed.
@@ -54,7 +53,7 @@ The website keeps you signed in with a session token stored in your browser (loc
 
 Depending on where you live you may have the right to access, correct, export, or delete your personal data, or to object to some processing. Email the privacy address below from the account concerned and we will answer within 30 days.
 
-Two honest limits: we cannot delete anything recorded on Robinhood Chain or published in a public GitHub repository, because neither is ours to erase, and we keep the payment and ledger records we are required to keep. Deleting your account unlinks your identifiers from future activity; it does not rewrite the chain or the public build feed. Before deleting your account, withdraw any balance from your custodial wallet — its key is derived from your account and is retired with it.
+Two honest limits: we cannot delete anything recorded on Robinhood Chain or published in a public GitHub repository, because neither is ours to erase, and we keep the ledger records we are required to keep. Deleting your account unlinks your identifiers from future activity; it does not rewrite the chain or the public build feed. Before deleting your account, withdraw any balance from your custodial wallet — its key is derived from your account and is retired with it.
 
 ## Security
 

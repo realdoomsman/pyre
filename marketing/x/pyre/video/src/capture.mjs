@@ -67,7 +67,7 @@ const SEGMENTS = {
       };
     },
   },
-  // Coin page (mock), "The loop" panel: pointer walks the six cells.
+  // Coin page (mock), "The loop" panel: pointer walks the four cells.
   loop: {
     site: MOCK, url: "/c/inbox-zero",
     seconds: 4.5,

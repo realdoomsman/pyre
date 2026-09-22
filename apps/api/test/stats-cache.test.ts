@@ -35,14 +35,12 @@ vi.mock("@pyre/chain", () => ({
   treasury: () => ({ address: "0x0000000000000000000000000000000000000001", account: {} }),
 }));
 vi.mock("../src/lib/metrics.js", () => {
-  const agg = async () => ({ _sum: { revenueMicros: 0n, feesWei: null, buybackWei: null, usdMicros: 0n, ethWei: null }, _count: 0 });
+  const agg = async () => ({ _sum: { feesWei: null, ethWei: null }, _count: 0 });
   const count = async () => 0;
   return {
     db: {
       $transaction: async (ops: unknown[]) => Promise.all(ops),
       app: { aggregate: agg, count },
-      revenueEvent: { aggregate: agg },
-      buyback: { aggregate: agg, count },
       pyreBurn: { aggregate: agg },
       buildJob: { findMany: async () => [] },
       platformSetting: { findUnique: async ({ where }: { where: { key: string } }) => (fx.snapshot.row?.key === where.key ? fx.snapshot.row : null) },

@@ -61,7 +61,7 @@ const EXAMPLE = {
 };
 
 const SEGMENTS = {
-  // Home: the empty hero, then a slow tilt down into "one loop. revenue closes it." — pointer walks 01…07.
+  // Home: the empty hero, then a slow tilt down into "one loop. fees close it." — pointer walks 01…07.
   home: {
     url: "/", seconds: 7,
     async plan(page) {
@@ -107,7 +107,7 @@ const SEGMENTS = {
       };
     },
   },
-  // Coin page (mock): market cap and chart, then tilt to "the loop" panel and walk its six cells; the kiln rides in on the right.
+  // Coin page (mock): market cap and chart, then tilt to "the loop" panel and walk its four cells; the kiln rides in on the right.
   coin: {
     site: MOCK, url: "/c/inbox-zero", seconds: 8,
     async plan(page) {

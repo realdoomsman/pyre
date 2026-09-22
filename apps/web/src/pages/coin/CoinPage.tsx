@@ -5,19 +5,17 @@ import { CandleIntervalDto as CandleInterval } from "@pyre/shared";
 import { useApp, useStats } from "../../api/queries.js";
 import { isHttpError } from "../../api/client.js";
 import { Chart, type ChartMarker } from "../../components/Chart.js";
-import { formatTokenUnits } from "../../lib/format.js";
 import { EmptyState, Skeleton, Tabs, panelId, tabId, useMediaQuery } from "../../ui/index.js";
 import { CoinHeader } from "./CoinHeader.js";
 import { FeeTable } from "./FeeTable.js";
 import { LoopStatus } from "./LoopStatus.js";
 import { ReportSheet, ShareSheet } from "./Sheets.js";
 import { StatsAudit } from "./StatsAudit.js";
-import { GraduationCard, KilnCard } from "./SupplyCards.js";
+import { GraduationCard } from "./SupplyCards.js";
 import { MobileTradeBar, TradePanel } from "./TradePanel.js";
-import { flatFeed, useAppStream, useBuybacks, useCandles, useFeed, useHolders, useTrades } from "./queries.js";
+import { flatFeed, useAppStream, useCandles, useFeed, useHolders, useTrades } from "./queries.js";
 import { AppTab } from "./tabs/AppTab.js";
 import { BountiesTab } from "./tabs/BountiesTab.js";
-import { BurnLedgerTab } from "./tabs/BurnLedgerTab.js";
 import { HoldersTab } from "./tabs/HoldersTab.js";
 import { RoadmapTab } from "./tabs/RoadmapTab.js";
 import { ThreadTab } from "./tabs/ThreadTab.js";
@@ -27,7 +25,6 @@ import { BuildLogTab } from "./tabs/BuildLogTab.js";
 const TABS = [
   { id: "build", label: "Build log" },
   { id: "app", label: "App" },
-  { id: "burns", label: "Burn ledger" },
   { id: "holders", label: "Holders" },
   { id: "trades", label: "Trades" },
   { id: "thread", label: "Thread" },
@@ -63,7 +60,7 @@ export const CoinPage = () => {
       </div>
     );
   }
-  return <Loaded app={app.data} updatedAt={app.dataUpdatedAt} />;
+  return <Loaded app={app.data} />;
 };
 
 const PageSkeleton = () => (
@@ -81,7 +78,7 @@ const PageSkeleton = () => (
   </div>
 );
 
-const Loaded = ({ app, updatedAt }: { app: AppDetailDto; updatedAt: number }) => {
+const Loaded = ({ app }: { app: AppDetailDto }) => {
   const [params, setParams] = useSearchParams();
   // Below `lg` the rail folds under the content and the trade panel moves to the sticky bar.
   const mobile = useMediaQuery("(max-width: 1023px)");
@@ -102,19 +99,17 @@ const Loaded = ({ app, updatedAt }: { app: AppDetailDto; updatedAt: number }) =>
   const feed = useFeed(app.slug);
   const trades = useTrades(app.slug);
   const holders = useHolders(app.slug);
-  const buybacks = useBuybacks(app.slug);
   const live = useAppStream(app.slug, app.phase);
   const [sheet, setSheet] = useState<"share" | "report" | null>(null);
 
   const events = useMemo(() => flatFeed(feed.data), [feed.data]);
-  const buybackRows = useMemo(() => buybacks.data?.pages.flatMap((p) => p.items) ?? [], [buybacks.data]);
   const tradeRows = useMemo(() => trades.data?.pages.flatMap((p) => p.items), [trades.data]);
   const allTrades = useMemo(() => mergeTrades(live.liveTrades, tradeRows ?? []), [live.liveTrades, tradeRows]);
   const markers = useMemo<ChartMarker[]>(() => {
-    const out: ChartMarker[] = (candles.data?.burns ?? []).map((b) => ({ t: b.t, kind: "burn", label: `burned ${formatTokenUnits(b.units)}` }));
+    const out: ChartMarker[] = [];
     for (const e of events) if (e.payload.type === "DEPLOY") out.push({ t: Math.floor(new Date(e.createdAt).getTime() / 1000), kind: "deploy", label: `v${e.payload.version}` });
     return out;
-  }, [candles.data, events]);
+  }, [events]);
 
   const trade = <TradePanel app={app} ethPriceUsd={ethPriceUsd} />;
 
@@ -141,9 +136,7 @@ const Loaded = ({ app, updatedAt }: { app: AppDetailDto; updatedAt: number }) =>
 
           {mobile && <GraduationCard app={app} />}
 
-          <LoopStatus app={app} updatedAt={updatedAt} />
-
-          {mobile && <KilnCard app={app} buybacks={buybackRows} />}
+          <LoopStatus app={app} />
 
           <section aria-label="Coin details">
             <Tabs items={TABS} value={tab} onChange={setTab} name={NAME} size="sm" />
@@ -151,17 +144,7 @@ const Loaded = ({ app, updatedAt }: { app: AppDetailDto; updatedAt: number }) =>
               {tab === "build" && (
                 <BuildLogTab app={app} events={events} stream={live.stream} hasMore={!!feed.hasNextPage} loadingMore={feed.isFetchingNextPage} onLoadMore={() => void feed.fetchNextPage()} />
               )}
-              {tab === "app" && <AppTab app={app} events={events} buybacks={buybackRows} />}
-              {tab === "burns" && (
-                <BurnLedgerTab
-                  ticker={app.ticker}
-                  rows={buybackRows}
-                  fresh={live.freshBuybacks}
-                  hasMore={!!buybacks.hasNextPage}
-                  loadingMore={buybacks.isFetchingNextPage}
-                  onLoadMore={() => void buybacks.fetchNextPage()}
-                />
-              )}
+              {tab === "app" && <AppTab app={app} events={events} />}
               {tab === "holders" && <HoldersTab app={app} data={holders.data} />}
               {tab === "trades" && (
                 <TradesTab
@@ -192,7 +175,6 @@ const Loaded = ({ app, updatedAt }: { app: AppDetailDto; updatedAt: number }) =>
           <aside className="sticky top-20 flex flex-col gap-4" aria-label="Trade and audit">
             {trade}
             <GraduationCard app={app} />
-            <KilnCard app={app} buybacks={buybackRows} />
             <StatsAudit app={app} trades={allTrades} holders={holders.data?.holders ?? []} ethPriceUsd={ethPriceUsd} />
             <FeeTable app={app} />
           </aside>

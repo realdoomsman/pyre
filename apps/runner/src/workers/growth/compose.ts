@@ -1,6 +1,6 @@
 import type { App } from "@pyre/db";
-import { big, prisma } from "@pyre/db";
-import { AppSpec, PONS_TOTAL_SUPPLY, ponsUrl } from "@pyre/shared";
+import { prisma } from "@pyre/db";
+import { AppSpec, ponsUrl } from "@pyre/shared";
 import { z } from "zod";
 import { appLiveUrl, models } from "../../env.js";
 import { askJson } from "../../lib/anthropic.js";
@@ -8,7 +8,7 @@ import { coinUrl } from "./post.js";
 
 export type GrowthApp = Pick<
   App,
-  "id" | "slug" | "name" | "ticker" | "imageUrl" | "spec" | "tokenAddress" | "budgetMicros" | "revenueMicros" | "burnedTokens" | "liveVersion"
+  "id" | "slug" | "name" | "ticker" | "imageUrl" | "spec" | "tokenAddress" | "budgetMicros" | "usersCount" | "liveVersion"
 >;
 
 export const GROWTH_APP_SELECT = {
@@ -20,26 +20,20 @@ export const GROWTH_APP_SELECT = {
   spec: true,
   tokenAddress: true,
   budgetMicros: true,
-  revenueMicros: true,
-  burnedTokens: true,
+  usersCount: true,
   liveVersion: true,
 } as const;
 
-const SYSTEM = `You write short X (Twitter) posts for an app built autonomously by an AI agent on Pyre, a launchpad on Robinhood Chain where each coin's creator fees fund its own app and the app's revenue buys the coin back and burns it.
+const SYSTEM = `You write short X (Twitter) posts for an app built autonomously by an AI agent on Pyre, a launchpad on Robinhood Chain where each coin's creator fees pay an agent to build and improve the coin's app, and a share of every coin's fees buys and burns PYRE.
 Rules:
-- Plain, factual, specific. Say what shipped, what changed, or what was burned. No hype words, no emojis, at most one hashtag, no exclamation marks.
-- Never mention token price, market cap, gains, "buy", "moon", or anything that reads as investment advice or a promise of returns. Burns are stated as supply removed, never as value.
+- Plain, factual, specific. Say what shipped or what changed. No hype words, no emojis, at most one hashtag, no exclamation marks.
+- Never mention token price, market cap, gains, "buy", "moon", or anything that reads as investment advice or a promise of returns.
 - Never invent features, numbers, or users. Only use facts in the brief.
 - Each tweet must be at most 260 characters. Include the link exactly once, in the first tweet.
 - Refer to the coin by its ticker as $TICKER.
 Respond with JSON only.`;
 
 const Tweets = z.object({ tweets: z.array(z.string().min(1).max(280)).min(1).max(3) });
-
-/** Whole tokens, grouped: `burnedTokensText(12_345n * 10n ** 18n)` → "12,345". */
-export const burnedTokensText = (units: bigint): string => (Number(units) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 0 });
-/** Share of the 1B launch supply: "0.12%". */
-export const burnedPctText = (units: bigint): string => `${((Number(units) / Number(PONS_TOTAL_SUPPLY)) * 100).toFixed(2)}%`;
 
 export type EventLine = { type: string; at: Date; text: string };
 
@@ -67,21 +61,18 @@ export async function recentEvents(appId: string, since: Date): Promise<EventLin
 
 function brief(app: GrowthApp, events: EventLine[]): string {
   const spec = AppSpec.safeParse(app.spec);
-  const burned = big(app.burnedTokens);
   const lines = [
     `App: ${app.name} ($${app.ticker})`,
     `App URL: ${appLiveUrl(app.slug)}`,
     `Coin page: ${coinUrl(app.slug)}`,
     ...(app.tokenAddress ? [`Trade on PONS: ${ponsUrl(app.tokenAddress)}`] : []),
     `Live version: ${app.liveVersion}`,
-    `Lifetime revenue: $${(Number(app.revenueMicros) / 1e6).toFixed(2)}`,
-    `Supply burned so far: ${burnedTokensText(burned)} $${app.ticker} (${burnedPctText(burned)} of launch supply)`,
+    `Users so far: ${app.usersCount}`,
   ];
   if (spec.success) {
     lines.push(
       `One-liner: ${spec.data.oneLiner}`,
       `What it does: ${spec.data.whatItDoes}`,
-      `Who pays: ${spec.data.whoPays}`,
       `MVP scope: ${spec.data.mvp.join("; ")}`,
     );
   }

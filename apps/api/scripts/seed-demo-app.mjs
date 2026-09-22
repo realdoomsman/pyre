@@ -70,9 +70,7 @@ const MANIFEST = {
   name: "demo",
   version: "1.0.0",
   entry: "index.html",
-  functions: [{ name: "hello", priceUsd: 0, auth: false, holderOnly: false }],
-  products: [{ id: "pro", name: "Pro unlock", priceUsd: 5, kind: "ONE_TIME" }],
-  adSlot: false,
+  functions: [{ name: "hello", auth: false, holderOnly: false }],
   holderTier: { minHoldTokens: 100000 },
 };
 
@@ -128,10 +126,8 @@ async function main() {
         title: "Demo",
         oneLiner: "Hosting verification app seeded by ops.",
         whatItDoes: "Exercises static serving, env injection and the function runtime.",
-        whoPays: "nobody — internal verification app",
         mvp: ["serve static files", "run the hello function"],
         outOfScope: [],
-        monetization: { model: "ONE_TIME", priceUsd: 5, priceDescription: "pro unlock" },
         holderTier: { enabled: true, minHoldTokens: 100000, perks: ["pro"] },
         template: "WEB_TOOL",
         risks: [],

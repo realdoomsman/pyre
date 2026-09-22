@@ -35,7 +35,7 @@ export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: A
   if (forkOf) {
     const parentSpec = AppSpec.safeParse(forkOf.spec);
     const parentSummary = parentSpec.success
-      ? `Original spec:\nTitle: ${parentSpec.data.title}\nOne-liner: ${parentSpec.data.oneLiner}\nWhat it does: ${parentSpec.data.whatItDoes}\nWho pays: ${parentSpec.data.whoPays}\nMVP:\n${parentSpec.data.mvp.map((m) => `- ${m}`).join("\n")}\nMonetization: ${parentSpec.data.monetization.model} (${parentSpec.data.monetization.priceDescription})`
+      ? `Original spec:\nTitle: ${parentSpec.data.title}\nOne-liner: ${parentSpec.data.oneLiner}\nWhat it does: ${parentSpec.data.whatItDoes}\nMVP:\n${parentSpec.data.mvp.map((m) => `- ${m}`).join("\n")}`
       : `Original prompt:\n${forkOf.prompt}`;
     prompt = `Fork of "${forkOf.name}" ($${forkOf.ticker}, ${forkOf.repoUrl ?? "no public repo yet"}).\n${parentSummary}\n\nChanges requested by the forker:\n${body.prompt}`;
   }

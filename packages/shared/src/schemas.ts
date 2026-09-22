@@ -1,6 +1,6 @@
 import { getAddress, isAddress } from "viem/utils";
 import { z } from "zod";
-import { LAUNCH_PHASE, MAX_CHARGE_USD } from "./constants.js";
+import { LAUNCH_PHASE } from "./constants.js";
 
 /* ─────────────────────────── Chain primitives ─────────────────────────── */
 
@@ -36,27 +36,12 @@ export type LaunchPhase = z.infer<typeof LaunchPhase>;
 
 /* ─────────────────────────── Spec (intake output) ─────────────────────────── */
 
-export const MonetizationModel = z.enum([
-  "ONE_TIME", // USDG checkout, single purchase unlocks
-  "SUBSCRIPTION", // USDG monthly
-  "PAY_PER_REQUEST", // x402-style per-call USDG
-  "ADS", // free app with ad slot
-  "HOLDER_TIER", // free, pro gated by holding the coin
-]);
-export type MonetizationModel = z.infer<typeof MonetizationModel>;
-
 export const AppSpec = z.object({
   title: z.string().min(2).max(80),
   oneLiner: z.string().min(10).max(160),
   whatItDoes: z.string().min(20).max(1200),
-  whoPays: z.string().min(10).max(600),
   mvp: z.array(z.string().min(3).max(200)).min(1).max(8),
   outOfScope: z.array(z.string().max(200)).max(8).default([]),
-  monetization: z.object({
-    model: MonetizationModel,
-    priceUsd: z.number().min(0).max(10_000).nullable(),
-    priceDescription: z.string().max(200),
-  }),
   holderTier: z.object({
     enabled: z.boolean(),
     minHoldTokens: z.number().int().min(0).nullable(),
@@ -113,7 +98,6 @@ export const BuildEventType = z.enum([
   "LAUNCH",
   "LAUNCH_GATED",
   "FEES",
-  "BUYBACK",
   "TRADE",
   "GRADUATED",
 ]);
@@ -176,17 +160,6 @@ export const BuildEventPayload = z.discriminatedUnion("type", [
     explorerUrl: z.string(),
   }),
   z.object({
-    type: z.literal("BUYBACK"),
-    buybackId: z.string(),
-    ethWei: z.string(),
-    burnedUnits: z.string(),
-    burnedPct: z.number(),
-    swapTx: TxHash.nullable(),
-    burnTx: TxHash.nullable(),
-    attestTx: TxHash.nullable(),
-    explorerUrl: z.string(),
-  }),
-  z.object({
     type: z.literal("TRADE"),
     side: z.enum(["BUY", "SELL"]),
     wallet: EvmAddress,
@@ -216,11 +189,6 @@ export const BuildJobData = z.object({
 });
 export type BuildJobData = z.infer<typeof BuildJobData>;
 
-export const BuyybackJobData = z.object({
-  appId: z.string(),
-});
-export type BuybackJobData = z.infer<typeof BuyybackJobData>;
-
 /** Lines streamed by the in-sandbox runner script (JSONL on stdout). */
 export const SandboxRunnerLine = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("note"), text: z.string() }),
@@ -244,8 +212,6 @@ export const PyreManifest = z.object({
     .array(
       z.object({
         name: z.string().regex(/^[a-z0-9_-]{1,40}$/),
-        /** Price per call in USD (x402). 0 = free; never above MAX_CHARGE_USD. */
-        priceUsd: z.number().min(0).max(MAX_CHARGE_USD).default(0),
         /** Require an authenticated user. */
         auth: z.boolean().default(false),
         /** Require the holder tier. */
@@ -253,19 +219,6 @@ export const PyreManifest = z.object({
       }),
     )
     .default([]),
-  /** Products available in the hosted checkout. */
-  products: z
-    .array(
-      z.object({
-        id: z.string().regex(/^[a-z0-9_-]{1,40}$/),
-        name: z.string().max(80),
-        /** USD per purchase; the host refuses anything above MAX_CHARGE_USD regardless of the manifest. */
-        priceUsd: z.number().positive().max(MAX_CHARGE_USD),
-        kind: z.enum(["ONE_TIME", "SUBSCRIPTION_MONTHLY"]),
-      }),
-    )
-    .default([]),
-  adSlot: z.boolean().default(false),
   holderTier: z.object({ minHoldTokens: z.number().int().min(0) }).nullable().default(null),
 });
 export type PyreManifest = z.infer<typeof PyreManifest>;
@@ -327,12 +280,7 @@ export const BountyBody = z.object({
   eth: z.number().positive().max(1000),
 });
 
-export const CheckoutBody = z.object({
-  productId: z.string(),
-  successUrl: z.string().url().optional(),
-});
-
-export const LeaderboardSort = z.enum(["revenue", "buybacks", "users", "newest", "dormant", "building"]);
+export const LeaderboardSort = z.enum(["users", "newest", "dormant", "building"]);
 export type LeaderboardSort = z.infer<typeof LeaderboardSort>;
 
 /**
@@ -348,7 +296,6 @@ export const AppChainDto = z.object({
   phase: LaunchPhase,
   stakeEth: z.number().min(0),
   feesEth: z.number().min(0),
-  buybackEth: z.number().min(0),
   progress: z.number().min(0).max(1),
   graduationThresholdEth: z.number().positive(),
   ponsUrl: z.string().url().nullable(),

@@ -98,14 +98,14 @@ const CARDS = [
         <li><i>01</i><span><code>POST /v1/auth/wallet/challenge</code> → one message<span class="who">eip-4361 fields: domain, chain 4663, nonce, expiry</span></span></li>
         <li><i>02</i><span>you <code>personal_sign</code> it → <code>/verify</code> → session<span class="who">eip-191 · single-use nonce · pyre never holds a key</span></span></li>
         <li><i>03</i><span>the launch stake is a tx from your wallet<span class="who">checked: mined, to the treasury, worth the stake, from you</span></span></li>
-        <li><i>04</i><span>you sign every trade yourself, in your wallet<span class="who">you still get a custodial balance for app purchases if you want one</span></span></li>
+        <li><i>04</i><span>you sign every trade yourself, in your wallet<span class="who">nothing inside an app ever asks either wallet for money</span></span></li>
       </ol>
     </div>
   </div>
   <div class="panel floor">
-    <div class="t">paying an app: no gas, either way</div>
-    <div class="m">the wallet signs an <b>eip-3009</b> USDG authorization; the treasury relays it on chain and pays the gas. cap <b>$250</b> per charge · <b>$1,000</b> per user per app per day.</div>
-    <div class="chip">USDG · robinhood chain</div>
+    <div class="t">using an app: free, either way</div>
+    <div class="m">apps on pyre take no payments: no checkout, no subscription, no per-call price, no ads. the only thing an app reads from your wallet is its coin balance, to <b>unlock a holder tier</b>. never charged, never paid out.</div>
+    <div class="chip">holder gate · balanceOf · robinhood chain</div>
   </div>` },
 
 { slug:"budget-50", kick:"what happens at $50", ftr:"thresholds are constants in the public repo", body:`
@@ -114,14 +114,14 @@ const CARDS = [
     <div class="before">
       <div class="panel"><div class="k">where budget comes from</div><div class="v">60% of claimed creator fees</div></div>
       <div class="panel"><div class="k">claim cadence</div><div class="v">every <code>5 min</code> from the fee escrow</div></div>
-      <div class="panel"><div class="k">the other 40%</div><div class="v">25% PYRE buyback · 15% launcher</div></div>
+      <div class="panel"><div class="k">the other 40%</div><div class="v">25% PYRE buyback and burn · 15% launcher</div></div>
       <div class="panel"><div class="k">counted in</div><div class="v">USD at the ETH price of the moment</div></div>
     </div>
     <div class="rail"></div>
     <div class="tick" style="left:0"><div class="n">$0<small>launch</small></div><div class="dot"></div><div class="l">idle</div><div class="d">the coin trades on PONS v2. fees accrue to the app's own wallet. no agent yet.</div></div>
     <div class="tick" style="left:370px"><div class="n">$10<small>iteration</small></div><div class="dot"></div><div class="l">minimum per build</div><div class="d">after the first build, each further iteration needs <b>$10</b> of budget. under it, the coin goes <span class="r">dormant</span>; the app keeps serving. the next claim over $10 <b>relights</b> it.</div></div>
     <div class="tick on" style="left:740px"><div class="n">$50<small>first build</small></div><div class="dot"></div><div class="l">the agent starts</div><div class="d">a sandbox, the approved brief, a budget cap. every tool call streams to the coin's build log. the <span class="b">0.05 ETH stake is refunded</span> here.</div></div>
-    <div class="tick burn" style="left:1110px"><div class="n">$5<small>revenue</small></div><div class="dot"></div><div class="l">separate stream</div><div class="d">once the app has <span class="e">earned $5</span> in USDG, the buyback runs: 85% buys the coin and <span class="r">burn()</span> destroys it. budget and revenue never mix.</div></div>
+    <div class="tick burn" style="left:1110px"><div class="n">$5<small>PYRE burn</small></div><div class="dot"></div><div class="l">pooled across coins</div><div class="d">once <span class="e">$5 of fee share</span> has pooled from every coin's 25%, the buyback runs: it buys PYRE and <span class="r">burn()</span> destroys it. app coins are never bought back.</div></div>
     <div class="gates"><i>nothing deploys unless every gate passes:</i><span class="ok">npm run build</span><span class="ok">playwright smoke</span><span class="ok">screenshots</span><span class="ok">lighthouse</span><span class="ok">reviewer vs the brief</span><i>→ live on its own subdomain</i></div>
   </div>` },
 ];

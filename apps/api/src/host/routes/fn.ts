@@ -1,19 +1,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
-import type { Address } from "viem";
-import { type User } from "@pyre/db";
 import { env } from "../../env.js";
-import { custodialUsdgBalance } from "../../lib/custodial.js";
 import { HttpError } from "../../lib/errors.js";
-import { logger } from "../../lib/logger.js";
 import { readJson } from "../body.js";
 import { loadFile } from "../files.js";
 import { holderInfo } from "../holder.js";
 import { appLlm } from "../llm.js";
-import { chargeUsdg, reserveCharge, sendInsufficientFunds } from "../payments.js";
 import { runFunction, scheduleFunction, serializeResult, type HostApi } from "../quickjs.js";
 import type { HostContext } from "../resolve.js";
-import { recordRevenue } from "../revenue.js";
 import { currentUser } from "../session.js";
 import { APP_SCOPE, kvDelete, kvRead, kvWrite } from "./kv.js";
 
@@ -134,50 +128,6 @@ async function pyreFetch(raw: unknown, body: unknown, depth: number): Promise<un
   return parsed;
 }
 
-/**
- * Charges the x402 price for one call: the caller's custodial wallet signs a USDG EIP-3009
- * authorization server-side and the treasury relays it. Returns false when a 402 was already sent,
- * true when the call may proceed. There is no client-signed payment header, no replay lock: the
- * platform holds the wallet and pays.
- */
-async function settlePayment(
-  ctx: HostContext,
-  res: Response,
-  user: User | null,
-  name: string,
-  priceMicros: bigint,
-): Promise<boolean> {
-  if (!user) throw new HttpError(401, "sign in required");
-  if (!user.wallet) throw new HttpError(503, "wallet is not ready yet");
-  const wallet = user.wallet as Address;
-
-  const balance = await custodialUsdgBalance(wallet);
-  if (balance < priceMicros) {
-    sendInsufficientFunds(res, priceMicros, balance, wallet);
-    return false;
-  }
-  const release = await reserveCharge(user.id, ctx.app.id, priceMicros);
-
-  let txHash: string;
-  try {
-    txHash = await chargeUsdg(user, priceMicros);
-  } catch (err) {
-    logger.error({ err, appId: ctx.app.id, name }, "host: x402 payment failed");
-    await release();
-    throw new HttpError(502, "payment_failed");
-  }
-
-  await recordRevenue({
-    app: { id: ctx.app.id, slug: ctx.app.slug },
-    source: "X402",
-    usdMicros: priceMicros,
-    payer: wallet,
-    reference: txHash,
-    label: `x402: ${name}`,
-  });
-  return true;
-}
-
 /** `POST /_pyre/fn/:name` — runs `functions/<name>.js` from the live deployment inside QuickJS. */
 export async function fnRoute(ctx: HostContext, req: Request, res: Response, name: string): Promise<void> {
   const deployment = ctx.deployment;
@@ -191,9 +141,6 @@ export async function fnRoute(ctx: HostContext, req: Request, res: Response, nam
   if (spec.auth && !user) throw new HttpError(401, "sign in required");
   const holder = user || spec.holderOnly ? await holderInfo(ctx, user?.wallet) : null;
   if (spec.holderOnly && !holder?.isHolder) throw new HttpError(403, "holders only");
-
-  const priceMicros = BigInt(Math.round(spec.priceUsd * 1e6));
-  if (priceMicros > 0n && !(await settlePayment(ctx, res, user, name, priceMicros))) return;
 
   const input = await readJson(req, MAX_INPUT_BYTES);
   const file = await loadFile(ctx, `functions/${name}.js`);

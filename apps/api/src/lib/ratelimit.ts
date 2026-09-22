@@ -71,8 +71,6 @@ export const RATE_TIERS = {
   appFnApp: { limit: 600, windowMs: 60_000 },
   /** Cookie-authenticated app writes: kv puts/deletes, track beacons, auth exchange. */
   appWrite: { limit: 120, windowMs: 60_000 },
-  /** Checkout creation reserves a Purchase row and burns an RPC blockhash. */
-  checkout: { limit: 10, windowMs: 60_000 },
   /** Anthropic proxy, per job token. */
   proxy: { limit: 240, windowMs: 60_000 },
   /** Anthropic proxy, per source IP — a fail-closed pre-auth floor so invalid tokens can't flood the token lookup. */

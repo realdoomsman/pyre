@@ -17,19 +17,9 @@ vi.mock("../src/lib/redis.js", () => ({
 }));
 vi.mock("@pyre/db", () => ({
   Prisma: { JsonNull: null },
-  prisma: { revenueEvent: { findFirst: async () => null }, appKv: { findUnique: async () => null } },
+  prisma: { appKv: { findUnique: async () => null } },
 }));
-vi.mock("@pyre/chain", () => ({
-  usdgAddress: () => "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
-  signUsdgAuthorization: async () => {
-    throw new Error("not in this test");
-  },
-  relayUsdgAuthorization: async () => {
-    throw new Error("not in this test");
-  },
-  verifyErc20Transfer: async () => ({ ok: false, from: "0x", units: 0n }),
-}));
-vi.mock("../src/lib/custodial.js", () => ({ custodialAccount: () => ({}), custodialUsdgBalance: async () => 0n }));
+vi.mock("@pyre/chain", () => ({}));
 vi.mock("../src/lib/treasury.js", () => ({ TREASURY_WALLET: "0x2222222222222222222222222222222222222222" }));
 
 import type { Request } from "express";

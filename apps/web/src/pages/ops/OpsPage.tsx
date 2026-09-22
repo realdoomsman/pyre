@@ -35,7 +35,7 @@ const useKill = () => {
 const PAUSES: ReadonlyArray<{ key: string; label: string; detail: string }> = [
   { key: "pause_builds", label: "Pause builds", detail: "No new build jobs start. Running jobs finish." },
   { key: "pauseFeeSweep", label: "Pause fee sweeps", detail: "Fees keep accruing on the curve / hook and in escrow; nothing is claimed or split." },
-  { key: "pauseBuyback", label: "Pause buybacks", detail: "Pending revenue accumulates; no swaps, no burns." },
+  { key: "pauseBuyback", label: "Pause PYRE burns", detail: "The PYRE_TOKEN ledger keeps accruing; no swaps, no burns." },
 ];
 
 const ALERT_TONE: Record<OpsDto["alerts"][number]["level"], ChipTone> = { info: "build", warn: "warn", critical: "burn" };
@@ -249,10 +249,8 @@ export const OpsPage = () => {
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-13">
             <Kv k="Fees total" v={formatEth(d.money.feesTotalWei)} />
             <Kv k="Fees 24h" v={formatEth(d.money.fees24hWei)} tone="earn" />
-            <Kv k="Revenue total" v={formatUsd(BigInt(d.money.revenueTotalMicros), 0)} />
-            <Kv k="Revenue 24h" v={formatUsd(BigInt(d.money.revenue24hMicros), 0)} tone="earn" />
-            <Kv k="Buybacks pending" v={String(d.money.buybacksPending)} />
-            <Kv k="Buybacks stuck" v={String(d.money.buybacksStuck)} tone={d.money.buybacksStuck > 0 ? "burn" : undefined} />
+            <Kv k="PYRE burns pending" v={String(d.money.pyreBurnsPending)} />
+            <Kv k="PYRE burns stuck" v={String(d.money.pyreBurnsStuck)} tone={d.money.pyreBurnsStuck > 0 ? "burn" : undefined} />
             <Kv k="Credit fundings stuck" v={String(d.money.creditFundingsStuck)} tone={d.money.creditFundingsStuck > 0 ? "burn" : undefined} />
             <Kv k="Open flags / reports" v={`${d.flags.open} / ${d.flags.reportsOpen}`} tone={d.flags.open + d.flags.reportsOpen > 0 ? "warn" : undefined} />
           </dl>

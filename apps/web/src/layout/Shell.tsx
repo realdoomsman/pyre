@@ -49,18 +49,15 @@ const RouteError = () => {
 
 /**
  * Proof Strip: three live network numbers in the nav. Seeded from
- * `/v1/stats`, nudged by SSE frames so a burn rolls the counter before the
- * next poll lands.
+ * `/v1/stats` (ETH burned = every PYRE burn), nudged by SSE frames so a
+ * launch rolls the counter before the next poll lands.
  */
 const Proof = ({ compact }: { compact?: boolean }) => {
   const stats = useStats();
-  const [nudge, setNudge] = useState({ burnedWei: 0n, live: 0 });
+  const [nudge, setNudge] = useState({ live: 0 });
   useLiveFrames(
     useCallback((f: GlobalFrame) => {
-      const p = f.event?.payload;
-      if (!p) return;
-      if (p.type === "BUYBACK") setNudge((n) => ({ ...n, burnedWei: n.burnedWei + BigInt(p.ethWei) }));
-      if (p.type === "LAUNCH") setNudge((n) => ({ ...n, live: n.live + 1 }));
+      if (f.event?.payload.type === "LAUNCH") setNudge((n) => ({ live: n.live + 1 }));
     }, []),
   );
   // Reset the nudges when a fresh snapshot arrives; it already includes them.
@@ -70,7 +67,7 @@ const Proof = ({ compact }: { compact?: boolean }) => {
     if (!s) return [];
     void snapshot;
     return [
-      { id: "burned", label: "eth burned", value: Number(BigInt(s.burnedEthWei) + nudge.burnedWei) / 1e18, format: { minimumFractionDigits: 3, maximumFractionDigits: 3 } },
+      { id: "burned", label: "eth burned", value: Number(BigInt(s.burnedEthWei)) / 1e18, format: { minimumFractionDigits: 3, maximumFractionDigits: 3 } },
       { id: "live", label: "apps live", value: s.appsLive + nudge.live },
       { id: "hours", label: "agent-hours today", value: s.agentHoursToday, format: { maximumFractionDigits: 1 } },
     ];
@@ -139,8 +136,7 @@ const Footer = () => (
       <div>
         <Lockup height={20} />
         <p className="small mt-3 max-w-sm text-ink-2">
-          coins that build apps. fees pay an agent to build the app; the app's revenue buys the coin back and{" "}
-          <span className="text-ink">burns</span> it.
+          coins that build apps. fees pay an agent to build the app; 25% of every coin's fees buys and <span className="text-ink">burns</span> PYRE.
         </p>
         <p className="micro mt-3 max-w-sm text-ink-3">coins are not investments. apps can fail. buybacks are burns, never distributions. not financial advice.</p>
         <div className="mt-4 flex items-center gap-3">

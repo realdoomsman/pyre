@@ -21,8 +21,8 @@ const dayKey = (d: Date) => d.toISOString().slice(0, 10);
 const DAY_MS = 86_400_000;
 /** Below this the treasury cannot fund launches (launch fee + gas) or relay USDG for long. */
 const TREASURY_LOW_WEI = 20_000_000_000_000_000n; // 0.02 ETH
-/** A buyback that has been SWAPPING this long never finished its burn leg. */
-const BUYBACK_STUCK_MS = 30 * 60_000;
+/** A $PYRE burn that has been SWAPPING this long never finished its burn leg. */
+const BURN_STUCK_MS = 30 * 60_000;
 
 /**
  * `GET /v1/admin/ops` — `OpsDto` (what the /ops page renders) plus the detail lists the admin
@@ -52,9 +52,8 @@ admin.get(
       ledger,
       money,
       fees24h,
-      rev24h,
-      buybacksPending,
-      buybacksStuck,
+      pyreBurnsPending,
+      pyreBurnsStuck,
       creditLedger,
       creditFunded,
       recentFundings,
@@ -76,12 +75,11 @@ admin.get(
       // Latest run per reconcile kind. Small table, a handful of kinds — take a window and reduce.
       prisma.reconcileRun.findMany({ orderBy: { createdAt: "desc" }, take: 60 }),
       prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 25 }),
-      prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { in: ["TREASURY", "PYRE_TOKEN", "OPS", "CREDITS"] } }, _sum: { deltaMicros: true } }),
-      prisma.app.aggregate({ _sum: { feesWei: true, revenueMicros: true } }),
+      prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { in: ["TREASURY", "PYRE_TOKEN"] } }, _sum: { deltaMicros: true } }),
+      prisma.app.aggregate({ _sum: { feesWei: true } }),
       prisma.feeEvent.aggregate({ where: { createdAt: { gte: since24h } }, _sum: { wei: true } }),
-      prisma.revenueEvent.aggregate({ where: { createdAt: { gte: since24h } }, _sum: { usdMicros: true } }),
-      prisma.buyback.count({ where: { status: { in: ["PENDING", "SWAPPED"] } } }),
-      prisma.buyback.count({ where: { status: "SWAPPING", createdAt: { lt: new Date(now - BUYBACK_STUCK_MS) } } }),
+      prisma.pyreBurn.count({ where: { status: { in: ["PENDING", "SWAPPED"] } } }),
+      prisma.pyreBurn.count({ where: { status: "SWAPPING", createdAt: { lt: new Date(now - BURN_STUCK_MS) } } }),
       // Per-app model-credit accrual: every CREDITS:<appId> ledger balance.
       prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { startsWith: "CREDITS:" } }, _sum: { deltaMicros: true } }),
       // USDC actually delivered to the card, per app (all-time CONFIRMED top-ups).
@@ -133,7 +131,7 @@ admin.get(
     if (treasuryEth === null || block === null) alerts.push({ level: "critical", code: "rpc_down", message: "RPC unreachable: chain reads and payouts are failing", href: null });
     else if (treasuryEth < TREASURY_LOW_WEI)
       alerts.push({ level: "warn", code: "treasury_low", message: `Treasury holds ${(Number(treasuryEth) / 1e18).toFixed(4)} ETH (below 0.02 ETH)`, href: `${env.BLOCKSCOUT_URL}/address/${TREASURY_WALLET}` });
-    if (buybacksStuck > 0) alerts.push({ level: "critical", code: "buyback_stuck", message: `${buybacksStuck} buyback(s) stuck in SWAPPING — manual reconcile`, href: null });
+    if (pyreBurnsStuck > 0) alerts.push({ level: "critical", code: "pyre_burn_stuck", message: `${pyreBurnsStuck} $PYRE burn(s) stuck in SWAPPING — manual reconcile`, href: null });
     if (stuckFundings.length > 0)
       alerts.push({ level: "critical", code: "stuck_funding", message: `${stuckFundings.length} credit funding(s) stuck — manual reconcile: ${stuckFundings.map((f) => f.app.slug).join(", ")}`, href: null });
     if (failedFundings.length > 0) alerts.push({ level: "warn", code: "funding_failed", message: `Credit funding failed: ${failedFundings[0]!.error ?? "unknown error"}`, href: null });
@@ -165,10 +163,8 @@ admin.get(
       money: {
         feesTotalWei: big(money._sum.feesWei).toString(),
         fees24hWei: big(fees24h._sum.wei).toString(),
-        revenueTotalMicros: (money._sum.revenueMicros ?? 0n).toString(),
-        revenue24hMicros: (rev24h._sum.usdMicros ?? 0n).toString(),
-        buybacksPending,
-        buybacksStuck,
+        pyreBurnsPending,
+        pyreBurnsStuck,
         creditFundingsStuck: stuckFundings.length,
         ledger: ledgerMap,
       },

@@ -160,7 +160,7 @@ export const Launch = () => {
             Launch a coin that <em>builds</em> something.
           </h1>
           <p className="body text-ink-2">
-            Name it, tell the agent what to build, stake 0.05 ETH. The coin launches on PONS v2; its creator fees fund the agent; the app's revenue buys the coin back and burns it.
+            Name it, tell the agent what to build, stake 0.05 ETH. The coin launches on PONS v2; its creator fees fund the agent; 25% of every coin's fees buys and burns PYRE.
           </p>
           <div>
             <Button size="lg" onClick={auth.signIn}>

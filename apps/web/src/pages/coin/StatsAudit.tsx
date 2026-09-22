@@ -93,7 +93,7 @@ interface Props {
   ethPriceUsd: number;
 }
 
-/** Windowed trade stats beside the audit: fees, fees→agent, burned, holder concentration. */
+/** Windowed trade stats beside the audit: fees, fees→agent, fees→PYRE burn, holder concentration. */
 export const StatsAudit = ({ app, trades, holders, ethPriceUsd }: Props) => {
   const [view, setView] = useState<ViewId>("stats");
   const [win, setWin] = useState<WindowId>("24h");
@@ -131,8 +131,7 @@ export const StatsAudit = ({ app, trades, holders, ethPriceUsd }: Props) => {
           <Line k="Total fees claimed" v={formatEth(feesWei)} tone="earn" />
           <Line k="Fees → agent" v={formatEth((feesWei * BigInt(app.feeSplit.buildBudget)) / 10_000n)} tone="earn" />
           <Line k="Fees accruing" v={formatEth(BigInt(app.unsweptWei) + BigInt(app.escrowWei))} />
-          <Line k="Bought back" v={formatEth(app.buybackWei)} tone="burn" />
-          <Line k="Burned" v={formatPct(app.burnedPct / 100, 3)} tone="burn" />
+          <Line k="Fees → PYRE burn" v={formatEth((feesWei * BigInt(app.feeSplit.pyreToken)) / 10_000n)} tone="burn" />
           <Line k="Creator tax" v="0%" />
           <Line k="Uptime" v={formatPct(app.uptimeBps / 10_000, 1)} tone={app.healthy ? "earn" : undefined} />
         </dl>

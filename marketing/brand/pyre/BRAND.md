@@ -1,8 +1,8 @@
 # Pyre — identity v2 "Obsidian Temper"
 
-coins that build apps. revenue *burns* them.
+coins that build apps. every fee *burns* PYRE.
 
-Every Pyre coin is a PONS v2 launch on Robinhood Chain. Its creator fees fund an AI agent that builds the app the coin describes; the app's revenue buys the coin back and burns it. The identity shows fire only through its consequence — supply shrinking, metal tempering — never as a flame.
+Every Pyre coin is a PONS v2 launch on Robinhood Chain. Its creator fees pay an AI agent to build the app the coin describes, and 25% of every coin's fees buys PYRE and burns it. The app is free to use; holding the coin unlocks features inside it. The identity shows fire only through its consequence — supply shrinking, metal tempering — never as a flame.
 
 ## Files
 
@@ -24,7 +24,7 @@ Every Pyre coin is a PONS v2 launch on Robinhood Chain. Its creator fees fund an
 
 ## 1. Rationale
 
-**Heat, not flame.** A flame glyph says "hot coin"; every launchpad has one. Pyre's mechanism is slower and more certain: revenue arrives, supply leaves. The visual language is therefore *tempering* — an obsidian block just pulled from a kiln, its lower edge still glowing — and the heat is the wrong colour for fire on purpose. Violet → cobalt → white is hotter than orange. It reads as engineered heat, not a campfire.
+**Heat, not flame.** A flame glyph says "hot coin"; every launchpad has one. Pyre's mechanism is slower and more certain: fees arrive, an app gets built, supply leaves. The visual language is therefore *tempering* — an obsidian block just pulled from a kiln, its lower edge still glowing — and the heat is the wrong colour for fire on purpose. Violet → cobalt → white is hotter than orange. It reads as engineered heat, not a campfire.
 
 **One object, one edge.** The mark is a rounded square (the tile every coin card, app icon and ledger row is built from) whose bottom edge carries the heat ramp. Everything else in the system reuses that gesture: the heat rises from the bottom of a card, a page, an avatar, a share card. The mono mark keeps the same silhouette and shows the boundary as a curved hairline — the temper line on a blade.
 
@@ -48,7 +48,7 @@ One theme: dark, "Obsidian Temper". There is no light mode — the app store, th
 | `accent` | `#9D8CFF` | tempered violet — links, the emphasised word, focus |
 | `accent-strong` | `#7A66F5` | buttons, active states |
 | `build` | `#3E8BFF` | agent / build activity |
-| `earn` | `#4FD1A6` | revenue in |
+| `earn` | `#4FD1A6` | fees in |
 | `burn` | `#FF4D6D` | supply out, destructive |
 | `warn` | `#E5C15C` | caution only |
 | `white-hot` | `#E9F1FF` | the hottest point; peaks of heat animations |
@@ -96,26 +96,26 @@ Never: bold Instrument Serif (it doesn't exist; don't fake it), all-caps serif, 
 
 Lowercase, declarative, numbers over adjectives. Say what happened and show the hash.
 
-- Yes: `app #14 earned $1,240 this week. bought back 3.1% of supply. burned. tx ↓`
-- Yes: `12 apps live · $8,410 revenue · 41.2m coins burned`
+- Yes: `app #14 earned $1,240 in fees this week. shipped v3. $310 of PYRE burned. tx ↓`
+- Yes: `12 apps live · $8,410 fees · 41.2m PYRE burned`
 - No: hype, exclamation marks, emoji, "huge", "massive", "incoming".
 
 Rules:
 - **No price talk.** No targets, no "up only", no "cheap", no charts-with-arrows. Market cap is a fact we display, never a claim we make.
-- **Buybacks are burns, never distributions.** Nothing is paid out to holders. Say *supply falls*, *burned*, *bought back and burned*. Never *yield*, *dividend*, *revenue share*, *passive income*, *rewards*.
+- **Buybacks are burns, never distributions.** Nothing is paid out to holders. Say *supply falls*, *burned*, *bought back and burned*. Never *yield*, *dividend*, *fee share*, *passive income*, *rewards*. The only coin that is bought back is PYRE; never imply an app coin is.
 - **Coin, not token** in prose. Contract addresses are always printed in full, in mono.
 - **No `$PYRE` cashtag on X yet.** X auto-links `$PYRE` to an unrelated asset; write `PYRE` until our coin is live and the mapping is verified.
-- **Apps are the point.** Lead with what the app does and what it earned. The coin is the consequence.
+- **Apps are the point.** Lead with what the app does and what its coin earned in fees. The coin is the consequence. Apps are free; never describe a price, a paywall or a purchase inside one.
 - Every post that names an amount links the tx or the app. If it can't be verified on Blockscout, don't post it.
 - `not financial advice` appended to anything that mentions a market cap or a price.
 
-Words: launch, build, earn, burn, budget, supply, holders, app, ship, dormant, relight, heat.
+Words: launch, build, earn, burn, budget, supply, holders, app, ship, dormant, relight, heat, free.
 Not: token, invest, profit, APY, moon, degen, alpha, gem.
 
 ## 6. X profile
 
 - **Name:** `Pyre`
-- **Bio (151/160):** `coins that build apps. fees pay an AI to build the app. app revenue buys the coin back and burns it. every coin is a PONS v2 launch on Robinhood Chain.`
+- **Bio (159/160):** `coins that build apps. fees pay an AI to build the app, and 25% of every coin's fees buys PYRE and burns it. every coin is a PONS v2 launch on Robinhood Chain.`
 - **Location:** `Robinhood Chain`
 - **Website:** `pyre.fun`
 - **Avatar:** `pfp.png` (or `pfp-alt.png`). **Header:** `banner.png`.

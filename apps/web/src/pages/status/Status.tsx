@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useStats, useStatus } from "../../api/queries.js";
 import { env } from "../../env.js";
-import { formatCount, formatDuration, formatEth, formatUsdCompact } from "../../lib/format.js";
+import { formatCount, formatDuration, formatEth } from "../../lib/format.js";
 import { Card, Chip, Skeleton, StatusLed, cx } from "../../ui/index.js";
 
 const Service = ({ name, ok, latencyMs, detail }: { name: string; ok: boolean | undefined; latencyMs?: number; detail?: string }) => (
@@ -86,9 +86,8 @@ export const Status = () => {
             <Figure label="apps live" value={formatCount(stats.data.appsLive)} tone="earn" />
             <Figure label="building" value={formatCount(stats.data.appsBuilding)} tone="build" />
             <Figure label="apps total" value={formatCount(stats.data.appsTotal)} />
-            <Figure label="buybacks" value={formatCount(stats.data.buybacksCount)} />
-            <Figure label="revenue" value={formatUsdCompact(stats.data.revenueTotalMicros)} tone="earn" />
-            <Figure label="fees claimed" value={formatEth(stats.data.feesTotalWei)} />
+            <Figure label="pyre burns" value={formatCount(stats.data.pyreBurnsCount)} />
+            <Figure label="fees claimed" value={formatEth(stats.data.feesTotalWei)} tone="earn" />
             <Figure label="eth burned" value={formatEth(stats.data.burnedEthWei)} tone="burn" />
             <Figure label="agent-hours today" value={stats.data.agentHoursToday.toFixed(1)} />
           </div>

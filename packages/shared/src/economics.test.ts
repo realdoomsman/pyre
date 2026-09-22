@@ -12,7 +12,6 @@ import {
   PONS_LAUNCH_FEE_WEI,
   PONS_TOTAL_SUPPLY,
   PROMPT_QUEUE_MIN_HOLD_BPS,
-  REVENUE_SPLIT_BPS,
   TOKEN_DECIMALS,
   VOTE_WALLET_CAP_BPS,
   WEI_PER_ETH,
@@ -51,13 +50,8 @@ describe("split tables", () => {
     expect(total).toBe(10_000);
   });
 
-  it("revenue split sums to exactly 10_000 bps", () => {
-    const total = REVENUE_SPLIT_BPS.BUYBACK_BURN + REVENUE_SPLIT_BPS.PYRE_TOKEN + REVENUE_SPLIT_BPS.PLATFORM_OPS;
-    expect(total).toBe(10_000);
-  });
-
   it("every share is a positive share of the whole", () => {
-    for (const share of [...Object.values(FEE_SPLIT_BPS), ...Object.values(REVENUE_SPLIT_BPS)]) {
+    for (const share of Object.values(FEE_SPLIT_BPS)) {
       expect(share).toBeGreaterThan(0);
       expect(share).toBeLessThan(10_000);
     }
@@ -109,16 +103,6 @@ describe("bps()", () => {
       expect(launcher).toBeGreaterThanOrEqual(0n);
       // The remainder lands on the launcher cut, and is never more than the rounding dust.
       expect(launcher - bps(amount, FEE_SPLIT_BPS.LAUNCHER)).toBeLessThanOrEqual(2n);
-    }
-  });
-
-  it("never loses or invents a micro across the three-way revenue split", () => {
-    for (const amount of randomAmounts(400, 0xbeef)) {
-      const buyback = bps(amount, REVENUE_SPLIT_BPS.BUYBACK_BURN);
-      const ship = bps(amount, REVENUE_SPLIT_BPS.PYRE_TOKEN);
-      const ops = amount - buyback - ship;
-      expect(buyback + ship + ops).toBe(amount);
-      expect(ops).toBeGreaterThanOrEqual(0n);
     }
   });
 

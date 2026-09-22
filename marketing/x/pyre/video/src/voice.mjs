@@ -71,19 +71,19 @@ export function buildVoice(opts) {
   for (const s of tl.sentences) lines.push(`| ${clock(s.start)} | ${clock(s.end)} | ${s.beat} | ${s.shot} | ${s.text} |`);
   lines.push("", "## shots", "", "| in | dur | shot | picture |", "|---|---|---|---|");
   const PICTURE = {
-    open: "obsidian; “coins that *build* apps.” rises through a mask; heat lifts from the bottom edge; “revenue *burns* them.”",
-    "launch-mg": "prompt box types the one sentence → spec card (what / who pays / mvp / price) → stake pill → launch line with the PONS v2 factory address",
+    open: "obsidian; “coins that *build* apps.” rises through a mask; heat lifts from the bottom edge; “every fee *burns* PYRE.”",
+    "launch-mg": "prompt box types the one sentence → spec card (what / who it is for / mvp / holder tier) → stake pill → launch line with the PONS v2 factory address",
     "launch-cap": "real capture: pyre.fun/launch hero, pointer onto the live preview card (parallax)",
     "fees-mg": "1% fee bar → 70% creator share → splits fill 60 / 25 / 15",
-    "fees-cap": "real capture: coin page, “the loop” panel, pointer walks the six cells · demo data",
+    "fees-cap": "real capture: coin page, “the loop” panel, pointer walks the four cells · demo data",
     "agent-mg": "console streams the build log; gate checklist lights: build · playwright · screenshots · lighthouse · reviewer → deploy",
-    "app-mg": "browser frame <slug>.pyre.fun; USDG charge card; “relayed by the treasury · 0 gas · EIP-3009”",
-    "revenue-mg": "revenue bar splits 85 / 10 / 5",
-    "revenue-cap": "real capture: pyre.fun home feed, pointer sweeps the ranked cards · demo data",
+    "app-mg": "browser frame <slug>.pyre.fun; free app, holder-tier card unlocks from balanceOf; “no checkout · no gas · no charge”",
+    "share-mg": "share bar fills 25 / 75; 25% buys PYRE and burns, 0 app coins bought back",
+    "share-cap": "real capture: pyre.fun home feed, pointer sweeps the ranked cards · demo data",
     "burn-mg": "supply stack hollows from the top; buy → burn() → totalSupply falls; attestation calldata types out",
     "burn-cap": "real capture: pyre.fun/burns ledger, chart tilting into the table · demo data",
     "dormant-mg": "the mark cools to ash at $0 budget; a fee arrives and the heat rises again",
-    proof: "408 unit tests · 62/68 production audit · 1 high + 5 medium review findings fixed",
+    proof: "unit tests · production audit · 1 high + 5 medium review findings fixed (counts filled from the post-cutover run)",
     close: "lockup; pyre.fun · Robinhood Chain · @PyreFun; $PYRE launching soon · buybacks are burns, never distributions",
   };
   for (const s of tl.shots) lines.push(`| ${clock(s.start)} | ${s.dur.toFixed(1)}s | ${s.id} | ${PICTURE[s.id] ?? ""} |`);

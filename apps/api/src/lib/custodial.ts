@@ -4,7 +4,7 @@ import type { User } from "@pyre/db";
 
 /**
  * The platform-custodied signing account for a user's wallet. Every on-chain action a custodial
- * user takes (withdraw, stake, trade, top-up, bounty escrow, checkout) is server-signed with this
+ * user takes (withdraw, stake, trade, top-up, bounty escrow) is server-signed with this
  * key, derived deterministically from the master seed at the user's `walletIndex`
  * (m/44'/60'/0'/0/{walletIndex}). Browsers never see a key.
  */

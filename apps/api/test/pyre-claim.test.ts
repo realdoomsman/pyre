@@ -77,8 +77,7 @@ vi.mock("../src/lib/audit.js", () => ({ writeAudit: fx.writeAudit }));
 vi.mock("../src/lib/dto.js", () => ({
   pctOfSupply: () => 0,
   stakeDto: () => ({}),
-  buybackDto: () => ({}),
-  BUYBACK_INCLUDE: {},
+  pyreBurnDto: () => ({}),
 }));
 vi.mock("../src/lib/metrics.js", () => ({ db: {} }));
 vi.mock("../src/lib/cache.js", () => ({ APPS_TAG: "apps", cached: <T,>(_k: unknown, _ttl: unknown, fn: () => Promise<T>) => fn() }));

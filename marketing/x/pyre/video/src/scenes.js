@@ -166,13 +166,13 @@
     [0.5, "00:00.0", "INFO", "budget reached $50.00 · queued build · pagegrade"],
     [1.0, "00:00.4", "INFO", "sandbox e2b i7ms0kqb · template pyre-starter · 2 vcpu · 4 gb"],
     [1.5, "00:01.1", "INFO", "claude agent sdk · job token j_8f21c · cap $50.00"],
-    [2.2, "00:02.6", "THINK", "reading spec: score a landing page, list fixes, $7 one-time"],
+    [2.2, "00:02.6", "THINK", "reading spec: score a landing page, list fixes, full report for holders"],
     [3.0, "00:04.0", "EDIT", "src/App.tsx · src/lib/score.ts · src/lib/fixes.ts  +212 −14"],
     [3.9, "00:05.3", "RUN", "npm run build ✓ 4.1s"],
     [4.5, "00:06.0", "RUN", "playwright smoke · 3 passed · 0 failed"],
     [5.0, "00:06.6", "RUN", "screenshots ×3 · 1440 · 390"],
     [5.6, "00:07.4", "RUN", "lighthouse perf 97 · a11y 100 · bp 96 · seo 100"],
-    [6.4, "00:08.1", "REVIEW", "approve · diff matches the spec · no auth, wallet or payment surfaces touched"],
+    [6.4, "00:08.1", "REVIEW", "approve · diff matches the spec · no auth or wallet surfaces touched · nothing asks for money"],
     [7.1, "00:08.4", "DEPLOY", "pagegrade.pyre.fun · v1 · spent $18.42"],
   ];
   const GATE_AT = { build: 3.9, smoke: 4.5, shots: 5.0, lh: 5.6, review: 6.4, deploy: 7.1 };
@@ -212,7 +212,7 @@
       const btn = $(".btn", el);
       const press = seg(t, 1.9, 0.18, inout) * (1 - seg(t, 2.1, 0.2, inout));
       btn.style.transform = `scale(${1 - 0.05 * press})`;
-      const co = $(".checkout", el);
+      const co = $(".tier", el);
       const cp = seg(t, 2.15, 0.7, expo);
       co.style.opacity = cp;
       co.style.transform = `translateY(${(1 - cp) * 40}px)`;
@@ -225,22 +225,22 @@
       }
       const paid = t >= 4.15;
       btn.classList.toggle("paid", paid);
-      btn.textContent = paid ? "paid · $7.00 USDG" : "grade it · $7";
+      btn.textContent = paid ? "unlocked · holder" : "grade it · free";
       fadeUp($(".under", el), seg(t, 1.0, 0.7), 12);
       $(".under", el).style.transform = `translate(-50%, ${(1 - seg(t, 1.0, 0.7)) * 12}px)`;
       heat(el, 0.16, lerp(0.3, 0.8, seg(t, 4.1, 1)));
     },
   };
 
-  S["revenue-mg"] = {
-    el: $("#s-revenue"), kind: "wipe",
+  S["share-mg"] = {
+    el: $("#s-share"), kind: "wipe",
     update(t) {
       const el = this.el;
       fadeUp($(".label", el), seg(t, 0.2, 0.5), 10);
       revealWords($(".h2", el), t, 0.3, 0.7, 0.06);
       const p = seg(t, 1.0, 1.4, quart);
       const a = $(".split .a", el), b = $(".split .b", el), c = $(".split .c", el);
-      const wa = Math.min(85, p * 100), wb = Math.max(0, Math.min(10, p * 100 - 85)), wc = Math.max(0, Math.min(5, p * 100 - 95));
+      const wa = Math.min(25, p * 100), wb = Math.max(0, Math.min(75, p * 100 - 25)), wc = 0;
       a.style.width = `${wa}%`;
       b.style.left = `${wa}%`; b.style.width = `${wb}%`;
       c.style.left = `${wa + wb}%`; c.style.width = `${wc}%`;
@@ -252,7 +252,7 @@
 
   const LAYERS = 20;
   const PREFIX = "0x5059524501";
-  const HASH = "6f8ff5278cfc64a47c0f72494e121e477ba38f52bf7cf8d096c34cf1d7b1135d"; // sha256 of two example revenue event ids
+  const HASH = "6f8ff5278cfc64a47c0f72494e121e477ba38f52bf7cf8d096c34cf1d7b1135d"; // sha256 of two example fee entry ids
   const fmt = (n) => Math.round(n).toLocaleString("en-US");
   S["burn-mg"] = {
     el: $("#s-burn"), kind: "wipe",
@@ -353,7 +353,7 @@
     },
   };
 
-  for (const id of ["launch-cap", "fees-cap", "revenue-cap", "burn-cap"]) {
+  for (const id of ["launch-cap", "fees-cap", "share-cap", "burn-cap"]) {
     const el = $(`#s-${id}`);
     S[id] = {
       el, kind: "mask",

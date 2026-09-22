@@ -20,7 +20,7 @@ model User {
   xUserId       String?
   displayName   String?
   avatarUrl     String?
-  reputation    Int      @default(0) // builds completed + revenue-derived score
+  reputation    Int      @default(0) // builds completed score
   isAdmin       Boolean  @default(false)
   bannedAt      DateTime?
   tokenVersion  Int      @default(0) // bump to revoke all of a user's outstanding session JWTs
@@ -32,7 +32,6 @@ model User {
   votes         Vote[]
   bounties      Bounty[]         @relation("BountyAuthor")
   claims        Bounty[]         @relation("BountyClaimant")
-  purchases     Purchase[]
   contributions Contributor[]
   appSessions   AppUserSession[]
   maintainerOf  App[]            @relation("Maintainer")
@@ -124,17 +123,6 @@ model DailyWithdraw {
   @@id([userId, day])
 }
 
-/** Durable per-user, per-app, per-UTC-day in-app charge total (USD micros): checkout + x402. Backs the atomic daily charge cap. */
-model DailyAppCharge {
-  userId     String
-  appId      String
-  day        String // UTC date "YYYY-MM-DD"
-  usedMicros BigInt   @default(0)
-  updatedAt  DateTime @updatedAt
-
-  @@id([userId, appId, day])
-}
-
 /* ─────────────────────────── Apps / coins ─────────────────────────── */
 
 enum AppStatus {
@@ -206,10 +194,6 @@ model App {
   budgetMicros   BigInt     @default(0) // accrued, unspent build budget
   spentMicros    BigInt     @default(0) // lifetime agent spend
   feesWei        Decimal @db.Decimal(78, 0)     @default(0) // lifetime creator fees claimed from the PONS escrow
-  revenueMicros  BigInt     @default(0) // lifetime revenue
-  buybackWei     Decimal @db.Decimal(78, 0)     @default(0) // lifetime ETH spent on buybacks
-  burnedTokens   Decimal @db.Decimal(78, 0)     @default(0) // base units (18 decimals), from totalSupply() deltas
-  pendingRevenueMicros BigInt @default(0) // revenue not yet routed to buyback
 
   // metrics
   usersCount     Int        @default(0)
@@ -230,7 +214,6 @@ model App {
   repoFullName   String?    // owner/name
   firstBuildAt   DateTime?
   mvpLiveAt      DateTime?
-  firstRevenueAt DateTime?
   milestones     Json       @default("[]")
   growthEnabled  Boolean    @default(false)
   xAccount       String?
@@ -242,13 +225,10 @@ model App {
   events         BuildEvent[]
   deployments    Deployment[]
   feeEvents      FeeEvent[]
-  revenueEvents  RevenueEvent[]
-  buybacks       Buyback[]
   queueItems     PromptQueueItem[]
   bounties       Bounty[]
   pullRequests   PullRequest[]
   contributors   Contributor[]
-  purchases      Purchase[]
   holderSnapshots HolderBalance[]
   trades         Trade[]
   candles        Candle[]
@@ -256,11 +236,9 @@ model App {
   sessions       AppUserSession[]
   abuseFlags     AbuseFlag[]
   maintainerVotes MaintainerVote[]
-  adImpressions  AdImpression[]
   creditFundings CreditFunding[]
 
   @@index([status])
-  @@index([revenueMicros])
   @@index([createdAt])
 }
 
@@ -389,31 +367,7 @@ model FeeEvent {
   @@index([appId, createdAt])
 }
 
-enum RevenueSource {
-  CHECKOUT
-  SUBSCRIPTION
-  X402
-  AD
-  EXTERNAL_SDK
-}
-
-model RevenueEvent {
-  id          String        @id @default(cuid())
-  appId       String
-  app         App           @relation(fields: [appId], references: [id], onDelete: Cascade)
-  source      RevenueSource
-  usdMicros   BigInt
-  payer       String?       // 0x wallet or user id
-  reference   String?       // tx hash / function name / ad id
-  purchaseId  String?       @unique
-  buybackId   String?
-  buyback     Buyback?      @relation(fields: [buybackId], references: [id], onDelete: SetNull)
-  createdAt   DateTime      @default(now())
-
-  @@index([appId, createdAt])
-  @@index([buybackId])
-}
-
+/** Lifecycle of a `PyreBurn`. */
 enum BuybackStatus {
   PENDING
   SWAPPING // swap CAS won; ETH->token buy in flight (prevents a retry double-swap)
@@ -422,37 +376,11 @@ enum BuybackStatus {
   FAILED
 }
 
-model Buyback {
-  id            String        @id @default(cuid())
-  appId         String
-  app           App           @relation(fields: [appId], references: [id], onDelete: Cascade)
-  status        BuybackStatus @default(PENDING)
-  revenueMicros BigInt        // revenue attested for this buyback
-  ethWei        Decimal @db.Decimal(78, 0)        // ETH quoted for the buy, then what the buy actually consumed once SWAPPED
-  refundWei     Decimal @db.Decimal(78, 0)        @default(0) // wei a clamped final curve buy handed back (quoted − consumed)
-  tokensBought  Decimal @db.Decimal(78, 0)        @default(0) // base units (18 decimals)
-  tokensBurned  Decimal @db.Decimal(78, 0)        @default(0) // base units burned via token.burn()
-  burnedUnits   Decimal? @db.Decimal(78, 0)       // totalSupply() delta observed after the burn (on-chain proof)
-  pyreMicros    BigInt        // routed to $PYRE
-  opsMicros     BigInt        // routed to ops
-  attestHash    String        // sha256 of revenue event ids, carried in attestTx calldata (0x5059524501 || hash)
-  swapTx        String?       // curve.buy() pre-grad or Universal Router v4 swap post-grad
-  burnTx        String?
-  attestTx      String?       // zero-value treasury self-tx whose calldata is the attestation
-  error         String?
-  createdAt     DateTime      @default(now())
-  completedAt   DateTime?
-
-  revenueEvents RevenueEvent[]
-
-  @@index([appId, createdAt])
-}
-
 /**
  * $PYRE's own buy-and-burn: the `PYRE_TOKEN` ledger balance is debited (`LedgerEntry.refType =
- * "PyreBurn"`, `refId` = this id) when the row opens, then the treasury buys and burns in the same
- * PENDING → SWAPPING → SWAPPED → BURNED steps as `Buyback`, each persisted so an interrupted burn
- * resumes instead of leaving bought-but-unburned $PYRE in treasury custody. SWAPPING with `error`
+ * "PyreBurn"`, `refId` = this id) when the row opens, then the treasury buys and burns in
+ * PENDING → SWAPPING → SWAPPED → BURNED steps, each persisted so an interrupted burn resumes
+ * instead of leaving bought-but-unburned $PYRE in treasury custody. SWAPPING with `error`
  * means the buy outcome is unknown and needs an operator.
  */
 model PyreBurn {
@@ -508,26 +436,6 @@ model CreditFunding {
 
   @@index([appId, status])
   @@index([status, createdAt])
-}
-
-model Purchase {
-  id          String   @id @default(cuid())
-  appId       String
-  app         App      @relation(fields: [appId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  productId   String
-  kind        String   // ONE_TIME | SUBSCRIPTION_MONTHLY
-  usdMicros   BigInt
-  payerWallet String   // 0x
-  txHash      String?  @unique
-  status      String   @default("PENDING") // PENDING | PAID | EXPIRED | FAILED
-  expiresAt   DateTime? // subscription period end
-  createdAt   DateTime @default(now())
-  paidAt      DateTime?
-
-  @@index([appId, userId])
-  @@index([status])
 }
 
 /* ─────────────────────────── Governance ─────────────────────────── */
@@ -729,17 +637,6 @@ model AppUserSession {
   @@unique([appId, userId])
 }
 
-model AdImpression {
-  id         String   @id @default(cuid())
-  appId      String   // app showing the ad
-  app        App      @relation(fields: [appId], references: [id], onDelete: Cascade)
-  advertiserAppId String
-  usdMicros  BigInt
-  createdAt  DateTime @default(now())
-
-  @@index([appId, createdAt])
-}
-
 /* ─────────────────────────── Platform ─────────────────────────── */
 
 model AbuseFlag {
@@ -773,33 +670,6 @@ model PyreStake {
   @@index([wallet])
 }
 
-/* ─────────────────────────── Ads ─────────────────────────── */
-
-enum AdStatus {
-  ACTIVE
-  PAUSED
-  EXHAUSTED
-}
-
-/** Internal ad network: Pyre apps advertise in other Pyre apps' ad slots, paid from the advertiser's budget. */
-model AdCampaign {
-  id              String   @id @default(cuid())
-  advertiserAppId String
-  headline        String
-  body            String
-  imageUrl        String?
-  targetUrl       String
-  cpmMicros       BigInt   // USD micros per 1000 impressions
-  budgetMicros    BigInt
-  spentMicros     BigInt   @default(0)
-  impressions     Int      @default(0)
-  clicks          Int      @default(0)
-  status          AdStatus @default(ACTIVE)
-  createdAt       DateTime @default(now())
-
-  @@index([status])
-}
-
 /* ─────────────────────────── Reports / takedowns ─────────────────────────── */
 
 model Report {
@@ -818,9 +688,9 @@ model Report {
 /** Platform-wide treasury ledger (USD micros). Every money movement writes one row. */
 model LedgerEntry {
   id        String   @id @default(cuid())
-  account   String   // TREASURY | PYRE_TOKEN | OPS | CREDITS:<appId> | LAUNCHER:<userId> | BUILD:<appId> | STAKERS:<appId>
+  account   String   // TREASURY | PYRE_TOKEN | CREDITS:<appId> | LAUNCHER:<userId> | BUILD:<appId> | STAKERS:<appId> | CONTRIB:<userId>
   deltaMicros BigInt
-  refType   String   // FeeEvent | RevenueEvent | Buyback | PyreBurn | BuildJob | Payout | CreditFunding
+  refType   String   // FeeEvent | PyreBurn | BuildJob | Payout | CreditFunding
   refId     String
   memo      String?
   createdAt DateTime @default(now())
@@ -882,7 +752,7 @@ model WebhookEvent {
  */
 model ReconcileRun {
   id          String   @id @default(cuid())
-  kind        String // LEDGER | FEES | BUYBACKS | BURNS | SANDBOXES | JOBS
+  kind        String // LEDGER | FEES | BURNS | SANDBOXES | JOBS
   ok          Boolean
   checked     Int      @default(0)
   drifted     Int      @default(0)

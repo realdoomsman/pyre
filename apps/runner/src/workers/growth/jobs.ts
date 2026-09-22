@@ -23,11 +23,5 @@ export const POST_OPS_FEE_MICROS = 50_000n;
 /** Max mention replies per app per day. */
 export const MAX_REPLIES_PER_DAY = 5;
 
-/** Ad tests only for apps that have earned this much lifetime revenue. */
-export const AD_TEST_MIN_REVENUE_MICROS = 100_000_000n;
-export const AD_TEST_MAX_BUDGET_MICROS = 5_000_000n;
-export const AD_TEST_BUDGET_BPS = 500;
-export const AD_TEST_CPM_MICROS = 2_000_000n;
-
 export const REPLIED_SET_TTL_SEC = 7 * 24 * 3600;
 export const DAY_MS = 24 * 3600 * 1000;

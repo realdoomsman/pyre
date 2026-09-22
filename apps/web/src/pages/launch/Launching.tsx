@@ -8,7 +8,7 @@ import { useTxReceipt } from "./hooks.js";
 
 const shareCoin = async (launch: LaunchDraftDto) => {
   const url = `${window.location.origin}/c/${launch.slug}`;
-  const text = `$${launch.ticker} just ignited on Pyre — its creator fees fund an agent that builds ${launch.name}; app revenue burns the coin.`;
+  const text = `$${launch.ticker} just ignited on Pyre — its creator fees fund an agent that builds ${launch.name}; every fee burns PYRE.`;
   try {
     if (navigator.share) {
       await navigator.share({ title: `$${launch.ticker} on Pyre`, text, url });

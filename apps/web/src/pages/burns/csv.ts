@@ -5,31 +5,11 @@ const cell = (v: string | number | null): string => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-/** One row per buyback, raw units so the file reconciles against the chain. */
+/** One row per PYRE burn, raw units so the file reconciles against the chain. */
 export const burnsCsv = (rows: ReadonlyArray<BurnLedgerRowDto>): string => {
-  const head = ["completed_at", "created_at", "slug", "ticker", "status", "revenue_usd_micros", "eth_wei", "tokens_bought_units", "tokens_burned_units", "burned_pct_of_supply", "swap_tx", "burn_tx", "attest_tx", "attest_hash", "revenue_event_count", "cumulative_eth_wei", "cumulative_revenue_usd_micros"];
+  const head = ["created_at", "usd_micros", "eth_wei", "tokens_bought_units", "burned_units", "burned_pct_of_supply", "swap_tx", "burn_tx", "attest_tx", "attest_hash", "cumulative_eth_wei", "cumulative_usd_micros"];
   const lines = rows.map((r) =>
-    [
-      r.completedAt,
-      r.createdAt,
-      r.slug,
-      r.ticker,
-      r.status,
-      r.revenueMicros,
-      r.ethWei,
-      r.tokensBoughtUnits,
-      r.tokensBurnedUnits,
-      r.burnedPctOfSupply,
-      r.swapTx,
-      r.burnTx,
-      r.attestTx,
-      r.attestHash,
-      r.revenueEventIds,
-      r.cumulativeEthWei,
-      r.cumulativeRevenueMicros,
-    ]
-      .map(cell)
-      .join(","),
+    [r.createdAt, r.usdMicros, r.ethWei, r.tokensBoughtUnits, r.burnedUnits, r.burnedPctOfSupply, r.swapTx, r.burnTx, r.attestTx, r.attestHash, r.cumulativeEthWei, r.cumulativeUsdMicros].map(cell).join(","),
   );
   return [head.join(","), ...lines].join("\n");
 };

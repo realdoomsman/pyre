@@ -10,7 +10,6 @@ import {
   CandleIntervalDto,
   FEE_SPLIT_BPS,
   PONS_GRADUATION_THRESHOLD_WEI,
-  REVENUE_SPLIT_BPS,
   TopupBody,
   ethToWei,
   usdMicrosFromWei,
@@ -24,11 +23,9 @@ import { APPS_TAG, appTag, cacheKey, cached } from "../lib/cache.js";
 import { custodialAccount, custodialEthBalance, GAS_RESERVE_WEI } from "../lib/custodial.js";
 import {
   APP_SUMMARY_SELECT,
-  BUYBACK_INCLUDE,
   USER_REF_SELECT,
   appExtrasByApp,
   appSummary,
-  buybackDto,
   candleDto,
   eventDto,
   feeEventDto,
@@ -63,20 +60,19 @@ const since24h = () => new Date(Date.now() - DAY_MS);
 
 /**
  * Feed filters. `where` narrows the set; `orderBy` ranks it in the database when the ranking
- * inputs are columns. Trending and burning rank on 24h aggregates instead, so they load the
- * candidate set and sort in memory (`rank`), paging by offset.
+ * inputs are columns. Trending ranks on 24h aggregates instead, so it loads the candidate set
+ * and sorts in memory (`rank`), paging by offset.
  */
 interface RankInputs {
   extras: AppExtras;
-  burned24hWei: bigint;
   ethPriceUsd: number;
 }
 
 const FILTERS: Record<AppSort, { where: () => Prisma.AppWhereInput; orderBy?: Prisma.AppOrderByWithRelationInput[]; rank?: (a: AppSummaryDto, r: RankInputs) => number }> = {
-  /** 24h volume + 3× 24h revenue + 2× 24h fees (USD): what is actually moving through the loop. */
+  /** 24h volume + 2× 24h fees (USD) + heat: what is actually moving through the loop. */
   trending: {
     where: () => PUBLIC,
-    rank: (a, r) => a.volume24hUsd + 3 * usd(r.extras.revenue24hMicros) + 2 * tokens(r.extras.fees24hWei) * r.ethPriceUsd + 100 * a.heat,
+    rank: (a, r) => a.volume24hUsd + 2 * tokens(r.extras.fees24hWei) * r.ethPriceUsd + 100 * a.heat,
   },
   new: { where: () => PUBLIC, orderBy: [{ launchedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }, { id: "desc" }] },
   heating: { where: () => ({ ...PUBLIC, launchPhase: 0 }), orderBy: [{ progress: "desc" }, { volume24hUsd: "desc" }, { id: "desc" }] },
@@ -86,11 +82,6 @@ const FILTERS: Record<AppSort, { where: () => Prisma.AppWhereInput; orderBy?: Pr
     where: () => ({ ...PUBLIC, OR: [{ jobs: { some: { status: { in: ["RUNNING", "QUEUED"] } } } }, { deployments: { some: { createdAt: { gte: since24h() } } } }] }),
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
   },
-  burning: {
-    where: () => ({ ...PUBLIC, buybacks: { some: { status: "BURNED", completedAt: { gte: since24h() } } } }),
-    rank: (_a, r) => Number(r.burned24hWei),
-  },
-  revenue: { where: () => ({ ...PUBLIC, revenueMicros: { gt: 0n } }), orderBy: [{ revenueMicros: "desc" }, { id: "desc" }] },
 };
 
 /** In-memory ranked sorts load at most this many candidates. */
@@ -104,19 +95,7 @@ const offsetOf = (cursor: string | undefined): number => {
   return Number(m[1]);
 };
 
-const ListQuery = pageQuery(24, 100).extend({ sort: AppSort.default("trending"), q: z.string().trim().min(1).max(64).optional() });
-
-const burned24hByApp = async (appIds: string[]): Promise<Record<string, bigint>> => {
-  const out: Record<string, bigint> = {};
-  if (appIds.length === 0) return out;
-  const rows = await db.buyback.groupBy({
-    by: ["appId"],
-    where: { appId: { in: appIds }, status: "BURNED", completedAt: { gte: since24h() } },
-    _sum: { ethWei: true },
-  });
-  for (const r of rows) out[r.appId] = big(r._sum.ethWei);
-  return out;
-};
+export const ListQuery = pageQuery(24, 100).extend({ sort: AppSort.default("trending"), q: z.string().trim().min(1).max(64).optional() });
 
 /** Rows → summaries. The ETH price comes from the runner's snapshot row (cached, DB-only): this sits on every list and detail read. */
 const summarize = async (rows: AppSummaryRow[]): Promise<{ items: AppSummaryDto[]; extras: Record<string, AppExtras>; ethPriceUsd: number }> => {
@@ -125,15 +104,15 @@ const summarize = async (rows: AppSummaryRow[]): Promise<{ items: AppSummaryDto[
   return { items: rows.map((a) => appSummary(a, extras[a.id]!, ethPriceUsd)), extras, ethPriceUsd };
 };
 
-const listApps = async (q: z.infer<typeof ListQuery>): Promise<AppsPageDto> => {
+export const listApps = async (q: z.infer<typeof ListQuery>): Promise<AppsPageDto> => {
   const filter = FILTERS[q.sort];
   if (filter.rank) {
     const offset = offsetOf(q.cursor);
     const rows = await db.app.findMany({ where: filter.where(), orderBy: [{ updatedAt: "desc" }], take: RANK_WINDOW, select: APP_SUMMARY_SELECT });
-    const [{ items, extras, ethPriceUsd }, burned] = await Promise.all([summarize(rows), q.sort === "burning" ? burned24hByApp(rows.map((a) => a.id)) : Promise.resolve<Record<string, bigint>>({})]);
+    const { items, extras, ethPriceUsd } = await summarize(rows);
     const rank = filter.rank;
     const scored = items
-      .map((a) => ({ a, s: rank(a, { extras: extras[a.id]!, burned24hWei: burned[a.id] ?? 0n, ethPriceUsd }) }))
+      .map((a) => ({ a, s: rank(a, { extras: extras[a.id]!, ethPriceUsd }) }))
       .sort((x, y) => y.s - x.s || x.a.id.localeCompare(y.a.id));
     const page = scored.slice(offset, offset + q.limit).map((x) => x.a);
     return { items: page, nextCursor: offset + q.limit < scored.length ? `offset_${offset + q.limit}` : null };
@@ -148,6 +127,22 @@ const listApps = async (q: z.infer<typeof ListQuery>): Promise<AppsPageDto> => {
   const page = rows.slice(0, q.limit);
   const { items } = await summarize(page);
   return { items, nextCursor: rows.length > q.limit ? page[page.length - 1]!.id : null };
+};
+
+/** Public summary of one live coin, or null; the app host serves this to apps as `/_pyre/coins/:slug`. */
+export const coinSummary = async (slug: string): Promise<AppSummaryDto | null> => {
+  const row = await db.app.findFirst({ where: { ...PUBLIC, slug }, select: APP_SUMMARY_SELECT });
+  if (!row) return null;
+  const { items } = await summarize([row]);
+  return items[0] ?? null;
+};
+
+/** OHLCV page for a live coin, or null; shared by `/v1/apps/:slug/candles` and the app host. */
+export const coinCandles = async (slug: string, q: z.infer<typeof CandleQuery>): Promise<{ appId: string; body: CandlesDto } | null> => {
+  const app = await db.app.findFirst({ where: { ...PUBLIC, slug }, select: { id: true } });
+  if (!app) return null;
+  const candles = await db.candle.findMany({ where: { appId: app.id, interval: q.interval }, orderBy: { t: "desc" }, take: q.limit });
+  return { appId: app.id, body: { interval: q.interval, candles: candles.reverse().map(candleDto), supply: tokens(SUPPLY_BASE_UNITS) } };
 };
 
 /** Total rows per sort — the tab counts on the home feed. */
@@ -175,7 +170,7 @@ apps.get(
             { tokenAddress: { equals: needle, mode: "insensitive" } },
           ],
         },
-        orderBy: [{ revenueMicros: "desc" }, { marketCapUsd: "desc" }],
+        orderBy: [{ marketCapUsd: "desc" }, { volume24hUsd: "desc" }],
         take: 20,
         select: APP_SUMMARY_SELECT,
       });
@@ -229,7 +224,7 @@ apps.get("/stream", (req, res) => {
 const appBySlug = async (slug: string) => {
   const app = await db.app.findUnique({
     where: { slug },
-    select: { id: true, tokenAddress: true, curveAddress: true, launchPhase: true, burnedTokens: true, launcher: { select: { wallet: true } } },
+    select: { id: true, tokenAddress: true, curveAddress: true, launchPhase: true, launcher: { select: { wallet: true } } },
   });
   if (!app || !app.tokenAddress) throw new HttpError(404, "app_not_found");
   return app;
@@ -269,10 +264,9 @@ const APP_DETAIL_SELECT = {
 const loadAppDetail = async (slug: string) => {
   const app = await db.app.findUnique({ where: { slug }, select: APP_DETAIL_SELECT });
   if (!app || !app.tokenAddress) throw new HttpError(404, "app_not_found");
-  const [fees, lastBuild, lastBuyback, lastEvent, roadmapCounts, top, bountyOpen] = await db.$transaction([
+  const [fees, lastBuild, lastEvent, roadmapCounts, top, bountyOpen] = await db.$transaction([
     db.feeEvent.findMany({ where: { appId: app.id }, orderBy: { createdAt: "desc" }, take: 30 }),
     db.buildJob.findFirst({ where: { appId: app.id, status: { in: ["SUCCEEDED", "FAILED", "RUNNING"] } }, orderBy: { createdAt: "desc" } }),
-    db.buyback.findFirst({ where: { appId: app.id, status: "BURNED" }, orderBy: { completedAt: "desc" }, include: BUYBACK_INCLUDE }),
     db.buildEvent.findFirst({ where: { appId: app.id }, orderBy: { createdAt: "desc" } }),
     db.promptQueueItem.groupBy({ by: ["status"], where: { appId: app.id }, _count: { _all: true } }),
     db.promptQueueItem.findMany({
@@ -299,18 +293,15 @@ const loadAppDetail = async (slug: string) => {
     stakeRefundTx: app.stakeRefundTx as AppDetailDto["stakeRefundTx"],
     launchTx: app.launchTx as AppDetailDto["launchTx"],
     spentMicros: app.spentMicros.toString(),
-    pendingRevenueMicros: app.pendingRevenueMicros.toString(),
     usersCount: app.usersCount,
     uptimeBps: app.uptimeBps,
     healthy: app.healthy,
     unsweptWei: big(app.unsweptWei).toString(),
     escrowWei: big(app.escrowWei).toString(),
     feeSplit: { buildBudget: FEE_SPLIT_BPS.BUILD_BUDGET, pyreToken: FEE_SPLIT_BPS.PYRE_TOKEN, launcher: FEE_SPLIT_BPS.LAUNCHER },
-    revenueSplit: { buybackBurn: REVENUE_SPLIT_BPS.BUYBACK_BURN, pyreToken: REVENUE_SPLIT_BPS.PYRE_TOKEN, platformOps: REVENUE_SPLIT_BPS.PLATFORM_OPS },
     graduationThresholdWei: PONS_GRADUATION_THRESHOLD_WEI.toString(),
     budgetHistory: fees.map(feeEventDto),
     lastBuild: lastBuild ? jobDto(lastBuild) : null,
-    lastBuyback: lastBuyback ? buybackDto(lastBuyback) : null,
     lastEvent: lastEvent ? eventDto(lastEvent) : null,
     roadmap: { open: counts.OPEN ?? 0, scheduled: counts.SCHEDULED ?? 0, done: counts.DONE ?? 0, top: top.map((t) => queueItemDto(t, false)) },
     bounties: { open: bountyOpen._count._all, openWei: big(bountyOpen._sum.wei).toString() },
@@ -397,37 +388,9 @@ apps.get(
   }),
 );
 
-const BuybacksQuery = pageQuery(50, 100);
+export const CandleQuery = z.object({ interval: CandleIntervalDto.default("5m"), limit: z.coerce.number().int().min(10).max(2000).default(500) });
 
-apps.get(
-  "/:slug/buybacks",
-  wrap(async (req, res) => {
-    const slug = req.params.slug!;
-    const q = parse(BuybacksQuery, req.query);
-    const page = await cached(
-      cacheKey("apps.buybacks", { slug, cursor: q.cursor ?? null, limit: q.limit }),
-      15_000,
-      async () => {
-        const app = await appBySlug(slug);
-        const rows = await db.buyback.findMany({
-          where: { appId: app.id },
-          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-          take: q.limit + 1,
-          ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
-          include: BUYBACK_INCLUDE,
-        });
-        const items = rows.slice(0, q.limit);
-        return { appId: app.id, body: { items: items.map(buybackDto), nextCursor: rows.length > q.limit ? items[items.length - 1]!.id : null } };
-      },
-      (v) => [appTag(v.appId)],
-    );
-    sendCached(res, page.body, { maxAge: 15, swr: 60 });
-  }),
-);
-
-const CandleQuery = z.object({ interval: CandleIntervalDto.default("5m"), limit: z.coerce.number().int().min(10).max(2000).default(500) });
-
-/** OHLCV from the runner's candle index plus burn markers; `supply` lets the client toggle price ↔ market cap. */
+/** OHLCV from the runner's candle index; `supply` lets the client toggle price ↔ market cap. */
 apps.get(
   "/:slug/candles",
   wrap(async (req, res) => {
@@ -437,27 +400,9 @@ apps.get(
       cacheKey("apps.candles", { slug, interval: q.interval, limit: q.limit }),
       20_000,
       async () => {
-        const app = await appBySlug(slug);
-        const [candles, burns] = await Promise.all([
-          db.candle.findMany({ where: { appId: app.id, interval: q.interval }, orderBy: { t: "desc" }, take: q.limit }),
-          db.buyback.findMany({
-            where: { appId: app.id, status: "BURNED", completedAt: { not: null } },
-            orderBy: { completedAt: "desc" },
-            take: 200,
-            select: { completedAt: true, burnedUnits: true, tokensBurned: true, burnTx: true },
-          }),
-        ]);
-        const body: CandlesDto = {
-          interval: q.interval,
-          candles: candles.reverse().map(candleDto),
-          supply: tokens(SUPPLY_BASE_UNITS - big(app.burnedTokens)),
-          burns: burns.map((b) => ({
-            t: Math.floor(b.completedAt!.getTime() / 1000),
-            units: big(b.burnedUnits ?? b.tokensBurned).toString(),
-            txHash: b.burnTx as CandlesDto["burns"][number]["txHash"],
-          })),
-        };
-        return { appId: app.id, body };
+        const page = await coinCandles(slug, q);
+        if (!page) throw new HttpError(404, "app_not_found");
+        return page;
       },
       (v) => [appTag(v.appId)],
     );
@@ -516,7 +461,6 @@ apps.get(
           body: {
             holders: holders.map((h) => holderDto(h, ctx)),
             supplyUnits: SUPPLY_BASE_UNITS.toString(),
-            burnedUnits: big(app.burnedTokens).toString(),
           },
         };
       },

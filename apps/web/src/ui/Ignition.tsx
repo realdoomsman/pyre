@@ -65,7 +65,7 @@ export const Ignition = ({ open, ticker, name, txHash, explorerUrl, ticks, statu
           transition={{ duration: duration.reveal, ease: ease.reveal }}
           className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-canvas px-6 text-center outline-none"
         >
-          {/* A faint heat wash rising from the floor: the kiln's glow, not a flame. */}
+          {/* A faint heat wash rising from the floor: a glow, not a flame. */}
           <div
             aria-hidden
             className={cx("pointer-events-none absolute inset-x-0 bottom-0 h-1/2", !reduced && "animate-fade-in")}

@@ -64,7 +64,7 @@
   .row .lab{font-size:14px}
   .row .big{font:400 44px/1 'Instrument Serif',serif;letter-spacing:-.02em}
 
-  /* 03 revenue */
+  /* 03 pyre burn */
   .cols{display:flex;align-items:flex-end;gap:28px;height:420px;margin-top:30px}
   .col{display:flex;flex-direction:column;justify-content:flex-end;height:100%}
   .col .fill{border-radius:10px 10px 0 0;display:flex;align-items:flex-end;padding:20px}
@@ -274,7 +274,7 @@
   <div id="lip"></div>
 </div>
 <script>
-const BYTES = "78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723";
+const BYTES = "78c765bfe203a34a74f05feedda83d64557e5c48541215e45acecbb7666329ff";
 const byteCells = () => {
   const p = ["50","59","52","45"].map(b=>`<div class="byte p">${b}</div>`).join("");
   const v = `<div class="byte v">01</div>`;
@@ -284,15 +284,15 @@ const byteCells = () => {
 
 const CARDS = [
 { slug:"loop", kick:"the loop", body:`
-  <h1>one sentence in. supply <em>falls</em> out.</h1>
+  <h1>one sentence in. an app out. PYRE <em>burns</em>.</h1>
   <div class="loop">
     <div class="n"><div><div class="s">01</div><div class="t">write one sentence</div></div><div class="d">what the app should do.</div></div>
-    <div class="n"><div><div class="s">02</div><div class="t">intake writes a spec</div></div><div class="d">what it does, who pays, the mvp, the price. you approve it.</div></div>
+    <div class="n"><div><div class="s">02</div><div class="t">intake writes a spec</div></div><div class="d">what it does, who it is for, the mvp, the holder tier. you approve it.</div></div>
     <div class="n"><div><div class="s">03</div><div class="t">stake 0.05 ETH</div></div><div class="d">refunded at the first build.</div></div>
     <div class="n hotn last"><div><div class="s">04</div><div class="t">launch on pons v2</div></div><div class="d">from the app's own derived wallet. 1B supply on a bonding curve.</div></div>
     <div class="turn">↓</div>
-    <div class="n burnn rev"><div><div class="s">08</div><div class="t">85% buys back and burns</div></div><div class="d">every 10 min. burn() lowers totalSupply. attestation tx follows.</div></div>
-    <div class="n rev"><div><div class="s">07</div><div class="t">users pay in USDG</div></div><div class="d">no gas for the user. the treasury relays it.</div></div>
+    <div class="n burnn rev"><div><div class="s">08</div><div class="t">25% buys PYRE and burns it</div></div><div class="d">every 10 min. burn() lowers totalSupply. attestation tx follows.</div></div>
+    <div class="n rev"><div><div class="s">07</div><div class="t">the app is free</div></div><div class="d">no checkout, no ads. holding the coin can unlock features.</div></div>
     <div class="n rev"><div><div class="s">06</div><div class="t">an agent builds the app</div></div><div class="d">at $50 budget, in a microvm, behind a build gate. deploys to &lt;slug&gt;.pyre.fun.</div></div>
     <div class="n rev"><div><div class="s">05</div><div class="t">creator fees fund it</div></div><div class="d">70% of the 1% trade fee, claimed every 5 min.</div></div>
   </div>`,
@@ -309,41 +309,41 @@ const CARDS = [
   <div class="row"><span class="lab">each claim splits</span><span class="lab">priced in usd at claim time</span></div>
   <div class="bar" style="width:70%">
     <div style="flex:60;background:rgba(62,139,255,.22);border:1px solid rgba(62,139,255,.5)"><span class="v build">60%</span><span class="l">build budget · pays the agent</span></div>
-    <div style="flex:25;background:rgba(255,77,109,.14);border:1px solid rgba(255,77,109,.45)"><span class="v burn">25%</span><span class="l">$PYRE buyback</span></div>
+    <div style="flex:25;background:rgba(255,77,109,.14);border:1px solid rgba(255,77,109,.45)"><span class="v burn">25%</span><span class="l">PYRE buyback and burn</span></div>
     <div style="flex:15;background:rgba(79,209,166,.14);border:1px solid rgba(79,209,166,.45)"><span class="v earn">15%</span><span class="l">launcher</span></div>
   </div>
   <div class="cap" style="margin-top:30px">nothing on the fee side goes to pyre. escrow 0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e · factory 0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e</div>`,
   ftr:"02 / 21" },
 
-{ slug:"revenue-burn", kick:"app revenue", body:`
-  <h1 class="sm">app revenue, in USDG, three ways. the big one is a <em>burn</em>.</h1>
+{ slug:"pyre-burn", kick:"the PYRE burn", body:`
+  <h1 class="sm">a quarter of every coin's fees goes to one place. it is a <em>burn</em>.</h1>
   <div class="cols">
-    <div class="col" style="width:300px"><div class="fill" style="height:85%;background:linear-gradient(180deg,rgba(255,77,109,.55),rgba(255,77,109,.15))"><span class="pct">85%</span></div><div class="who">buyback and burn</div></div>
-    <div class="col" style="width:150px"><div class="fill" style="height:10%;background:rgba(157,140,255,.25);border:1px solid rgba(157,140,255,.4)"><span class="pct" style="font-size:44px">10%</span></div><div class="who">$PYRE</div></div>
-    <div class="col" style="width:110px"><div class="fill" style="height:5%;background:var(--raised);border:1px solid var(--line2)"><span class="pct" style="font-size:34px">5%</span></div><div class="who">ops</div></div>
+    <div class="col" style="width:300px"><div class="fill" style="height:60%;background:linear-gradient(180deg,rgba(255,77,109,.55),rgba(255,77,109,.15))"><span class="pct">25%</span></div><div class="who">of every coin's fees → PYRE buyback and burn</div></div>
+    <div class="col" style="width:150px"><div class="fill" style="height:6%;background:rgba(157,140,255,.25);border:1px solid rgba(157,140,255,.4)"><span class="pct" style="font-size:44px">0</span></div><div class="who">app coins bought back</div></div>
+    <div class="col" style="width:110px"><div class="fill" style="height:6%;background:var(--raised);border:1px solid var(--line2)"><span class="pct" style="font-size:34px">0</span></div><div class="who">paid to holders</div></div>
     <div class="seq">
-      <div class="st"><span class="n">01</span><span class="t">every 10 minutes, when at least <code>$5</code> is pending</span></div>
-      <div class="st"><span class="n">02</span><span class="t">buy the coin on the curve, or in the uniswap v4 pool after graduation</span></div>
-      <div class="st"><span class="n">03</span><span class="t"><code>burn()</code> on the coin itself. pons v2 coins are ERC20Burnable, so <code>totalSupply</code> falls</span></div>
-      <div class="st"><span class="n">04</span><span class="t">an attestation tx ties the burn to the revenue that paid for it</span></div>
+      <div class="st"><span class="n">01</span><span class="t">every 10 minutes, when at least <code>$5</code> is pooled across all coins</span></div>
+      <div class="st"><span class="n">02</span><span class="t">buy PYRE on the curve, or in the uniswap v4 pool after graduation</span></div>
+      <div class="st"><span class="n">03</span><span class="t"><code>burn()</code> on PYRE itself. pons v2 coins are ERC20Burnable, so <code>totalSupply</code> falls</span></div>
+      <div class="st"><span class="n">04</span><span class="t">an attestation tx ties the burn to the fees that paid for it</span></div>
       <div class="st"><span class="n"></span><span class="t ink2">nothing is sent to holders. supply gets smaller. that is the whole effect.</span></div>
     </div>
   </div>`,
   ftr:"03 / 21" },
 
 { slug:"attestation", kick:"attestation calldata", body:`
-  <h1 class="sm">37 bytes that tie a burn to the payments behind it.</h1>
-  <div class="cap" style="margin-top:14px">a zero-value self-transfer from the treasury. calldata = 0x50595245 ‖ 0x01 ‖ sha256(revenue event ids, sorted, comma-joined)</div>
+  <h1 class="sm">37 bytes that tie a burn to the fees behind it.</h1>
+  <div class="cap" style="margin-top:14px">a zero-value self-transfer from the treasury. calldata = 0x50595245 ‖ 0x01 ‖ sha256(fee entry ids, sorted, comma-joined)</div>
   <div class="bytes">${byteCells()}</div>
   <div class="legend">
     <div><i style="border-color:var(--accent);background:rgba(157,140,255,.2)"></i>4 bytes · "PYRE"</div>
     <div><i style="border-color:var(--warn);background:rgba(229,193,92,.2)"></i>1 byte · version</div>
-    <div><i style="border-color:var(--line2)"></i>32 bytes · sha256 of the revenue event ids</div>
+    <div><i style="border-color:var(--line2)"></i>32 bytes · sha256 of the fee entry ids</div>
   </div>
   <div class="work">
-    <span class="k">event ids</span><span>rev_c, rev_a, rev_b</span>
-    <span class="k">sorted, joined</span><span>rev_a,rev_b,rev_c</span>
-    <span class="k">sha256</span><span class="ink2">0x<span class="ink">78e9b6e5df154dc1d9d8820d76252ceeae39628b5011226b55e8dd76f8544723</span></span>
+    <span class="k">entry ids</span><span>fee_c, fee_a, fee_b</span>
+    <span class="k">sorted, joined</span><span>fee_a,fee_b,fee_c</span>
+    <span class="k">sha256</span><span class="ink2">0x<span class="ink">78c765bfe203a34a74f05feedda83d64557e5c48541215e45acecbb7666329ff</span></span>
   </div>`,
   ftr:"04 / 21" },
 
@@ -372,14 +372,14 @@ const CARDS = [
   ftr:"05 / 21" },
 
 { slug:"agent-scope", kick:"what the agent can touch", body:`
-  <h1 class="sm">the agent writes the app. it never writes the parts that hold <em>money</em>.</h1>
+  <h1 class="sm">the agent writes the app. it never writes the parts that hold a <em>key</em>.</h1>
   <div class="scope">
     <div>
       <div class="h">writes</div>
       <ul>
         <li><i class="earn">+</i>the product: pages, state, the thing the sentence described</li>
         <li><i class="earn">+</i>server functions, run in <code>QuickJS</code> <span class="why">64 MB · 5 s</span></li>
-        <li><i class="earn">+</i>calls into <code>@pyre/app-sdk</code> <span class="why">auth · charge · kv · fn</span></li>
+        <li><i class="earn">+</i>calls into <code>@pyre/app-sdk</code> <span class="why">auth · kv · fn · llm · holder gate</span></li>
         <li><i class="earn">+</i>tests, screenshots, its own build config</li>
       </ul>
     </div>
@@ -387,8 +387,7 @@ const CARDS = [
       <div class="h">never writes</div>
       <ul>
         <li><i class="burn">×</i>auth <span class="why">platform-hosted</span></li>
-        <li><i class="burn">×</i>wallet code, keys, signing <span class="why">reviewer hard block</span></li>
-        <li><i class="burn">×</i>payment code <span class="why">sdk only</span></li>
+        <li><i class="burn">×</i>anything that asks for money <span class="why">apps are free</span></li>
         <li><i class="burn">×</i>outbound network <span class="why">csp · no fetch</span></li>
       </ul>
     </div>
@@ -422,31 +421,31 @@ const CARDS = [
   <div class="state">
     <div><div class="tile lit"></div><div class="sname">live</div><div class="sdesc">budget above the $10 iteration minimum.<br>the agent builds, the app serves.</div></div>
     <div class="arrows">
-      <div class="fwd">budget under $10<br>and nothing pending</div>
+      <div class="fwd">budget under $10</div>
       <div class="back">a fee claim lifts the budget<br>back to $10</div>
     </div>
-    <div><div class="tile ash"></div><div class="sname ink2">dormant</div><div class="sdesc">the app stays up, keeps earning.<br>only the build loop stops.</div></div>
+    <div><div class="tile ash"></div><div class="sname ink2">dormant</div><div class="sdesc">the app stays up, keeps serving.<br>only the build loop stops.</div></div>
   </div>
   <div class="cap" style="margin-top:36px">a dormant app keeps its subdomain and its coin. any new fee claim, or a top-up in ETH, funds the next build. no vote, no button.</div>`,
   ftr:"08 / 21" },
 
 { slug:"ranked", kick:"ranking", body:`
-  <h1 class="sm">ranked by dollars <em>earned</em>, not volume.</h1>
+  <h1 class="sm">ranked by what moved through the <em>loop</em>, not market cap.</h1>
   <div class="rank">
     <div>
-      <div class="lab" style="margin-bottom:12px">a worked example, two apps</div>
+      <div class="lab" style="margin-bottom:12px">a worked example, two coins</div>
       <div class="kv">
-        <div><span>app a · earned $12 · traded $300</span><span class="earn">#1</span></div>
-        <div><span>app b · earned $0 · traded $40,000</span><span class="ink3">#2</span></div>
+        <div><span>coin a · $12 of fees · shipped v3 · mcap $40k</span><span class="earn">#1</span></div>
+        <div><span>coin b · $0 of fees · never built · mcap $400k</span><span class="ink3">#2</span></div>
       </div>
-      <div class="cap" style="margin-top:16px">the app store sorts by usdg revenue. what the coin traded does not enter the sort.</div>
+      <div class="cap" style="margin-top:16px">the front page sorts by 24h volume with fees weighted double, plus a heat index. market cap does not enter the sort.</div>
     </div>
     <div>
-      <div class="lab" style="margin-bottom:12px">what moves an app up</div>
+      <div class="lab" style="margin-bottom:12px">what moves a coin up</div>
       <div class="kv">
-        <div><span>usdg revenue, all time</span><span class="earn">ranks</span></div>
-        <div><span>revenue, last 24h</span><span class="earn">ranks</span></div>
-        <div><span>trade volume</span><span class="ink3">no</span></div>
+        <div><span>creator fees claimed, last 24h</span><span class="earn">ranks ×2</span></div>
+        <div><span>trade volume, last 24h</span><span class="earn">ranks</span></div>
+        <div><span>heat: fees and volume, recent</span><span class="earn">ranks</span></div>
         <div><span>market cap</span><span class="ink3">no</span></div>
         <div><span>holder count</span><span class="ink3">no</span></div>
       </div>
@@ -455,18 +454,18 @@ const CARDS = [
   </div>`,
   ftr:"09 / 21" },
 
-{ slug:"wallets", kick:"wallets and payments", body:`
-  <h1 class="sm">two ways in. no gas to pay an app.</h1>
+{ slug:"wallets", kick:"wallets", body:`
+  <h1 class="sm">two ways in. neither is ever charged by an app.</h1>
   <div class="two">
     <div class="panel"><div class="t">sign in with google</div><div class="m">a custodial hd wallet on robinhood chain<br><b>m/44'/60'/0'/0/&lt;user&gt;</b><br>the browser holds a session jwt, never a key. the server signs.</div></div>
     <div class="panel"><div class="t">sign in with your own wallet</div><div class="m">an eip-191 challenge, siwe-style<br><b>sign a message, get a session</b><br>you pay the stake from your wallet. you sign your own trades.</div></div>
   </div>
   <div class="flow">
-    <div class="act" style="left:0"><div class="box">user's wallet</div><div class="sub">custodial or external</div></div>
-    <div class="act" style="left:603px"><div class="box">treasury</div><div class="sub">pays the gas</div></div>
-    <div class="act" style="left:1206px"><div class="box">USDG</div><div class="sub">0x5fc5360D…d168 · robinhood chain</div></div>
-    <div class="msg" style="left:250px;width:353px;top:130px"><span>signs an eip-3009 authorization<i>transferWithAuthorization · no tx, no gas</i></span></div>
-    <div class="msg" style="left:853px;width:353px;top:130px"><span>relays it on chain<i>the app is paid. per charge cap $250, $1,000 / user / app / day</i></span></div>
+    <div class="act" style="left:0"><div class="box">your wallet</div><div class="sub">custodial or external</div></div>
+    <div class="act" style="left:603px"><div class="box">the app</div><div class="sub">free to use</div></div>
+    <div class="act" style="left:1206px"><div class="box">the coin</div><div class="sub">balanceOf on robinhood chain</div></div>
+    <div class="msg" style="left:250px;width:353px;top:130px"><span>signs in<i>session only · no tx, no gas, no charge</i></span></div>
+    <div class="msg" style="left:853px;width:353px;top:130px"><span>reads your balance<i>hold N coins → a feature unlocks. never charged, never paid out</i></span></div>
   </div>`,
   ftr:"10 / 21" },
 
@@ -499,7 +498,7 @@ const CARDS = [
     <div class="g"><span class="i">04</span><div class="k">PAYOUTS</div><div class="d">treasury payouts broadcast but unconfirmed. <b>read the receipt, finalise or flag.</b></div></div>
     <div class="g"><span class="i">05</span><div class="k">LEDGER</div><div class="d">assert the money invariants. <b>reports, never repairs:</b> an automatic fix would destroy the evidence.</div></div>
     <div class="g"><span class="i">06</span><div class="k">FEES</div><div class="d">every <b>Claimed</b> the escrow emitted for an app wallet must have a fee event. missing ones are replayed, idempotent on tx hash.</div></div>
-    <div class="g"><span class="i">07</span><div class="k">BURNS</div><div class="d">the ledger's burned total per app is compared with the chain. <b>the ledger can never exceed the chain.</b></div></div>
+    <div class="g"><span class="i">07</span><div class="k">BURNS</div><div class="d">the ledger's burned PYRE total is compared with the chain. <b>the ledger can never exceed the chain.</b></div></div>
     <div class="g tick"><div class="lab">cadence</div><div class="big">5 min</div><div class="d" style="margin-top:6px">one ReconcileRun row per check, per pass.</div></div>
   </div>`,
   ftr:"12 / 21" },
@@ -533,8 +532,8 @@ const CARDS = [
 { slug:"numbers", kick:"engineering proof", body:`
   <h1 class="sm">where the engineering stands, in numbers.</h1>
   <div class="nums">
-    <div class="num"><div class="v">408</div><div class="l">unit tests</div><div class="n">chain client, economics, api, runner, web. vitest.</div></div>
-    <div class="num"><div class="v">62<small>/68</small></div><div class="l">production feature audit</div><div class="n">the other 6 wait only on treasury funding. run against the live deployment.</div></div>
+    <div class="num"><div class="v">—</div><div class="l">unit tests</div><div class="n">chain client, economics, api, runner, web. vitest. fill from the post-cutover run.</div></div>
+    <div class="num"><div class="v">—<small>/—</small></div><div class="l">production feature audit</div><div class="n">the rest wait only on treasury funding. run against the live deployment. fill from docs/go-live.md.</div></div>
     <div class="num"><div class="v">6</div><div class="l">review findings, all fixed</div><div class="n">one high and five medium, from an independent security review of the codebase.</div></div>
   </div>
   <div class="cap" style="margin-top:36px">every number here is reproducible from the public repo: npm test · apps/api/scripts/feature-audit.mjs · the fixes in apps/api/src/lib/launch.ts</div>`,
@@ -560,7 +559,7 @@ const CARDS = [
         <div class="type">
           <div><span class="a">Instrument Serif <em style="color:var(--accent)">italic</em> for one word</span><span class="lab">display</span></div>
           <div><span class="b">Geist for the interface</span><span class="lab">ui</span></div>
-          <div><span class="c">Geist Mono 0x5059524501 · 4.2 ETH · 85%</span><span class="lab">numbers</span></div>
+          <div><span class="c">Geist Mono 0x5059524501 · 4.2 ETH · 25%</span><span class="lab">numbers</span></div>
           <div><span class="cap">heat ramp, always vertical, always rising from the bottom edge. violet → cobalt → white is hotter than orange.</span></div>
         </div>
       </div>
@@ -585,9 +584,9 @@ const CARDS = [
       <div class="prog"><i style="width:66%"></i></div>
       <div class="spec">
         <div><b>what it does</b> · one line, in the app's own words</div>
-        <div><b>who pays</b> · the person the app is worth money to</div>
-        <div><b>mvp</b> · the smallest version worth paying for</div>
-        <div><b>price</b> · in USD, charged in USDG</div>
+        <div><b>who it is for</b> · the person the app is worth building for</div>
+        <div><b>mvp</b> · the smallest version worth shipping</div>
+        <div><b>holder tier</b> · optional: hold N coins, a feature unlocks</div>
       </div>
       <div class="cap" style="margin-top:12px">written by the intake agent. you approve it or send it back.</div>
       <span class="btn">Approve spec</span>
@@ -611,17 +610,17 @@ const CARDS = [
   <div class="verify">
     <div class="steps">
       <div>open <b>pyre.fun/burns</b> and pick a row. each one carries a swap tx, a burn tx and an attestation tx.</div>
-      <div>open the <b>burn tx</b> on robinhoodchain.blockscout.com. the coin's <code>totalSupply()</code> drops by the burned amount. nothing moves to a wallet.</div>
+      <div>open the <b>burn tx</b> on robinhoodchain.blockscout.com. PYRE's <code>totalSupply()</code> drops by the burned amount. nothing moves to a wallet.</div>
       <div>open the <b>attestation tx</b>. zero value, treasury to itself. the calldata starts <code>0x5059524501</code>.</div>
-      <div>take the revenue event ids listed on the row, sort them, join with commas, <code>sha256</code>. it must equal the remaining 32 bytes.</div>
+      <div>take the <b>hash</b> shown on the row. it must equal the remaining 32 bytes. it is sha256 of the fee entry ids behind that burn.</div>
     </div>
     <div>
       <div class="lab" style="margin-bottom:12px">the attestation calldata, 37 bytes</div>
       <div class="frame"><div class="bar"><span>calldata</span><span>zero value · treasury → treasury</span></div>
         <div style="padding:22px 18px;font:400 22px/1.5 'Geist Mono',monospace;color:var(--ink)">0x<span style="color:var(--accent)">50595245</span> <span style="color:var(--build)">01</span><br><span style="color:var(--ink2)">&lt;32-byte sha256&gt;</span></div>
-        <div style="padding:0 18px 22px;font:400 15px/1.5 'Geist Mono',monospace;color:var(--ink2)">"PYRE" · version 1 · sha256(sorted revenue event ids, comma-joined)</div>
+        <div style="padding:0 18px 22px;font:400 15px/1.5 'Geist Mono',monospace;color:var(--ink2)">"PYRE" · version 1 · sha256(sorted fee entry ids, comma-joined)</div>
       </div>
-      <div class="cap" style="margin-top:14px">no part of the check needs pyre. the ledger row gives the ids; blockscout gives the bytes.</div>
+      <div class="cap" style="margin-top:14px">no part of the check needs pyre. the ledger row gives the hash; blockscout gives the bytes and the supply.</div>
     </div>
   </div>`,
   ftr:"17 / 21" },
@@ -635,8 +634,8 @@ const CARDS = [
         <li><i></i>pyre.fun and api.pyre.fun on robinhood chain<span class="r">4663</span></li>
         <li><i></i>launch flow: sentence, spec, stake, pons v2 launch</li>
         <li><i></i>build pipeline: microvm, build gate, reviewer, &lt;slug&gt;.pyre.fun</li>
-        <li><i></i>usdg payments relayed by the treasury, no user gas</li>
-        <li><i></i>buyback, burn() and attestation every 10 minutes</li>
+        <li><i></i>free apps with holder gating, no in-app money</li>
+        <li><i></i>PYRE buyback, burn() and attestation every 10 minutes</li>
         <li><i></i>the public repo, mit<span class="r">github.com/realdoomsman/pyre</span></li>
       </ul>
     </div>
@@ -644,7 +643,7 @@ const CARDS = [
       <div class="h">next <span class="lab">no dates</span></div>
       <ul>
         <li><i></i>$PYRE launches soon. no contract address exists yet.</li>
-        <li><i></i>treasury funding, which clears the 6 audit checks waiting on it</li>
+        <li><i></i>treasury funding, which clears the audit checks waiting on it</li>
         <li><i></i>the board starts at zero: no number appears until a real coin earns it</li>
         <li><i></i>the first real launches</li>
       </ul>
@@ -658,9 +657,9 @@ const CARDS = [
     <div class="q">is a buyback a payout?</div>
     <div class="a">no.</div>
     <div class="more">
-      <div><div class="qq">what actually happens?</div><div class="aa">app revenue buys the coin on the open curve or pool, then burn() destroys what was bought. supply falls. nothing is sent to anyone.</div></div>
-      <div><div class="qq">is it yield, a dividend, revenue share?</div><div class="aa">none of those. no holder acquires a claim against pyre, a launcher or an app by holding a coin. the terms say so because it is true.</div></div>
-      <div><div class="qq">will burns keep happening?</div><div class="aa">only if the app keeps earning. a burn is a record of what happened, never a forecast. apps can fail.</div></div>
+      <div><div class="qq">what actually happens?</div><div class="aa">25% of every coin's fees buys PYRE on the open curve or pool, then burn() destroys what was bought. supply falls. nothing is sent to anyone. app coins are never bought back.</div></div>
+      <div><div class="qq">is it yield, a dividend, a fee share?</div><div class="aa">none of those. no holder acquires a claim against pyre, a launcher or an app by holding a coin. the terms say so because it is true.</div></div>
+      <div><div class="qq">will burns keep happening?</div><div class="aa">only while coins trade and produce fees. a burn is a record of what happened, never a forecast. coins can go quiet.</div></div>
     </div>
   </div>`,
   ftr:"19 / 21" },
@@ -671,10 +670,10 @@ const CARDS = [
     <div class="frame">
       <div class="bar"><span>github.com/realdoomsman/pyre</span><span>mit</span></div>
       <div class="rows">
-        <div class="r"><span><span class="dir">packages/</span>chain</span><b>robinhood chain on viem. hd wallets, pons v2, uniswap v4, usdg eip-3009, burn + attestation</b></div>
+        <div class="r"><span><span class="dir">packages/</span>chain</span><b>robinhood chain on viem. hd wallets, pons v2, uniswap v4, burn + attestation</b></div>
         <div class="r"><span><span class="dir">packages/</span>shared</span><b>economics in wei, splits, schemas</b></div>
         <div class="r"><span><span class="dir">packages/</span>db</span><b>prisma schema, one squashed migration</b></div>
-        <div class="r"><span><span class="dir">packages/</span>app-sdk</span><b>what generated apps call: auth, charge, kv, fn, holder gate</b></div>
+        <div class="r"><span><span class="dir">packages/</span>app-sdk</span><b>what generated apps call: auth, kv, fn, llm, holder gate</b></div>
         <div class="r"><span><span class="dir">apps/</span>api</span><b>express api, sse, rpc read proxy, model proxy with per-job tokens</b></div>
         <div class="r"><span><span class="dir">apps/</span>runner</span><b>launch, fee sweep, scheduler, build, buyback, reconcile</b></div>
         <div class="r"><span><span class="dir">apps/</span>web</span><b>react 19, vite, tailwind v4</b></div>
@@ -694,7 +693,7 @@ const CARDS = [
 { slug:"founder", kick:"why we built this", body:`
   <div class="letter">
     launchpads solved launching and skipped the part where something gets built. a coin would trade for a day and leave nothing behind.<br><br>
-    we wanted the other order. a sentence becomes a spec. fees pay an agent to ship it. people pay for the app, and the app's revenue buys the coin back and <em>burns</em> it, with a hash on chain you can recompute.<br><br>
+    we wanted the other order. a sentence becomes a spec. fees pay an agent to ship it. the app is free, and a quarter of every fee buys PYRE and <em>burns</em> it, with a hash on chain you can check.<br><br>
     it is small. it is real. it is open.
     <div class="sig">pyre · robinhood chain · pons v2 · mit</div>
   </div>`,

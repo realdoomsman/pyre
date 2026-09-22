@@ -9,10 +9,10 @@ const TAG: Record<NonNullable<HolderDto["tag"]>, { label: string; tone: ChipTone
   curve: { label: "curve", tone: "accent" },
   pool: { label: "pool", tone: "accent" },
   locker: { label: "locker", tone: "accent" },
-  vault: { label: "buyback vault", tone: "accent" },
+  vault: { label: "vault", tone: "accent" },
   treasury: { label: "treasury", tone: "build" },
   launcher: { label: "launcher", tone: "earn" },
-  dead: { label: "burned", tone: "burn" },
+  dead: { label: "dead address", tone: "neutral" },
 };
 
 interface Segment {
@@ -22,21 +22,20 @@ interface Segment {
   className: string;
 }
 
-/** Distribution: who holds what share of the full 1B supply, burned included. */
-const segments = (holders: ReadonlyArray<HolderDto>, burnedPct: number): Segment[] => {
+/** Distribution: who holds what share of the full 1B supply. */
+const segments = (holders: ReadonlyArray<HolderDto>): Segment[] => {
   const wallets = holders.filter((h) => h.tag === null);
   const top10 = wallets.slice(0, 10).reduce((s, h) => s + h.pct, 0);
   const creator = holders.filter((h) => h.tag === "launcher").reduce((s, h) => s + h.pct, 0);
   const pool = holders.filter((h) => h.tag === "curve" || h.tag === "pool" || h.tag === "locker" || h.tag === "vault").reduce((s, h) => s + h.pct, 0);
   const treasury = holders.filter((h) => h.tag === "treasury").reduce((s, h) => s + h.pct, 0);
-  const rest = Math.max(0, 100 - top10 - creator - pool - treasury - burnedPct);
+  const rest = Math.max(0, 100 - top10 - creator - pool - treasury);
   return [
     { key: "top10", label: "Top 10", pct: top10, className: "bg-ink" },
     { key: "creator", label: "Launcher", pct: creator, className: "bg-earn" },
     { key: "pool", label: "Curve / pool / locker", pct: pool, className: "bg-accent" },
     { key: "treasury", label: "Treasury", pct: treasury, className: "bg-build" },
     { key: "rest", label: "Everyone else", pct: rest, className: "bg-ink-3" },
-    { key: "burned", label: "Burned", pct: burnedPct, className: "bg-burn" },
   ].filter((s) => s.pct > 0.0005);
 };
 
@@ -47,7 +46,7 @@ interface Props {
 
 export const HoldersTab = ({ app, data }: Props) => {
   const rows = data?.holders ?? [];
-  const dist = useMemo(() => segments(rows, app.burnedPct), [rows, app.burnedPct]);
+  const dist = useMemo(() => segments(rows), [rows]);
   const columns = useMemo<Column<HolderDto>[]>(
     () => [
       { key: "rank", header: "#", width: 40, render: (_r, i) => <span className="num text-ink-3">{i + 1}</span> },
@@ -101,7 +100,7 @@ export const HoldersTab = ({ app, data }: Props) => {
       </div>
       <Table columns={columns} rows={rows} rowKey={(r) => r.address} maxHeight={520} dense caption={`Top holders of $${app.ticker}`} />
       <p className="num text-12 text-ink-3">
-        {rows.length} of {app.holders.toLocaleString("en-US")} holders · supply {formatTokenUnits(data.supplyUnits)} · burned {formatTokenUnits(data.burnedUnits)}
+        {rows.length} of {app.holders.toLocaleString("en-US")} holders · supply {formatTokenUnits(data.supplyUnits)}
       </p>
     </div>
   );

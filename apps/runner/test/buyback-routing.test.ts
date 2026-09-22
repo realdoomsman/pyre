@@ -1,9 +1,8 @@
 import type * as Db from "@pyre/db";
-import { PONS_TOTAL_SUPPLY } from "@pyre/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * A buyback spends treasury ETH on whichever venue the launch trades on. Routing by the
+ * The $PYRE buyback spends treasury ETH on whichever venue the launch trades on. Routing by the
  * factory's phase is what keeps a post-graduation buy off a closed curve (revert, ETH stuck in
  * a SWAPPING row) and a pre-graduation buy off a pool that does not exist yet. The slippage
  * bound and the refund accounting are what make the ledger's `ethWei` true.
@@ -35,13 +34,11 @@ vi.mock("@pyre/chain", () => ({
   tokenAbi: [],
 }));
 vi.mock("../src/workers/chain/env.js", () => ({ chainWorkerEnv: () => ({}) }));
-vi.mock("../src/workers/chain/publish.js", () => ({ publishGlobal: vi.fn(), publishEvent: vi.fn() }));
 vi.mock("../src/lib/audit.js", () => ({ audit: vi.fn() }));
 vi.mock("../src/lib/lock.js", () => ({ withLock: vi.fn() }));
 
 // Dynamic import: the module binds `@pyre/chain` at load time, so it must come after the mocks.
-const { buyTokens, burnedPctOfSupply, treasurySpentMicros } = await import("../src/workers/chain/buyback.js");
-const { dec } = await import("@pyre/db");
+const { buyTokens } = await import("../src/workers/chain/buyback.js");
 
 const launch = (phase: 0 | 1 | 2 | 3) => ({
   token: TOKEN,
@@ -100,25 +97,5 @@ describe("buyTokens routes by launch phase", () => {
     curveQuoteBuy.mockResolvedValue({ tokensOut: 0n, spent: 0n, refund: 100n });
     await expect(buyTokens(launch(0) as never, 100n)).rejects.toThrow(/quotes 0 tokens/);
     expect(curveBuy).not.toHaveBeenCalled();
-  });
-});
-
-describe("burnedPctOfSupply", () => {
-  it("is the share of the 1B launch supply in percent", () => {
-    expect(burnedPctOfSupply(PONS_TOTAL_SUPPLY / 100n)).toBeCloseTo(1, 9);
-    expect(burnedPctOfSupply(0n)).toBe(0);
-  });
-});
-
-describe("treasurySpentMicros", () => {
-  // $100 of revenue → $85 buyback share quoted as 1 ETH; the clamped final curve buy refunded a quarter of it.
-  const row = { revenueMicros: 100_000_000n, ethWei: dec(750_000_000_000_000_000n), refundWei: dec(250_000_000_000_000_000n) };
-
-  it("debits only the wei the chain consumed, not the quoted share", () => {
-    expect(treasurySpentMicros(row)).toBe(63_750_000n);
-  });
-
-  it("equals the quoted share when nothing was refunded", () => {
-    expect(treasurySpentMicros({ ...row, ethWei: dec(10n ** 18n), refundWei: dec(0n) })).toBe(85_000_000n);
   });
 });

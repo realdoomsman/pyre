@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppDetailDto, TradeDto } from "@pyre/shared";
 import { AddressLink, TxLink } from "../../../components/TxLink.js";
 import { formatEth, formatTokenUnits, formatUsd, timeAgo } from "../../../lib/format.js";
-import { Button, Chip, EmptyState, Skeleton, Table, cx, type Column } from "../../../ui/index.js";
+import { Button, EmptyState, Skeleton, Table, cx, type Column } from "../../../ui/index.js";
 
 interface Props {
   app: AppDetailDto;
@@ -62,11 +62,6 @@ export const TradesTab = ({ app, rows, live, ethPriceUsd, hasMore, loadingMore, 
         render: (r) => (
           <span className={cx("num inline-flex items-center gap-1 font-medium", r.side === "BUY" ? "text-earn" : "text-burn")}>
             {r.side === "BUY" ? "↗" : "↙"} {r.side === "BUY" ? "buy" : "sell"}
-            {r.isBuyback && (
-              <Chip tone="burn" size="sm" mono className="ml-1">
-                burn
-              </Chip>
-            )}
           </span>
         ),
       },

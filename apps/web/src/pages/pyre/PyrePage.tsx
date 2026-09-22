@@ -4,7 +4,7 @@ import type { PyreBurnDto, PyrePageDto } from "@pyre/shared";
 import { LAUNCH_PHASE, explorerTxUrl } from "@pyre/shared";
 import { env } from "../../env.js";
 import { formatBps, formatEth, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
-import { Address, Button, Card, CardHeader, Chip, EmptyState, GraduationRing, NumberFlow, Skeleton, SupplyKiln, Table, UsdFlow, type Column } from "../../ui/index.js";
+import { Address, Button, Card, CardHeader, Chip, EmptyState, GraduationRing, NumberFlow, Progress, Skeleton, Table, UsdFlow, type Column } from "../../ui/index.js";
 import { usePyre } from "./hooks.js";
 import { MyStakes, StakeForm, TopStakes } from "./Staking.js";
 
@@ -89,7 +89,7 @@ const Header = ({ page, token }: { page: PyrePageDto; token: NonNullable<PyrePag
           </Stat>
           <Stat label="Burned in ETH">
             <span className="text-burn">{formatEth(page.burns.reduce((s, b) => s + BigInt(b.ethWei), 0n))}</span>
-            <span className="small block text-ink-3">{page.burns.length} buybacks</span>
+            <span className="small block text-ink-3">{page.burns.length} burns</span>
           </Stat>
         </dl>
         <div className="flex flex-wrap gap-2">
@@ -102,8 +102,11 @@ const Header = ({ page, token }: { page: PyrePageDto; token: NonNullable<PyrePag
         </div>
       </div>
       <Card>
-        <CardHeader eyebrow="Supply kiln" title="1,000,000,000 minted" description="Every buyback burns; the stack hollows." />
-        <SupplyKiln burnedFraction={token.burnedPct / 100} width={200} />
+        <CardHeader eyebrow="Supply" title="1,000,000,000 minted" description="Every burn lowers totalSupply for good." />
+        <Progress value={token.burnedPct / 100} tone="heat" size="md" label="Share of supply burned" />
+        <p className="num mt-2 text-13 text-ink-2">
+          <span className="text-burn">{formatTokenUnits(token.burnedUnits, { compact: true })}</span> burned · {formatTokenUnits(BigInt(token.totalSupplyUnits) - BigInt(token.burnedUnits), { compact: true })} remain
+        </p>
       </Card>
     </header>
   );
@@ -120,8 +123,8 @@ const PreLaunch = ({ page }: { page: PyrePageDto }) => (
       </Chip>
       <p className="body max-w-2xl text-ink-2">
         $PYRE is the platform's own coin: a PONS v2 launch made from the treasury wallet, on the same curve and under the same rules as every coin on Pyre. It does not exist
-        on-chain yet, so there is no price, no market cap and no burn to show. What already exists is the ledger below — the share of every fee and every dollar of revenue
-        that is earmarked for buying and burning it the moment it launches.
+        on-chain yet, so there is no price, no market cap and no burn to show. What already exists is the ledger below — the share of every coin's creator fees that is
+        earmarked for buying and burning it the moment it launches.
       </p>
       <dl className="grid max-w-md grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 border-y border-line py-3 text-13">
         <dt className="eyebrow">Contract</dt>
@@ -137,14 +140,10 @@ const PreLaunch = ({ page }: { page: PyrePageDto }) => (
     </div>
     <Card tone="inset">
       <CardHeader eyebrow="Earmarked so far" title={formatUsd(BigInt(page.ledger.pendingMicros))} description="Accrued to the PYRE_TOKEN ledger account, waiting for a token to buy." />
-      <dl className="grid grid-cols-2 gap-3 text-13">
+      <dl className="grid grid-cols-1 gap-3 text-13">
         <div>
           <dt className="eyebrow">From fees</dt>
-          <dd className="num text-ink">{formatBps(page.feeShareBps)} of every claim</dd>
-        </div>
-        <div>
-          <dt className="eyebrow">From revenue</dt>
-          <dd className="num text-ink">{formatBps(page.revenueShareBps)} of every sale</dd>
+          <dd className="num text-ink">{formatBps(page.feeShareBps)} of every coin's fee claims</dd>
         </div>
       </dl>
     </Card>
@@ -164,12 +163,6 @@ const Accrual = ({ page }: { page: PyrePageDto }) => (
         </li>
         <li className="flex gap-3">
           <span className="num shrink-0 text-ink-3">02</span>
-          <span>
-            <span className="num text-ink">{formatBps(page.revenueShareBps)}</span> of every app's revenue is credited to the same account.
-          </span>
-        </li>
-        <li className="flex gap-3">
-          <span className="num shrink-0 text-ink-3">03</span>
           <span>
             Every 10 minutes, when the balance clears $5, the treasury buys $PYRE on the curve or in the pool and calls <span className="num">burn()</span>. Supply falls. Each burn is attested on-chain.
           </span>
@@ -195,7 +188,7 @@ const Accrual = ({ page }: { page: PyrePageDto }) => (
           <dd className="num text-18 text-ink-2">{formatUsd(BigInt(page.ledger.pendingMicros), 0)}</dd>
         </div>
       </dl>
-      <p className="small mt-4 text-ink-3">USD at the time each fee or sale was recorded. Burns below are the on-chain record; the ledger is the accounting.</p>
+      <p className="small mt-4 text-ink-3">USD at the time each fee claim was recorded. Burns below are the on-chain record; the ledger is the accounting.</p>
     </Card>
   </section>
 );

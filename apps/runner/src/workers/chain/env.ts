@@ -11,7 +11,7 @@ const ChainWorkerEnv = z.object({
   WEB_ORIGIN: z.string().url().optional(),
   APP_DOMAIN: z.string().optional(),
   PLATFORM_MASTER_SEED_HEX: z.string().regex(/^(0x)?[0-9a-fA-F]{32,128}$/),
-  /** $PYRE launch token; when set, its fee/revenue shares are bought back and burned too. */
+  /** $PYRE launch token; when set, its 25% share of every coin's creator fees is bought back and burned. */
   PYRE_TOKEN: EvmAddress.optional(),
   /** Zentro session (cookies + CardHub localStorage) for card top-ups; unset keeps credits accruing in the ledger. */
   ZENTRO_STATE: z.string().optional(),

@@ -93,8 +93,8 @@ export const Launched = ({ me }: { me: MeDto }) => {
                         <dd className="num text-earn">{formatEth(l.feesWei)}</dd>
                       </div>
                       <div>
-                        <dt className="eyebrow">Revenue</dt>
-                        <dd className="num text-ink">{formatUsd(BigInt(l.revenueMicros))}</dd>
+                        <dt className="eyebrow">Live</dt>
+                        <dd className="num text-ink">{l.liveVersion > 0 ? `v${l.liveVersion}` : "not yet"}</dd>
                       </div>
                       <div>
                         <dt className="eyebrow">Stake</dt>
