@@ -36,7 +36,7 @@ export function parseAttestationMemo(text: string): { digestHex: `0x${string}`; 
 
 /** Memo-only transaction from `account`; the memo program requires no accounts, so the payer's signature is the only one. */
 export async function attestOnSolana(account: Keypair, digestHex: string): Promise<SolanaTxResult> {
-  return sendInstructions(account, [memoInstruction(encodeAttestationMemo(digestHex))], { computeUnits: COMPUTE_UNITS.transfer });
+  return sendInstructions(account, [memoInstruction(encodeAttestationMemo(digestHex))], { computeUnits: COMPUTE_UNITS.memo });
 }
 
 const isParsed = (ix: ParsedInstruction | PartiallyDecodedInstruction): ix is ParsedInstruction => "parsed" in ix;

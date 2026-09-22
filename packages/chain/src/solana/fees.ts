@@ -9,7 +9,8 @@ export const PRIORITY_FEE_FLOOR_MICROLAMPORTS = 100_000;
 export const PRIORITY_FEE_CAP_MICROLAMPORTS = 5_000_000;
 
 /** Compute-unit limits per instruction family: pump's frontend defaults, with headroom for the ATA/volume-accumulator creates a first trade adds. */
-export const COMPUTE_UNITS = { create: 270_000, curveSwap: 150_000, ammSwap: 200_000, collectFees: 200_000, burn: 60_000, transfer: 20_000 } as const;
+/** Memo v2 validates UTF-8 byte by byte: ~1k CU per byte of memo text, so a 70-byte attestation needs ~80k. */
+export const COMPUTE_UNITS = { create: 270_000, curveSwap: 150_000, ammSwap: 200_000, collectFees: 200_000, burn: 60_000, transfer: 20_000, memo: 120_000 } as const;
 
 /** Pure: median of the observed fees, clamped to [floor, cap]. Exported for tests. */
 export function clampComputeUnitPrice(observed: number[]): number {

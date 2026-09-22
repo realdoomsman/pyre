@@ -126,7 +126,8 @@ try {
 }
 
 step("sweep float back to the funder");
-const feeReserve = 10_000n;
+// Leave the rent-exempt minimum (0-byte account) plus a tx fee behind: an account cannot be drained below rent.
+const feeReserve = 890_880n + 10_000n;
 for (const w of [app, treasury]) {
   const bal = await pumpAdapter.nativeBalance(w.address);
   if (bal > feeReserve * 2n) {
