@@ -20,10 +20,18 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@pump-fun/pump-sdk": "2.0.0",
+    "@pump-fun/pump-swap-sdk": "1.20.0",
+    "@solana/spl-token": "0.4.15",
+    "@solana/web3.js": "1.99.0",
+    "bn.js": "^5.2.1",
+    "bs58": "^6.0.0",
+    "micro-key-producer": "0.10.2",
     "viem": "^2.56.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bn.js": "^5.2.0",
     "@types/node": "^22.9.0",
     "typescript": "^5.6.3"
   }

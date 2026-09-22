@@ -11,7 +11,7 @@ export { GraduationRing, type GraduationRingProps } from "./GraduationRing.js";
 export { HeatGauge, type HeatGaugeProps } from "./HeatGauge.js";
 export { Ignition, type IgnitionProps, type IgnitionTick } from "./Ignition.js";
 export { Kbd } from "./Kbd.js";
-export { EthFlow, NumberFlow, UsdFlow, type NumberFlowProps } from "./NumberFlow.js";
+export { EthFlow, NativeFlow, NumberFlow, UsdFlow, type NumberFlowProps } from "./NumberFlow.js";
 export { Progress, type ProgressProps, type ProgressTone } from "./Progress.js";
 export { ProofStrip, type ProofItem } from "./ProofStrip.js";
 export { Sheet, Tray, type SheetProps } from "./Sheet.js";

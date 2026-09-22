@@ -4,6 +4,7 @@ import { formatCount, formatUsdCompact, timeAgo } from "../lib/format.js";
 import { Avatar, Card, Chip, cx } from "../ui/index.js";
 import { AGENT_CHIP } from "./CoinCard.js";
 import { IconExternal } from "./icons.js";
+import { VenueChip } from "./VenueChip.js";
 
 export interface AppCardProps {
   app: AppSummaryDto;
@@ -46,6 +47,7 @@ export const AppCard = ({ app, className }: AppCardProps) => {
         <Chip tone={agent.tone} dot={agent.dot} size="sm" mono>
           {agent.label}
         </Chip>
+        <VenueChip app={app} />
         {app.liveUrl && (
           <a href={app.liveUrl} target="_blank" rel="noreferrer noopener" className="ml-auto inline-flex items-center gap-1 text-12 font-medium text-accent hover:underline">
             open app <IconExternal size={12} />

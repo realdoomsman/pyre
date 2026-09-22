@@ -8,6 +8,7 @@
  */
 import { z } from "zod";
 import { EvmAddress, LaunchPhase, TxHash, AppSpec, BuildEventPayload } from "./schemas.js";
+import { Chain, Launchpad, NativeAsset } from "./venues.js";
 
 /* ─────────────────────────── Primitives ─────────────────────────── */
 
@@ -56,9 +57,15 @@ export const AppSummaryDto = z.object({
   oneLiner: z.string(),
   status: AppStatusDto,
   template: z.enum(["WEB_TOOL", "GAME", "AGENT_API"]),
-  tokenAddress: EvmAddress.nullable(),
-  curveAddress: EvmAddress.nullable(),
-  poolId: Bytes32.nullable(),
+  /** Venue: every `…Wei` field below is in `native` base units (wei on Robinhood Chain, lamports on Solana). */
+  chain: Chain,
+  launchpad: Launchpad,
+  native: NativeAsset,
+  /** Venue-formatted (0x… on Robinhood Chain, base58 on Solana). */
+  tokenAddress: z.string().nullable(),
+  curveAddress: z.string().nullable(),
+  /** Uniswap v4 poolId (bytes32) on Robinhood Chain; PumpSwap pool address on Solana. */
+  poolId: z.string().nullable(),
   phase: LaunchPhase,
   /** Curve raise ÷ graduation threshold, 0..1; pinned to 1 once in the pool. */
   progress: z.number().min(0).max(1),
@@ -80,7 +87,8 @@ export const AppSummaryDto = z.object({
   createdAt: IsoDate,
   launchedAt: IsoDate.nullable(),
   graduatedAt: IsoDate.nullable(),
-  ponsUrl: z.string().nullable(),
+  /** The coin's page on its launchpad (pons / pump.fun). */
+  launchpadUrl: z.string().nullable(),
   explorerUrl: z.string().nullable(),
 });
 export type AppSummaryDto = z.infer<typeof AppSummaryDto>;
@@ -111,29 +119,30 @@ export const BuildEventDto = z.object({
 export type BuildEventDto = z.infer<typeof BuildEventDto>;
 
 
-/** One fill on the curve or the v4 pool. Mirrors the `Trade` table the runner's indexer fills. */
+/** One fill on the curve or the pool. Mirrors the `Trade` table the runner's indexer fills. */
 export const TradeDto = z.object({
   id: z.string(),
   appId: z.string(),
   side: z.enum(["BUY", "SELL"]),
-  /** Where the fill happened: the bonding curve (phase 0) or the Uniswap v4 pool (phase 2). */
+  /** Where the fill happened: the bonding curve (phase 0) or the graduated pool (phase 2). */
   venue: z.enum(["CURVE", "POOL"]),
-  wallet: EvmAddress,
+  wallet: z.string(),
   tokenUnits: BigIntString,
+  /** Native base units of the app's chain. */
   quoteWei: BigIntString,
   priceUsd: z.number(),
-  txHash: TxHash,
+  txHash: z.string(),
   block: z.number().int(),
   ts: IsoDate,
 });
 export type TradeDto = z.infer<typeof TradeDto>;
 
 export const HolderDto = z.object({
-  address: EvmAddress,
+  address: z.string(),
   units: BigIntString,
   pct: z.number().min(0).max(100),
-  /** Protocol-owned rows (curve, v4 pool, locker, buyback vault, burn sink) and the platform's own wallets; null for a plain holder. */
-  tag: z.enum(["curve", "pool", "locker", "vault", "treasury", "launcher", "dead"]).nullable(),
+  /** Protocol-owned rows (curve, v4 pool, locker, buyback vault, burn sink, pump curve/pool liquidity) and the platform's own wallets; null for a plain holder. */
+  tag: z.enum(["curve", "pool", "liquidity", "locker", "vault", "treasury", "launcher", "dead"]).nullable(),
 });
 export type HolderDto = z.infer<typeof HolderDto>;
 
@@ -224,18 +233,43 @@ export type PullRequestDto = z.infer<typeof PullRequestDto>;
 export const FeeEventDto = z.object({
   id: z.string(),
   source: z.enum(["CREATOR_FEE", "FORK_ROYALTY", "REVIVE_BUY", "MANUAL"]),
+  /** Native base units of the app's chain. */
   wei: BigIntString,
+  /** Native/USD price at claim time (ETH on Robinhood Chain, SOL on Solana). */
   ethPriceUsd: z.number(),
   usdMicros: BigIntString,
   buildMicros: BigIntString,
   pyreMicros: BigIntString,
+  /** The 25% burn leg off Robinhood Chain: buys and burns the coin itself. */
+  coinBurnMicros: BigIntString,
   launcherMicros: BigIntString,
   upstreamMicros: BigIntString,
   creditsMicros: BigIntString,
-  txHash: TxHash.nullable(),
+  txHash: z.string().nullable(),
   createdAt: IsoDate,
 });
 export type FeeEventDto = z.infer<typeof FeeEventDto>;
+
+/** One treasury buy-and-burn of a Solana coin (the 25% fee leg that would buy PYRE on Robinhood Chain), attested on chain. */
+export const CoinBurnDto = z.object({
+  id: z.string(),
+  appId: z.string(),
+  usdMicros: BigIntString,
+  /** Lamports spent on the buy. */
+  nativeWei: BigIntString,
+  tokensBoughtUnits: BigIntString,
+  burnedUnits: BigIntString,
+  burnedPctOfSupply: z.number(),
+  swapTx: z.string().nullable(),
+  burnTx: z.string().nullable(),
+  attestTx: z.string().nullable(),
+  attestHash: z.string().nullable(),
+  createdAt: IsoDate,
+});
+export type CoinBurnDto = z.infer<typeof CoinBurnDto>;
+
+export const CoinBurnsPageDto = pageOf(CoinBurnDto);
+export type CoinBurnsPageDto = z.infer<typeof CoinBurnsPageDto>;
 
 export const AppSocialsDto = z.object({
   twitter: z.string().nullable(),
@@ -249,21 +283,34 @@ export const AppDetailDto = AppSummaryDto.extend({
   spec: AppSpec.nullable(),
   prompt: z.string(),
   killedReason: z.string().nullable(),
-  walletAddress: EvmAddress.nullable(),
+  /** Creator/fee-recipient wallet on the app's chain (venue-formatted). */
+  walletAddress: z.string().nullable(),
   stakeWei: BigIntString,
-  stakeTx: TxHash.nullable(),
-  stakeRefundTx: TxHash.nullable(),
-  launchTx: TxHash.nullable(),
+  stakeTx: z.string().nullable(),
+  stakeRefundTx: z.string().nullable(),
+  launchTx: z.string().nullable(),
   spentMicros: BigIntString,
   usersCount: z.number().int(),
   uptimeBps: z.number().int(),
   healthy: z.boolean(),
-  /** Per-app wallet balances the fee sweeper will claim next: unswept on the curve/hook + escrow. */
+  /** Per-app wallet balances the fee sweeper will claim next: unswept on the curve/hook + escrow (creator vault on pump). */
   unsweptWei: BigIntString,
   escrowWei: BigIntString,
-  /** 60/25/15 creator-fee split (bps). */
-  feeSplit: z.object({ buildBudget: z.number().int(), pyreToken: z.number().int(), launcher: z.number().int() }),
+  /** Creator-fee split (bps) on the app's chain: 60/25 PYRE/15 on Robinhood Chain, 60/25 coin burn/15 on Solana. */
+  feeSplit: z.object({ buildBudget: z.number().int(), pyreToken: z.number().int(), coinBurn: z.number().int(), launcher: z.number().int() }),
   graduationThresholdWei: BigIntString,
+  /** Coin buy-and-burns from the app's own fees; null on Robinhood Chain where that leg burns PYRE instead. */
+  coinBurns: z
+    .object({
+      count: z.number().int(),
+      nativeWei: BigIntString,
+      burnedUnits: BigIntString,
+      burnedPctOfSupply: z.number(),
+      /** `COINBURN:<appId>` ledger balance not yet burned. */
+      pendingMicros: BigIntString,
+      last: CoinBurnDto.nullable(),
+    })
+    .nullable(),
   /** Newest fee events first (build-budget history). */
   budgetHistory: z.array(FeeEventDto),
   lastBuild: BuildJobDto.nullable(),
@@ -298,11 +345,13 @@ export const MARKET_SNAPSHOT_KEY = "market:snapshot";
 
 /**
  * Platform-wide market figures the public read paths need (`/v1/stats`, `/v1/pyre`, app pages):
- * the ETH/USD price and $PYRE's on-chain state. Written by the runner every price pass so the API
- * serves them from Postgres/Redis and never blocks a request on the RPC or a price feed.
+ * the ETH/USD and SOL/USD prices and $PYRE's on-chain state. Written by the runner every price
+ * pass so the API serves them from Postgres/Redis and never blocks a request on the RPC or a price feed.
  */
 export const MarketSnapshot = z.object({
   ethPriceUsd: z.number().positive(),
+  /** Null while the Solana venue is disabled. */
+  solPriceUsd: z.number().positive().nullable().default(null),
   pyreToken: z
     .object({
       address: EvmAddress,
@@ -329,7 +378,9 @@ export const StatsDto = z.object({
   appsLive: z.number().int(),
   appsBuilding: z.number().int(),
   appsTotal: z.number().int(),
+  /** Lifetime creator fees claimed, per chain in that chain's native base units. */
   feesTotalWei: BigIntString,
+  feesTotalLamports: BigIntString,
   burnedEthWei: BigIntString,
   burnedEth24hWei: BigIntString,
   burnedEth30dWei: BigIntString,
@@ -339,6 +390,7 @@ export const StatsDto = z.object({
   /** Agent compute hours in the current UTC day (from BuildJob runtimes). */
   agentHoursToday: z.number(),
   ethPriceUsd: z.number(),
+  solPriceUsd: z.number().nullable(),
   pyreToken: z
     .object({
       address: EvmAddress,
@@ -358,6 +410,9 @@ export const BalancesDto = z.object({
   ethWei: BigIntString,
   usdgUnits: BigIntString,
   ethPriceUsd: z.number(),
+  /** Custodial Solana wallet balance; 0 while the Solana venue is disabled. */
+  solLamports: BigIntString,
+  solPriceUsd: z.number(),
 });
 export type BalancesDto = z.infer<typeof BalancesDto>;
 
@@ -382,18 +437,22 @@ export const LaunchDraftDto = z.object({
   spec: AppSpec.nullable(),
   specApprovedAt: IsoDate.nullable(),
   template: z.enum(["WEB_TOOL", "GAME", "AGENT_API"]),
-  walletAddress: EvmAddress.nullable(),
-  tokenAddress: EvmAddress.nullable(),
-  curveAddress: EvmAddress.nullable(),
-  launchTx: TxHash.nullable(),
+  /** Venue: `…Wei` fields are in `native` base units; addresses/hashes are venue-formatted. */
+  chain: Chain,
+  launchpad: Launchpad,
+  native: NativeAsset,
+  walletAddress: z.string().nullable(),
+  tokenAddress: z.string().nullable(),
+  curveAddress: z.string().nullable(),
+  launchTx: z.string().nullable(),
   stakeWei: BigIntString,
-  stakeTx: TxHash.nullable(),
-  stakeRefundTx: TxHash.nullable(),
+  stakeTx: z.string().nullable(),
+  stakeRefundTx: z.string().nullable(),
   stakeRefundedAt: IsoDate.nullable(),
-  /** Fixed stake the launcher must post (LAUNCH_STAKE_WEI). */
+  /** Fixed stake the launcher must post (`LAUNCH_STAKE_BY_CHAIN[chain]`). */
   requiredStakeWei: BigIntString,
-  /** Where an external wallet sends the stake (the platform treasury). */
-  stakeTo: EvmAddress,
+  /** Where an external wallet sends the stake (the platform treasury on the app's chain). */
+  stakeTo: z.string(),
   budgetMicros: BigIntString,
   feesWei: BigIntString,
   liveVersion: z.number().int(),
@@ -428,8 +487,10 @@ export const MeDto = z.object({
     tier: z.enum(["NEW", "TRUSTED", "VETERAN"]),
     createdAt: IsoDate,
   }),
-  /** Custodial wallet (server-signed). */
+  /** Custodial wallet on Robinhood Chain (server-signed). */
   wallet: EvmAddress,
+  /** Custodial wallet on Solana (base58); null while the Solana venue is disabled. */
+  solWallet: z.string().nullable(),
   /** External wallet proved at login, if the user signed in with one. */
   authWallet: EvmAddress.nullable(),
   balances: BalancesDto,
@@ -449,20 +510,23 @@ export const TradeQuoteDto = z.object({
   side: z.enum(["buy", "sell"]),
   venue: z.enum(["CURVE", "POOL"]),
   phase: LaunchPhase,
-  /** Exact amount in (wei for buy, token units for sell). */
+  /** Every `…Wei` figure below is in `native` base units of the coin's chain. */
+  chain: Chain,
+  native: NativeAsset,
+  /** Exact amount in (native for buy, token units for sell). */
   amountIn: BigIntString,
-  /** Expected amount out (token units for buy, wei for sell). */
+  /** Expected amount out (token units for buy, native for sell). */
   amountOut: BigIntString,
   /** Out after the caller's slippage tolerance; the tx reverts below this. */
   minOut: BigIntString,
-  /** Protocol fee taken by PONS on this fill (wei), including any early-buy snipe tax. */
+  /** Fee taken by the launchpad on this fill (native), including any early-buy snipe tax. */
   feeWei: BigIntString,
   snipeTaxBps: z.number().int(),
-  /** Wei refunded when a curve buy overshoots graduation. */
+  /** Native refunded when a curve buy overshoots graduation (PONS only). */
   refundWei: BigIntString,
   priceImpactPct: z.number(),
   priceUsd: z.number(),
-  ethPriceUsd: z.number(),
+  nativePriceUsd: z.number(),
 });
 export type TradeQuoteDto = z.infer<typeof TradeQuoteDto>;
 
@@ -474,14 +538,34 @@ export const TradeResultDto = z.object({
 export type TradeResultDto = z.infer<typeof TradeResultDto>;
 
 export const WithdrawResultDto = z.object({
-  asset: z.enum(["ETH", "USDG"]),
-  to: EvmAddress,
+  asset: z.enum(["ETH", "USDG", "SOL"]),
+  to: z.string(),
   amount: BigIntString,
-  txHash: TxHash,
+  txHash: z.string(),
   explorerUrl: z.string(),
   balances: BalancesDto,
 });
 export type WithdrawResultDto = z.infer<typeof WithdrawResultDto>;
+
+/* ─────────────────────────── Venues ─────────────────────────── */
+
+/** One launch venue as the web sees it: enabled by the API's environment, stake in native base units. */
+export const VenueDto = z.object({
+  chain: Chain,
+  launchpad: Launchpad,
+  enabled: z.boolean(),
+  stakeWei: BigIntString,
+  chainLabel: z.string(),
+  launchpadLabel: z.string(),
+  native: NativeAsset,
+  tokenDecimals: z.number().int(),
+  /** Solana cluster the API runs against (for explorer links); null on EVM venues. */
+  cluster: z.enum(["mainnet-beta", "devnet"]).nullable(),
+});
+export type VenueDto = z.infer<typeof VenueDto>;
+
+export const VenuesDto = z.object({ venues: z.array(VenueDto) });
+export type VenuesDto = z.infer<typeof VenuesDto>;
 
 /* ─────────────────────────── Ops ─────────────────────────── */
 
@@ -496,15 +580,22 @@ export type OpsAlertDto = z.infer<typeof OpsAlertDto>;
 export const OpsDto = z.object({
   generatedAt: IsoDate,
   treasury: z.object({ address: EvmAddress, ethWei: BigIntString, usdgUnits: BigIntString }),
+  /** Treasury Solana wallet; null while the Solana venue is disabled. */
+  solana: z.object({ address: z.string(), lamports: BigIntString, cluster: z.enum(["mainnet-beta", "devnet"]), solPriceUsd: z.number(), rpcOk: z.boolean() }).nullable(),
   chain: z.object({ chainId: z.number().int(), blockNumber: z.number().int(), ethPriceUsd: z.number(), rpcOk: z.boolean() }),
   apps: z.record(z.string(), z.number().int()),
   jobs: z.object({ queued: z.number().int(), running: z.number().int(), failed24h: z.number().int(), succeeded24h: z.number().int() }),
   compute: z.object({ todayMicros: BigIntString, ceilingMicros: BigIntString }),
   money: z.object({
+    /** Per chain, native base units. */
     feesTotalWei: BigIntString,
     fees24hWei: BigIntString,
+    feesTotalLamports: BigIntString,
+    fees24hLamports: BigIntString,
     pyreBurnsPending: z.number().int(),
     pyreBurnsStuck: z.number().int(),
+    coinBurnsPending: z.number().int(),
+    coinBurnsStuck: z.number().int(),
     creditFundingsStuck: z.number().int(),
     ledger: z.record(z.string(), BigIntString),
   }),
@@ -620,7 +711,10 @@ export type PyrePageDto = z.infer<typeof PyrePageDto>;
 export const WalletChallengeBody = z.object({ address: EvmAddress });
 export const WalletVerifyBody = z.object({ address: EvmAddress, signature: z.string().regex(/^0x[0-9a-fA-F]+$/) });
 
-/** Launch stake: an external-wallet transfer to verify, or a custodial debit. */
+/**
+ * Launch stake: an external-wallet transfer to verify, or a custodial debit. External stakes need
+ * a wallet proven at login, which only exists on Robinhood Chain; Solana stakes are custodial.
+ */
 export const StakeBody = z.union([z.object({ txHash: TxHash }), z.object({ custodial: z.literal(true) })]);
 export type StakeBody = z.infer<typeof StakeBody>;
 

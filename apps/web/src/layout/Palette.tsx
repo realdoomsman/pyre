@@ -2,15 +2,15 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSearch } from "../api/queries.js";
 import { formatUsdCompact } from "../lib/format.js";
+import { EVM_ADDRESS, SOLANA_ADDRESS } from "../lib/venue.js";
 import { Avatar, CommandK, Kbd, type CommandItem } from "../ui/index.js";
 import { IconApps, IconBurn, IconLaunch, IconPyre, IconUser } from "../components/icons.js";
 
-const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
-
 /**
  * ⌘K. Searches coins by name, ticker, slug or token address through
- * `/v1/apps?q=`, and offers the four destinations. Pasting a full address
- * resolves straight to the coin when the API knows it.
+ * `/v1/apps?q=`, and offers the four destinations. Pasting a full address —
+ * 0x on Robinhood Chain or base58 on Solana — resolves straight to the coin
+ * when the API knows it.
  */
 export const Palette = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export const Palette = ({ open, onClose }: { open: boolean; onClose: () => void 
       label: `$${a.ticker} · ${a.name}`,
       hint: formatUsdCompact(Math.round(a.mcapUsd * 1e6)),
       icon: <Avatar src={a.imageUrl} name={a.ticker} size={20} />,
-      keywords: [a.slug, a.ticker, a.name, a.tokenAddress ?? ""],
+      keywords: [a.slug, a.ticker, a.name, a.tokenAddress ?? "", a.chain, a.launchpad.replace("_", " ")],
       onSelect: go(`/c/${a.slug}`),
     }));
     const actions: CommandItem[] = [
@@ -43,7 +43,8 @@ export const Palette = ({ open, onClose }: { open: boolean; onClose: () => void 
 
   const onQueryChange = useCallback((next: string) => setQuery(next), []);
 
-  const empty = ADDRESS.test(q)
+  const address = EVM_ADDRESS.test(q) || SOLANA_ADDRESS.test(q);
+  const empty = address
     ? search.isFetching
       ? "resolving address…"
       : "no pyre coin at that address"
@@ -51,7 +52,7 @@ export const Palette = ({ open, onClose }: { open: boolean; onClose: () => void 
       ? "searching…"
       : q
         ? "no coin matches"
-        : "type a name, ticker or 0x address";
+        : "type a name, ticker, 0x or base58 address";
 
   return (
     <CommandK
@@ -69,7 +70,7 @@ export const Palette = ({ open, onClose }: { open: boolean; onClose: () => void 
           <span className="inline-flex items-center gap-1.5">
             <Kbd>↵</Kbd> open
           </span>
-          <span className="ml-auto inline-flex items-center gap-1.5">paste a 0x address to jump to its coin</span>
+          <span className="ml-auto inline-flex items-center gap-1.5">paste a token address (0x or base58) to jump to its coin</span>
         </>
       }
     />

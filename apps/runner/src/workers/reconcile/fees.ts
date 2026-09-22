@@ -25,7 +25,7 @@ export const checkFees = async (ctx: WorkerContext): Promise<CheckOutcome> => {
   const outcome = emptyOutcome();
   const log = ctx.log.child({ worker: "reconcile", check: "FEES" });
   const apps = await prisma.app.findMany({
-    where: { tokenAddress: { not: null }, walletAddress: { not: null }, status: { in: ["LIVE", "DORMANT"] } },
+    where: { chain: "robinhood", tokenAddress: { not: null }, walletAddress: { not: null }, status: { in: ["LIVE", "DORMANT"] } },
     include: SWEEP_APP_INCLUDE,
   });
   outcome.checked = apps.length;

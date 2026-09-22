@@ -1,4 +1,4 @@
-import { big, dec, prisma } from "@pyre/db";
+import { big, dec, prisma, type App, type User } from "@pyre/db";
 import { getErc20Balance } from "@pyre/chain";
 import type { Address } from "viem";
 import {
@@ -6,24 +6,32 @@ import {
   PLATFORM_PROPOSAL_MIN_HOLD_BPS,
   PLATFORM_PROPOSAL_QUORUM_BPS,
   PONS_TOTAL_SUPPLY,
-  PROMPT_QUEUE_MIN_HOLD_BPS,
   VOTE_WALLET_CAP_BPS,
+  bps,
+  venueOf,
 } from "@pyre/shared";
 import { env } from "../env.js";
 import { cached } from "./cache.js";
 
-/** Every PONS v2 launch (app coins and $PYRE alike) mints exactly this many base units. */
+/** $PYRE (a PONS v2 launch on Robinhood Chain) mints exactly this many base units. */
 export const SUPPLY_BASE_UNITS = PONS_TOTAL_SUPPLY;
-/** Max governance weight a single wallet can carry (base units). */
-export const VOTE_CAP = (SUPPLY_BASE_UNITS * BigInt(VOTE_WALLET_CAP_BPS)) / 10_000n;
-/** Minimum holding to submit a prompt-queue task (base units). */
-export const QUEUE_MIN_HOLD = (SUPPLY_BASE_UNITS * BigInt(PROMPT_QUEUE_MIN_HOLD_BPS)) / 10_000n;
-/** Minimum holding to contribute build prompts that steer an app (base units) — the ≥2% contributor gate. */
-export const CONTRIBUTOR_MIN_HOLD = (SUPPLY_BASE_UNITS * BigInt(CONTRIBUTOR_MIN_HOLD_BPS)) / 10_000n;
 /** Minimum $PYRE holding to submit a platform-improvement proposal (base units) — the ≥3% gate. */
 export const PLATFORM_PROPOSAL_MIN_HOLD = (SUPPLY_BASE_UNITS * BigInt(PLATFORM_PROPOSAL_MIN_HOLD_BPS)) / 10_000n;
 /** Capped $PYRE weight at which a proposal is considered "backed" (base units) — the ≥10% quorum. */
 export const PLATFORM_PROPOSAL_QUORUM = (SUPPLY_BASE_UNITS * BigInt(PLATFORM_PROPOSAL_QUORUM_BPS)) / 10_000n;
+/** Max $PYRE governance weight a single wallet can carry (base units). */
+const PLATFORM_VOTE_CAP = (SUPPLY_BASE_UNITS * BigInt(VOTE_WALLET_CAP_BPS)) / 10_000n;
+
+/** What app-coin governance needs from an app row: its venue fixes the supply the bps gates apply to. */
+export type GovApp = Pick<App, "id" | "chain" | "launchpad">;
+
+/** Max governance weight a single wallet can carry on an app's coin (base units of that coin). */
+export const voteCap = (app: GovApp): bigint => bps(venueOf(app).totalSupplyUnits, VOTE_WALLET_CAP_BPS);
+/** Minimum holding to contribute build prompts that steer an app (base units) — the ≥2% contributor gate. */
+export const contributorMinHold = (app: GovApp): bigint => bps(venueOf(app).totalSupplyUnits, CONTRIBUTOR_MIN_HOLD_BPS);
+
+/** The viewer's custodial wallet on the app's chain, the one the holder snapshot is keyed by. */
+export const holderWallet = (app: GovApp, user: Pick<User, "wallet" | "solWallet">): string | null => (app.chain === "solana" ? user.solWallet : user.wallet);
 
 /** Live $PYRE balance (base units) of a wallet; 0 before $PYRE launches. Cached briefly (as a decimal string: the Redis tier is JSON): governance reads are bursty. */
 export const pyreBalance = async (wallet: Address | null): Promise<bigint> => {
@@ -38,7 +46,7 @@ export const pyreBalance = async (wallet: Address | null): Promise<bigint> => {
  */
 export const platformHoldWeight = async (wallet: Address | null): Promise<bigint> => {
   const balance = await pyreBalance(wallet);
-  return balance > VOTE_CAP ? VOTE_CAP : balance;
+  return balance > PLATFORM_VOTE_CAP ? PLATFORM_VOTE_CAP : balance;
 };
 
 export const holderBalance = async (appId: string, wallet: string | null): Promise<bigint> => {
@@ -48,19 +56,21 @@ export const holderBalance = async (appId: string, wallet: string | null): Promi
 };
 
 /** Capped token-weighted vote weight for a wallet on an app. */
-export const voteWeight = async (appId: string, wallet: string | null): Promise<bigint> => {
-  const balance = await holderBalance(appId, wallet);
-  return balance > VOTE_CAP ? VOTE_CAP : balance;
+export const voteWeight = async (app: GovApp, wallet: string | null): Promise<bigint> => {
+  const balance = await holderBalance(app.id, wallet);
+  const cap = voteCap(app);
+  return balance > cap ? cap : balance;
 };
 
 /** Sum of capped weights across all holders — the electorate size for majority checks. */
-export const cappedElectorate = async (appId: string): Promise<bigint> => {
-  const cap = dec(VOTE_CAP);
+export const cappedElectorate = async (app: GovApp): Promise<bigint> => {
+  const capUnits = voteCap(app);
+  const cap = dec(capUnits);
   const [capped, uncapped] = await Promise.all([
-    prisma.holderBalance.count({ where: { appId, amount: { gt: cap } } }),
-    prisma.holderBalance.aggregate({ where: { appId, amount: { lte: cap } }, _sum: { amount: true } }),
+    prisma.holderBalance.count({ where: { appId: app.id, amount: { gt: cap } } }),
+    prisma.holderBalance.aggregate({ where: { appId: app.id, amount: { lte: cap } }, _sum: { amount: true } }),
   ]);
-  return BigInt(capped) * VOTE_CAP + big(uncapped._sum.amount);
+  return BigInt(capped) * capUnits + big(uncapped._sum.amount);
 };
 
 /**

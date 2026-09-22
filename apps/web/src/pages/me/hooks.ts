@@ -4,7 +4,8 @@ import { api } from "../../api/client.js";
 import { keys } from "../../api/queries.js";
 
 export interface WithdrawInput {
-  asset: "ETH" | "USDG";
+  /** ETH and USDG leave on Robinhood Chain; SOL leaves on Solana. */
+  asset: "ETH" | "USDG" | "SOL";
   to: string;
   amount: number;
 }
@@ -32,11 +33,11 @@ export const useClaimLauncher = () => {
   });
 };
 
-/** Relight / top up an app's build budget from the custodial ETH balance. */
+/** Relight / top up an app's build budget from the custodial balance on the app's chain (`amount` in whole ETH or SOL). */
 export const useTopup = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ slug, eth }: { slug: string; eth: number }) => api.post<{ ok: true }>(`/v1/apps/${slug}/topup`, { eth }),
+    mutationFn: ({ slug, amount }: { slug: string; amount: number }) => api.post<{ ok: true }>(`/v1/apps/${slug}/topup`, { amount }),
     onSuccess: (_r, { slug }) => {
       void qc.invalidateQueries({ queryKey: keys.me });
       void qc.invalidateQueries({ queryKey: keys.app(slug) });

@@ -9,7 +9,7 @@
 /** Robinhood Chain (Arbitrum Nitro L2, native ETH). */
 export const ROBINHOOD_CHAIN_ID = 4663;
 
-/** Creator-fee split (ETH claimed from the PONS v2 fee escrow). Sums to 10_000. */
+/** Creator-fee split on Robinhood Chain (ETH claimed from the PONS v2 fee escrow). Sums to 10_000. Per-chain table: `FEE_SPLIT_BPS_BY_CHAIN`. */
 export const FEE_SPLIT_BPS = {
   BUILD_BUDGET: 6000,
   PYRE_TOKEN: 2500,
@@ -40,7 +40,7 @@ export const ITERATION_BUDGET_USD = { MIN: 10, DEFAULT: 25, MAX: 50 } as const;
 /** Global daily platform compute ceiling (USD). Runner refuses new jobs past this. */
 export const GLOBAL_DAILY_COMPUTE_CEILING_USD = 2000;
 
-/** Refundable launch stake in wei (0.05 ETH, ≈$135). Spam control only; returned at first build threshold. */
+/** Refundable launch stake on Robinhood Chain in wei (0.05 ETH, ≈$135). Spam control only; returned at first build threshold. Per-chain table: `LAUNCH_STAKE_BY_CHAIN`. */
 export const LAUNCH_STAKE_WEI = 50_000_000_000_000_000n;
 
 /** Tiny budget used for the intake spec generation before any coin exists. Paid by platform. */

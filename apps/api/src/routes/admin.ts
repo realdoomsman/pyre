@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { big, prisma, type Prisma } from "@pyre/db";
 import { GLOBAL_DAILY_COMPUTE_CEILING_USD, type OpsDto } from "@pyre/shared";
-import { getEthPriceUsd, publicClient } from "@pyre/chain";
+import { adapterFor, getEthPriceUsd, publicClient, solanaEnabled } from "@pyre/chain";
 import { requireAdmin } from "../lib/auth.js";
 import { auditAdmin } from "../lib/audit.js";
 import { adminJobDto } from "../lib/dto.js";
@@ -23,6 +23,17 @@ const DAY_MS = 86_400_000;
 const TREASURY_LOW_WEI = 20_000_000_000_000_000n; // 0.02 ETH
 /** A $PYRE burn that has been SWAPPING this long never finished its burn leg. */
 const BURN_STUCK_MS = 30 * 60_000;
+/** Below this the Solana treasury cannot pre-fund a pump launch (≈0.01 SOL + float) or run a coin burn. */
+const SOL_TREASURY_LOW_LAMPORTS = 200_000_000n; // 0.2 SOL
+
+/** Treasury Solana wallet health for `OpsDto.solana`; null while the venue is disabled. */
+const solanaTreasury = async (): Promise<OpsDto["solana"]> => {
+  if (!solanaEnabled()) return null;
+  const sol = adapterFor("pump_fun");
+  const address = sol.treasury().address;
+  const [lamports, solPriceUsd] = await Promise.all([sol.nativeBalance(address).catch(() => null), sol.nativePriceUsd().catch(() => 0)]);
+  return { address, lamports: (lamports ?? 0n).toString(), cluster: env.SOLANA_CLUSTER, solPriceUsd, rpcOk: lamports !== null };
+};
 
 /**
  * `GET /v1/admin/ops` — `OpsDto` (what the /ops page renders) plus the detail lists the admin
@@ -51,9 +62,13 @@ admin.get(
       audit,
       ledger,
       money,
+      moneySol,
       fees24h,
+      fees24hSol,
       pyreBurnsPending,
       pyreBurnsStuck,
+      coinBurnsPending,
+      coinBurnsStuck,
       creditLedger,
       creditFunded,
       recentFundings,
@@ -75,11 +90,15 @@ admin.get(
       // Latest run per reconcile kind. Small table, a handful of kinds — take a window and reduce.
       prisma.reconcileRun.findMany({ orderBy: { createdAt: "desc" }, take: 60 }),
       prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 25 }),
-      prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { in: ["TREASURY", "PYRE_TOKEN"] } }, _sum: { deltaMicros: true } }),
-      prisma.app.aggregate({ _sum: { feesWei: true } }),
-      prisma.feeEvent.aggregate({ where: { createdAt: { gte: since24h } }, _sum: { wei: true } }),
+      prisma.ledgerEntry.groupBy({ by: ["account"], where: { OR: [{ account: { in: ["TREASURY", "PYRE_TOKEN"] } }, { account: { startsWith: "COINBURN:" } }] }, _sum: { deltaMicros: true } }),
+      prisma.app.aggregate({ where: { chain: "robinhood" }, _sum: { feesWei: true } }),
+      prisma.app.aggregate({ where: { chain: "solana" }, _sum: { feesWei: true } }),
+      prisma.feeEvent.aggregate({ where: { createdAt: { gte: since24h }, app: { chain: "robinhood" } }, _sum: { wei: true } }),
+      prisma.feeEvent.aggregate({ where: { createdAt: { gte: since24h }, app: { chain: "solana" } }, _sum: { wei: true } }),
       prisma.pyreBurn.count({ where: { status: { in: ["PENDING", "SWAPPED"] } } }),
       prisma.pyreBurn.count({ where: { status: "SWAPPING", createdAt: { lt: new Date(now - BURN_STUCK_MS) } } }),
+      prisma.coinBurn.count({ where: { status: { in: ["PENDING", "SWAPPED"] } } }),
+      prisma.coinBurn.count({ where: { status: "SWAPPING", createdAt: { lt: new Date(now - BURN_STUCK_MS) } } }),
       // Per-app model-credit accrual: every CREDITS:<appId> ledger balance.
       prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { startsWith: "CREDITS:" } }, _sum: { deltaMicros: true } }),
       // USDC actually delivered to the card, per app (all-time CONFIRMED top-ups).
@@ -92,13 +111,14 @@ admin.get(
       }),
       prisma.creditFunding.findMany({ where: { status: "FAILED", createdAt: { gte: since24h } }, orderBy: { createdAt: "desc" }, take: 1 }),
     ]);
-    const [treasuryEth, treasuryUsdg, block, ethPriceUsd] = await Promise.all([
+    const [treasuryEth, treasuryUsdg, block, ethPriceUsd, solana] = await Promise.all([
       custodialEthBalance(TREASURY_WALLET).catch(() => null),
       custodialUsdgBalance(TREASURY_WALLET).catch(() => null),
       publicClient()
         .getBlockNumber()
         .catch(() => null),
       getEthPriceUsd().catch(() => 0),
+      solanaTreasury(),
     ]);
     const reportApps = await prisma.app.findMany({ where: { id: { in: reports.map((r) => r.appId) } }, select: { id: true, slug: true } });
     const slugById: Record<string, string> = {};
@@ -153,9 +173,15 @@ admin.get(
       if (!run.ok) alerts.push({ level: "warn", code: `reconcile_${run.kind.toLowerCase()}`, message: `Reconcile ${run.kind}: ${run.drifted} drifted of ${run.checked}`, href: null });
     }
 
+    if (solana && !solana.rpcOk) alerts.push({ level: "critical", code: "solana_rpc_down", message: "Solana RPC unreachable: pump.fun reads, launches and coin burns are failing", href: null });
+    else if (solana && BigInt(solana.lamports) < SOL_TREASURY_LOW_LAMPORTS)
+      alerts.push({ level: "warn", code: "sol_treasury_low", message: `Solana treasury holds ${(Number(solana.lamports) / 1e9).toFixed(4)} SOL (below 0.2 SOL)`, href: null });
+    if (coinBurnsStuck > 0) alerts.push({ level: "critical", code: "coin_burn_stuck", message: `${coinBurnsStuck} coin burn(s) stuck in SWAPPING — manual reconcile`, href: null });
+
     const ops: OpsDto = {
       generatedAt: new Date(now).toISOString(),
       treasury: { address: TREASURY_WALLET, ethWei: (treasuryEth ?? 0n).toString(), usdgUnits: (treasuryUsdg ?? 0n).toString() },
+      solana,
       chain: { chainId: env.CHAIN_ID, blockNumber: block === null ? 0 : Number(block), ethPriceUsd, rpcOk: block !== null },
       apps: appCounts,
       jobs: { queued, running: running.length, failed24h, succeeded24h },
@@ -163,8 +189,12 @@ admin.get(
       money: {
         feesTotalWei: big(money._sum.feesWei).toString(),
         fees24hWei: big(fees24h._sum.wei).toString(),
+        feesTotalLamports: big(moneySol._sum.feesWei).toString(),
+        fees24hLamports: big(fees24hSol._sum.wei).toString(),
         pyreBurnsPending,
         pyreBurnsStuck,
+        coinBurnsPending,
+        coinBurnsStuck,
         creditFundingsStuck: stuckFundings.length,
         ledger: ledgerMap,
       },

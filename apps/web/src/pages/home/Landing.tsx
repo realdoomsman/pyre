@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link } from "react-router-dom";
-import { FEE_SPLIT_BPS, LAUNCH_STAKE_WEI, MIN_BUILD_BUDGET_USD, MIN_BUYBACK_USD, type StatsDto } from "@pyre/shared";
+import { FEE_SPLIT_BPS, LAUNCH_STAKE_BY_CHAIN, MIN_BUILD_BUDGET_USD, MIN_BUYBACK_USD, type StatsDto } from "@pyre/shared";
 import type { Format } from "@number-flow/react";
-import { formatCount, formatEth } from "../../lib/format.js";
+import { ETH, SOL, formatCount, formatEth, formatNative } from "../../lib/format.js";
 import { useReducedMotion } from "../../lib/motion.js";
 import { Button, NumberFlow, cx } from "../../ui/index.js";
 import { IconArrowRight } from "../../components/icons.js";
@@ -25,7 +25,7 @@ const STAGES: ReadonlyArray<Stage> = [
   {
     id: "launch",
     label: "launch",
-    copy: "describe the app. the coin launches on PONS v2 with a refundable 0.05 ETH stake.",
+    copy: "describe the app. the coin launches on pons v2 (Robinhood Chain) or pump.fun (Solana) with a refundable stake.",
     value: (s) => ({ value: s.appsTotal, caption: "coins launched" }),
   },
   {
@@ -228,28 +228,30 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
           </thead>
           <tbody className="divide-y divide-line">
             <tr>
-              <td className="px-4 py-3 text-ink">creator fees (ETH)</td>
+              <td className="px-4 py-3 text-ink">creator fees (ETH or SOL)</td>
               <td className="num px-4 py-3 text-ink">
                 {pct(FEE_SPLIT_BPS.BUILD_BUDGET)} / {pct(FEE_SPLIT_BPS.PYRE_TOKEN)} / {pct(FEE_SPLIT_BPS.LAUNCHER)}
               </td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">agent budget / PYRE buy-and-burn / launcher</td>
+              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">agent budget / buy-and-burn (PYRE on Robinhood Chain, the coin itself on Solana) / launcher</td>
             </tr>
             <tr>
               <td className="px-4 py-3 text-ink">launch stake</td>
-              <td className="num px-4 py-3 text-ink">{formatEth(LAUNCH_STAKE_WEI)}</td>
+              <td className="num px-4 py-3 text-ink">
+                {formatNative(LAUNCH_STAKE_BY_CHAIN.robinhood, ETH, { digits: 2 })} · {formatNative(LAUNCH_STAKE_BY_CHAIN.solana, SOL, { digits: 0 })}
+              </td>
               <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">refunded at the first build; spam control only</td>
             </tr>
             <tr>
-              <td className="px-4 py-3 text-ink">PONS trade fee</td>
-              <td className="num px-4 py-3 text-ink">1% · 70% to creator</td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">the creator wallet is the app's wallet</td>
+              <td className="px-4 py-3 text-ink">launchpad trade fee</td>
+              <td className="num px-4 py-3 text-ink">pons 1% · 70% to creator</td>
+              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">pump.fun pays the creator 0.30% on the curve and a tiered share after; the creator wallet is always the app's wallet</td>
             </tr>
             <tr>
               <td className="px-4 py-3 text-ink">thresholds</td>
               <td className="num px-4 py-3 text-ink">
                 ${MIN_BUILD_BUDGET_USD} build · ${MIN_BUYBACK_USD} burn
               </td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">first build starts at $50 budget; PYRE burns batch at $5 of fee share</td>
+              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">first build starts at $50 budget; burns batch at $5 of fee share</td>
             </tr>
           </tbody>
         </table>
@@ -267,7 +269,7 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
       <h2 id="cta-title" className="display text-36 sm:text-48">
         launch a coin that <em>ships</em>.
       </h2>
-      <p className="body mx-auto mt-3 max-w-md text-ink-2">describe the app in a paragraph. the stake is 0.05 ETH and comes back.</p>
+      <p className="body mx-auto mt-3 max-w-md text-ink-2">describe the app in a paragraph. the stake is 0.05 ETH or 1 SOL and comes back.</p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
         <Button variant="primary" size="lg" href="/launch" iconRight={<IconArrowRight size={16} />}>
           Launch

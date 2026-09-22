@@ -54,7 +54,7 @@ export const checkLedger = async (ctx: WorkerContext): Promise<CheckOutcome> => 
   // Fee split: every collected dollar must land in exactly one bucket. The staker
   // share has no column on FeeEvent — it lives on the STAKERS:<appId> ledger account.
   const fees = await prisma.feeEvent.aggregate({
-    _sum: { usdMicros: true, buildMicros: true, creditsMicros: true, pyreMicros: true, launcherMicros: true, upstreamMicros: true },
+    _sum: { usdMicros: true, buildMicros: true, creditsMicros: true, pyreMicros: true, coinBurnMicros: true, launcherMicros: true, upstreamMicros: true },
     _count: true,
   });
   const stakerLedger = await prisma.ledgerEntry.aggregate({
@@ -66,6 +66,7 @@ export const checkLedger = async (ctx: WorkerContext): Promise<CheckOutcome> => 
     (fees._sum.buildMicros ?? 0n) +
     (fees._sum.creditsMicros ?? 0n) +
     (fees._sum.pyreMicros ?? 0n) +
+    (fees._sum.coinBurnMicros ?? 0n) +
     (fees._sum.launcherMicros ?? 0n) +
     (fees._sum.upstreamMicros ?? 0n) +
     (stakerLedger._sum.deltaMicros ?? 0n);
@@ -74,10 +75,23 @@ export const checkLedger = async (ctx: WorkerContext): Promise<CheckOutcome> => 
     outcome.drifted++;
     outcome.findings.push({
       code: "FEE_SPLIT_DRIFT",
-      detail: `fee split parts ${usd(parts)} (build+credits+ship+launcher+upstream+stakers) vs collected ${usd(feeTotal)} over ${fees._count} FeeEvent rows`,
+      detail: `fee split parts ${usd(parts)} (build+credits+pyre+coinBurn+launcher+upstream+stakers) vs collected ${usd(feeTotal)} over ${fees._count} FeeEvent rows`,
       partsMicros: parts.toString(),
       usdMicros: feeTotal.toString(),
     });
+  }
+  // COINBURN:<appId> credits must equal the FeeEvent coin-burn legs of that app; the only debits are CoinBurn rows.
+  const coinBurnCredits = await prisma.ledgerEntry.groupBy({ by: ["account"], where: { account: { startsWith: "COINBURN:" }, refType: "FeeEvent" }, _sum: { deltaMicros: true } });
+  for (const row of coinBurnCredits) {
+    const appId = row.account.slice("COINBURN:".length);
+    const legs = await prisma.feeEvent.aggregate({ where: { appId }, _sum: { coinBurnMicros: true } });
+    outcome.checked++;
+    const credited = row._sum.deltaMicros ?? 0n;
+    const expected = legs._sum.coinBurnMicros ?? 0n;
+    if (abs(credited - expected) > TOLERANCE_MICROS) {
+      outcome.drifted++;
+      outcome.findings.push({ code: "COINBURN_LEDGER_DRIFT", detail: `COINBURN:${appId} credited ${usd(credited)} vs FeeEvent coinBurnMicros ${usd(expected)}`, appId });
+    }
   }
   if (outcome.drifted > 0) ctx.log.warn({ worker: "reconcile", check: "LEDGER", drifted: outcome.drifted }, "ledger invariants drifted");
   return outcome;

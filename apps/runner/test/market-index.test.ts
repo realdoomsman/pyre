@@ -46,9 +46,9 @@ const TOKEN = "0x1111111111111111111111111111111111111111";
 const POOL_LAUNCH = { exists: true, phase: 2, token: TOKEN, curve: "0x00000000000000000000000000000000000000c0", poolId: "0x" + "ab".repeat(32) };
 const log = { child: () => log, info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 const ctx = { redis: {}, log } as never;
-const fill = (block: number) => ({ hash: `0x${block}`, block, ts: 1_700_000_000 + block, side: "buy" as const, wallet: "0x2222222222222222222222222222222222222222", tokenUnits: 10n ** 18n, quoteWei: 10n ** 15n, priceEth: 0.001 });
+const fill = (block: number) => ({ hash: `0x${block}`, block, ts: 1_700_000_000 + block, side: "buy" as const, wallet: "0x2222222222222222222222222222222222222222", tokenUnits: 10n ** 18n, quoteNative: 10n ** 15n, priceNative: 0.001 });
 /** App row already flipped to POOL by an earlier pass, cursor at 1000. */
-const graduatedApp = { id: "a1", tokenAddress: TOKEN, launchPhase: 2, poolId: POOL_LAUNCH.poolId, graduatedAt: new Date(), launchBlock: 1n, lastIndexedBlock: 1000n };
+const graduatedApp = { id: "a1", chain: "robinhood" as const, launchpad: "pons_v2" as const, tokenAddress: TOKEN, launchPhase: 2, poolId: POOL_LAUNCH.poolId, graduatedAt: new Date(), launchBlock: 1n, lastIndexedBlock: 1000n };
 
 beforeEach(() => {
   vi.clearAllMocks();

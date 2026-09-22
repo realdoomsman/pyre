@@ -1,8 +1,8 @@
 /*
- * Formatting for the three amount units the product speaks:
+ * Formatting for the amount units the product speaks:
  *   USD    micros  (1e6 per dollar)   bigint
- *   ETH    wei     (1e18 per ETH)     bigint
- *   tokens base units (1e18 default)  bigint
+ *   native base units of the app's chain: wei (1e18 per ETH) or lamports (1e9 per SOL)
+ *   tokens base units (1e18 PONS, 1e6 pump)  bigint
  *
  * Every function is BigInt-safe: integers are split with bigint arithmetic and
  * only the fractional tail (or a compacted mantissa) is ever a Number. Inputs
@@ -92,23 +92,41 @@ export const formatUsdCompact = (micros: Amount): string => {
   return s.startsWith("-") ? `-$${s.slice(1)}` : `$${s}`;
 };
 
+/** The native asset an amount is denominated in; every app DTO carries its own as `app.native`. */
+export interface NativeUnit {
+  symbol: string;
+  decimals: number;
+}
+
+export const ETH: NativeUnit = { symbol: "ETH", decimals: 18 };
+export const SOL: NativeUnit = { symbol: "SOL", decimals: 9 };
+
 /**
- * Wei → "0.0420 ETH". Precision follows magnitude so small fees stay legible
- * and treasury balances do not sprout eight decimals.
+ * Native base units → "0.0420 ETH" / "1.2500 SOL". Precision follows magnitude so small fees
+ * stay legible and treasury balances do not sprout eight decimals.
  */
-export const formatEth = (wei: Amount, opts: { unit?: boolean; digits?: number } = {}): string => {
-  const w = toBig(wei);
-  const abs = w < 0n ? -w : w;
-  const oneEth = 10n ** 18n;
-  const digits = opts.digits ?? (abs >= 100n * oneEth ? 2 : abs >= oneEth ? 3 : 4);
+export const formatNative = (units: Amount, native: NativeUnit, opts: { unit?: boolean; digits?: number } = {}): string => {
+  const u = toBig(units);
+  const abs = u < 0n ? -u : u;
+  const one = 10n ** BigInt(native.decimals);
+  const digits = opts.digits ?? (abs >= 100n * one ? 2 : abs >= one ? 3 : 4);
   let s: string;
-  if (abs !== 0n && abs < oneEth / 10n ** BigInt(digits)) {
-    s = `${w < 0n ? "-" : ""}<0.${"0".repeat(digits - 1)}1`;
+  if (abs !== 0n && abs < one / 10n ** BigInt(digits)) {
+    s = `${u < 0n ? "-" : ""}<0.${"0".repeat(digits - 1)}1`;
   } else {
-    s = fixed(w, 18, digits);
+    s = fixed(u, native.decimals, digits);
   }
-  return opts.unit === false ? s : `${s} ETH`;
+  return opts.unit === false ? s : `${s} ${native.symbol}`;
 };
+
+/** Wei → "0.0420 ETH": amounts that only ever exist on Robinhood Chain (PYRE burns, treasury, launcher payouts, bounties). */
+export const formatEth = (wei: Amount, opts: { unit?: boolean; digits?: number } = {}): string => formatNative(wei, ETH, opts);
+
+/** Display number of whole native units (never feed back into money math). */
+export const nativeToNumber = (units: Amount, native: NativeUnit): number => Number(toBig(units)) / 10 ** native.decimals;
+
+/** USD micros for `units` of a native asset at `priceUsd`, for the "≈ $x" lines. */
+export const nativeUsdMicros = (units: Amount, native: NativeUnit, priceUsd: number): bigint => BigInt(Math.round(nativeToNumber(units, native) * priceUsd * 1e6));
 
 /** Token base units → "1.00B" / "412.5M" / "1,234". */
 export const formatTokenUnits = (units: Amount, opts: { decimals?: number; compact?: boolean; digits?: number } = {}): string => {
@@ -127,9 +145,11 @@ export const formatPct = (fraction: number | null | undefined, digits = 1): stri
 /** Basis points → "85%" / "0.5%". */
 export const formatBps = (bps: Amount): string => formatPct(Number(toBig(bps)) / 10_000, 2);
 
-/** `0x84F8…4afA`. Keeps the 0x so an address reads as one at a glance. */
-export const shortAddress = (address: string, chars = 4): string =>
-  address.length > chars * 2 + 3 ? `${address.slice(0, chars + 2)}…${address.slice(-chars)}` : address;
+/** `0x84F8…4afA` / `5Kd3…9xQm`. Keeps a `0x` prefix so an EVM address reads as one at a glance; base58 has none. */
+export const shortAddress = (address: string, chars = 4): string => {
+  const head = address.startsWith("0x") ? chars + 2 : chars;
+  return address.length > head + chars + 1 ? `${address.slice(0, head)}…${address.slice(-chars)}` : address;
+};
 
 /** Tiny per-token prices need more precision than money formatting offers. */
 export const formatPriceUsd = (usd: number): string =>

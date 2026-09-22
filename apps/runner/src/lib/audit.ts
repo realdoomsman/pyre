@@ -27,6 +27,7 @@ export type AuditAction =
   | "CREDIT_FUNDING"
   | "PLATFORM_FEE_CLAIM"
   | "PYRE_BURN"
+  | "COIN_BURN"
   | "KILL_SANDBOX"
   | "REVOKE_TOKEN"
   | "RECONCILE"

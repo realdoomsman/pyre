@@ -6,12 +6,18 @@
  *
  * Prints the token + curve addresses and the exact env changes to apply. Refuses to run if
  * PYRE_TOKEN is already set, if the treasury cannot cover fee + gas, or if PONS gates launches.
+ * PYRE lives on Robinhood Chain only: any `--launchpad` other than pons_v2 is refused outright.
  */
 import { formatEther } from "viem";
 import { getEthBalance, launchPonsToken, predictLaunchCost, ponsUrl, treasury } from "@pyre/chain";
 
 if (process.env.PYRE_TOKEN) {
   console.error(`PYRE_TOKEN is already set (${process.env.PYRE_TOKEN}); refusing to launch a second coin.`);
+  process.exit(2);
+}
+const launchpadFlag = process.argv.indexOf("--launchpad");
+if (launchpadFlag !== -1 && process.argv[launchpadFlag + 1] !== "pons_v2") {
+  console.error(`PYRE is launched on PONS v2 on Robinhood Chain only; --launchpad ${process.argv[launchpadFlag + 1] ?? "(missing)"} is refused.`);
   process.exit(2);
 }
 if (!process.argv.includes("--i-am-launching-pyre")) {

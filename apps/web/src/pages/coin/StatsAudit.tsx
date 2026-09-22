@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { AppDetailDto, HolderDto, TradeDto } from "@pyre/shared";
-import { formatCount, formatEth, formatPct, formatUsd } from "../../lib/format.js";
+import { venueOf } from "@pyre/shared";
+import { formatCount, formatNative, formatPct, formatUsd, nativeToNumber, type NativeUnit } from "../../lib/format.js";
 import { Card, Tabs, cx } from "../../ui/index.js";
 
 const WINDOWS = [
@@ -28,7 +29,7 @@ interface WindowStats {
   priceChangePct: number | null;
 }
 
-const windowStats = (trades: ReadonlyArray<TradeDto>, ms: number, ethPriceUsd: number, now: number): WindowStats => {
+const windowStats = (trades: ReadonlyArray<TradeDto>, ms: number, native: NativeUnit, nativePriceUsd: number, now: number): WindowStats => {
   const since = now - ms;
   const buyerSet: Record<string, true> = {};
   const sellerSet: Record<string, true> = {};
@@ -41,7 +42,7 @@ const windowStats = (trades: ReadonlyArray<TradeDto>, ms: number, ethPriceUsd: n
   for (const t of trades) {
     const ts = new Date(t.ts).getTime();
     if (ts < since) continue;
-    const usd = (Number(t.quoteWei) / 1e18) * ethPriceUsd;
+    const usd = nativeToNumber(t.quoteWei, native) * nativePriceUsd;
     if (t.side === "BUY") {
       buys++;
       buyVol += usd;
@@ -90,17 +91,21 @@ interface Props {
   app: AppDetailDto;
   trades: ReadonlyArray<TradeDto>;
   holders: ReadonlyArray<HolderDto>;
-  ethPriceUsd: number;
+  /** USD price of the app's native asset (ETH or SOL). */
+  nativePriceUsd: number;
 }
 
-/** Windowed trade stats beside the audit: fees, fees→agent, fees→PYRE burn, holder concentration. */
-export const StatsAudit = ({ app, trades, holders, ethPriceUsd }: Props) => {
+/** Windowed trade stats beside the audit: fees, fees→agent, fees→burn, holder concentration. */
+export const StatsAudit = ({ app, trades, holders, nativePriceUsd }: Props) => {
   const [view, setView] = useState<ViewId>("stats");
   const [win, setWin] = useState<WindowId>("24h");
-  const stats = useMemo(() => windowStats(trades, WINDOWS.find((w) => w.id === win)!.ms, ethPriceUsd, Date.now()), [trades, win, ethPriceUsd]);
+  const venue = venueOf(app);
+  const native = venue.native;
+  const stats = useMemo(() => windowStats(trades, WINDOWS.find((w) => w.id === win)!.ms, native, nativePriceUsd, Date.now()), [trades, win, native, nativePriceUsd]);
   const top10 = holders.filter((h) => h.tag === null).slice(0, 10).reduce((s, h) => s + h.pct, 0);
   const creator = holders.filter((h) => h.tag === "launcher").reduce((s, h) => s + h.pct, 0);
   const feesWei = BigInt(app.feesWei);
+  const burnBps = app.feeSplit.pyreToken + app.feeSplit.coinBurn;
   const usd = (n: number) => formatUsd(BigInt(Math.round(n * 1e6)));
 
   return (
@@ -128,10 +133,10 @@ export const StatsAudit = ({ app, trades, holders, ethPriceUsd }: Props) => {
           <Line k="Holders" v={formatCount(app.holders)} />
           <Line k="Top 10" v={formatPct(top10 / 100, 1)} />
           <Line k="Launcher" v={formatPct(creator / 100, 2)} />
-          <Line k="Total fees claimed" v={formatEth(feesWei)} tone="earn" />
-          <Line k="Fees → agent" v={formatEth((feesWei * BigInt(app.feeSplit.buildBudget)) / 10_000n)} tone="earn" />
-          <Line k="Fees accruing" v={formatEth(BigInt(app.unsweptWei) + BigInt(app.escrowWei))} />
-          <Line k="Fees → PYRE burn" v={formatEth((feesWei * BigInt(app.feeSplit.pyreToken)) / 10_000n)} tone="burn" />
+          <Line k="Total fees claimed" v={formatNative(feesWei, native)} tone="earn" />
+          <Line k="Fees → agent" v={formatNative((feesWei * BigInt(app.feeSplit.buildBudget)) / 10_000n, native)} tone="earn" />
+          <Line k="Fees accruing" v={formatNative(BigInt(app.unsweptWei) + BigInt(app.escrowWei), native)} />
+          <Line k={venue.chain === "solana" ? `Fees → $${app.ticker} burn` : "Fees → PYRE burn"} v={formatNative((feesWei * BigInt(burnBps)) / 10_000n, native)} tone="burn" />
           <Line k="Creator tax" v="0%" />
           <Line k="Uptime" v={formatPct(app.uptimeBps / 10_000, 1)} tone={app.healthy ? "earn" : undefined} />
         </dl>

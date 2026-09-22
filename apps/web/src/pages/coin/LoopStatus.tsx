@@ -1,13 +1,17 @@
 import { useMemo, type ReactNode } from "react";
 import type { AppDetailDto } from "@pyre/shared";
-import { formatEth, formatPct, formatUsd, timeAgo } from "../../lib/format.js";
-import { Card, CardHeader, EthFlow, TickFlash, UsdFlow, cx } from "../../ui/index.js";
+import { venueOf } from "@pyre/shared";
+import { formatNative, formatPct, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
+import { useVenueLinks } from "../../lib/venue.js";
+import { Address, Card, CardHeader, NativeFlow, TickFlash, UsdFlow, cx } from "../../ui/index.js";
 import { agentChip } from "./CoinHeader.js";
 
 /*
  * The loop, as four live numbers: Fees accrued → Agent budget → Build state →
- * PYRE share burned. Each cell shows the number, the next thing that will
- * happen to it, and when it last moved.
+ * the burn leg. On Robinhood Chain the 25% share buys and burns PYRE; on
+ * Solana it buys and burns the coin itself (PYRE stays on Robinhood Chain).
+ * Each cell shows the number, the next thing that will happen to it, and
+ * when it last moved.
  */
 
 interface Cell {
@@ -22,23 +26,73 @@ interface Cell {
 }
 
 export const LoopStatus = ({ app }: { app: AppDetailDto }) => {
+  const venue = venueOf(app);
+  const links = useVenueLinks(app);
+  const native = venue.native;
   const feesWei = BigInt(app.feesWei);
   const unswept = BigInt(app.unsweptWei);
   const escrow = BigInt(app.escrowWei);
   const lastFee = app.budgetHistory[0]?.createdAt ?? null;
   const build = app.lastBuild;
-  // This coin's 25% share of every fee claim, booked in USD at claim time; it funds the PYRE buy-and-burn.
-  const pyreMicros = useMemo(() => app.budgetHistory.reduce((s, f) => s + BigInt(f.pyreMicros), 0n), [app.budgetHistory]);
-  const pyreWei = (feesWei * BigInt(app.feeSplit.pyreToken)) / 10_000n;
+  // This coin's 25% share of every fee claim, booked in USD at claim time; it funds the buy-and-burn.
+  const burnMicros = useMemo(() => app.budgetHistory.reduce((s, f) => s + BigInt(f.pyreMicros) + BigInt(f.coinBurnMicros), 0n), [app.budgetHistory]);
+  const burnBps = app.feeSplit.pyreToken + app.feeSplit.coinBurn;
+  const burnWei = (feesWei * BigInt(burnBps)) / 10_000n;
+  const coinBurns = app.coinBurns;
+  const burnCell: Cell = coinBurns
+    ? {
+        key: "burn",
+        label: `$${app.ticker} burned`,
+        value: <span className="text-burn">{formatTokenUnits(coinBurns.burnedUnits, { decimals: venue.tokenDecimals })}</span>,
+        tick: coinBurns.burnedUnits,
+        sub: (
+          <>
+            {formatPct(coinBurns.burnedPctOfSupply / 100, 3)} of supply · {formatNative(coinBurns.nativeWei, native)} over {coinBurns.count} burns
+            {coinBurns.last ? (
+              <span className="text-ink-3">
+                {" "}
+                · last{" "}
+                {coinBurns.last.burnTx ? <Address address={coinBurns.last.burnTx} kind="tx" chars={3} explorerUrl={links.tx(coinBurns.last.burnTx)} copy={false} /> : "pending"}
+                {coinBurns.last.attestTx && (
+                  <>
+                    {" "}
+                    · attested <Address address={coinBurns.last.attestTx} kind="tx" chars={3} explorerUrl={links.tx(coinBurns.last.attestTx)} copy={false} />
+                  </>
+                )}
+              </span>
+            ) : (
+              <span className="text-ink-3"> · {formatUsd(coinBurns.pendingMicros)} pending, burns at $5</span>
+            )}
+          </>
+        ),
+        updatedAt: coinBurns.last?.createdAt ?? lastFee,
+        tone: "burn",
+      }
+    : {
+        key: "pyre",
+        label: "PYRE share burned",
+        value: <UsdFlow micros={burnMicros} />,
+        tick: burnMicros,
+        sub: (
+          <>
+            {formatNative(burnWei, native)} <span className="text-ink-3">· {formatPct(burnBps / 10_000, 0)} of every fee claim buys and burns PYRE</span>
+          </>
+        ),
+        updatedAt: lastFee,
+        tone: "burn",
+      };
   const cells: Cell[] = [
     {
       key: "fees",
       label: "Fees accrued",
-      value: <EthFlow wei={feesWei} digits={4} />,
+      value: <NativeFlow units={feesWei} native={native} digits={4} />,
       tick: feesWei,
       sub: (
         <>
-          <span className="text-ink-2">accruing</span> {formatEth(unswept + escrow)} <span className="text-ink-3">· unswept {formatEth(unswept)} · escrow {formatEth(escrow)}</span>
+          <span className="text-ink-2">accruing</span> {formatNative(unswept + escrow, native)}{" "}
+          <span className="text-ink-3">
+            {venue.chain === "solana" ? `· creator vault ${formatNative(unswept, native)}` : `· unswept ${formatNative(unswept, native)} · escrow ${formatNative(escrow, native)}`}
+          </span>
         </>
       ),
       updatedAt: lastFee,
@@ -74,24 +128,12 @@ export const LoopStatus = ({ app }: { app: AppDetailDto }) => {
       updatedAt: build?.finishedAt ?? build?.startedAt ?? build?.createdAt ?? null,
       tone: "build",
     },
-    {
-      key: "pyre",
-      label: "PYRE share burned",
-      value: <UsdFlow micros={pyreMicros} />,
-      tick: pyreMicros,
-      sub: (
-        <>
-          {formatEth(pyreWei)} <span className="text-ink-3">· {formatPct(app.feeSplit.pyreToken / 10_000, 0)} of every fee claim buys and burns PYRE</span>
-        </>
-      ),
-      updatedAt: lastFee,
-      tone: "burn",
-    },
+    burnCell,
   ];
 
   return (
     <Card as="section" padding="md" aria-label="Loop status">
-      <CardHeader eyebrow="The loop" title="Fees → agent → app → PYRE burn" />
+      <CardHeader eyebrow="The loop" title={coinBurns ? `Fees → agent → app → $${app.ticker} burn` : "Fees → agent → app → PYRE burn"} />
       <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cells.map((c, i) => (
           <li key={c.key} className="min-w-0">

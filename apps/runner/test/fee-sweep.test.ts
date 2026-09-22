@@ -36,6 +36,10 @@ const chain = {
   transferEth: vi.fn(),
   treasury: () => ({ address: TREASURY, account: { address: TREASURY } }),
   deriveAppWallet: () => ({ address: APP_WALLET, account: { address: APP_WALLET } }),
+  solanaEnabled: () => false,
+  adapterFor: () => {
+    throw new Error("unused");
+  },
 };
 const publishEvent = vi.fn();
 
@@ -60,6 +64,8 @@ const CLAIM_TX = "0x" + "ab".repeat(32);
 const sweepApp_ = (over: Record<string, unknown> = {}) =>
   ({
     id: "app1",
+    chain: "robinhood",
+    launchpad: "pons_v2",
     launcherId: "user1",
     status: "LIVE",
     keypairIndex: 7,
@@ -115,6 +121,29 @@ describe("recordCreatorFee", () => {
     // Every dollar of the claim lands in exactly one ledger bucket.
     expect(rows.reduce((s, r) => s + r.deltaMicros, 0n)).toBe(usdMicros);
     expect(byAccount["BUILD:app1"]! + byAccount["CREDITS:app1"]!).toBe(bps(usdMicros, FEE_SPLIT_BPS.BUILD_BUDGET));
+  });
+
+  it("routes the 25% leg of a Solana claim to COINBURN:<appId> instead of PYRE_TOKEN, valuing lamports at the SOL price", async () => {
+    const lamports = 2_000_000_000n; // 2 SOL at $120 → $240
+    const sig = "5wHu1qwD4E3vTd9nJqvUeYtWuDL1yiLFJVXDQzVdYc3PtLHRZAx9y1n2Cz3wVn3nS4eZfLPaJRBk6eZB4bHzAYS";
+    const credit = await recordCreatorFee(sweepApp_({ chain: "solana", launchpad: "pump_fun" }), lamports, sig, 120, log as never);
+
+    const usdMicros = 240_000_000n;
+    const split = splitFees(usdMicros, false, false, "solana");
+    expect(credit).toEqual({ feeEventId: "fee1", budgetMicros: 123n, buildMicros: split.buildMicros, usdMicros });
+    expect(feeEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ source: "CREATOR_FEE", wei: dec(lamports), ethPriceUsd: 120, txHash: sig, pyreMicros: 0n, coinBurnMicros: split.coinBurnMicros }),
+    });
+    const rows = ledgerEntry.createMany.mock.calls[0]![0].data as Array<{ account: string; deltaMicros: bigint }>;
+    const byAccount = Object.fromEntries(rows.map((r) => [r.account, r.deltaMicros]));
+    expect(byAccount).toEqual({
+      "BUILD:app1": split.buildMicros,
+      "COINBURN:app1": 60_000_000n, // 25% of $240
+      "LAUNCHER:user1": split.launcherMicros,
+      "CREDITS:app1": split.creditsMicros,
+    });
+    expect(byAccount.PYRE_TOKEN).toBeUndefined();
+    expect(rows.reduce((s, r) => s + r.deltaMicros, 0n)).toBe(usdMicros);
   });
 
   it("is idempotent on the claim transaction", async () => {

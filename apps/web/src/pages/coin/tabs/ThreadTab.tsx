@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { AppDetailDto, BuildEventDto } from "@pyre/shared";
-import { explorerTx } from "../../../env.js";
 import { timeAgo } from "../../../lib/format.js";
+import { useVenueLinks } from "../../../lib/venue.js";
 import { Button, EmptyState, cx } from "../../../ui/index.js";
 import { threadItem, type ThreadTone } from "../feed.js";
 
@@ -23,14 +23,15 @@ interface Props {
 
 /** The coin's story in plain sentences: launches, fees, builds, burns, trades — newest first. */
 export const ThreadTab = ({ app, events, hasMore, loadingMore, onLoadMore }: Props) => {
+  const venue = useVenueLinks(app);
   const items = useMemo(() => {
     const out = [];
     for (let i = events.length - 1; i >= 0; i--) {
-      const item = threadItem(events[i]!, app.ticker, explorerTx);
+      const item = threadItem(events[i]!, app.ticker, venue);
       if (item) out.push(item);
     }
     return out;
-  }, [events, app.ticker]);
+  }, [events, app.ticker, venue]);
 
   if (items.length === 0) return <EmptyState title="Quiet so far" body="Launch, fee claims, builds, burns and trades will be written up here as they happen." />;
 

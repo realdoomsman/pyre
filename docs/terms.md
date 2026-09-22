@@ -2,11 +2,13 @@
 
 _Last updated: 22 September 2026_
 
-These terms are the agreement between you and Pyre ("Pyre", "the platform", "we"). They cover this website, the API, the launch tools, every app we host, the Pyre SDK, and the coins launched through the platform on PONS. Using any of it means you accept these terms. If you do not accept them, do not use Pyre.
+These terms are the agreement between you and Pyre ("Pyre", "the platform", "we"). They cover this website, the API, the launch tools, every app we host, the Pyre SDK, and the coins launched through the platform on PONS or pump.fun. Using any of it means you accept these terms. If you do not accept them, do not use Pyre.
 
 ## 1. What Pyre actually does
 
-You submit an idea. A coin for that idea is launched through **PONS v2** on **Robinhood Chain**. The creator fees that coin earns are collected by the platform and split three ways: most is spent on an AI agent that writes, deploys, and maintains the app, a share is used by the platform to buy $PYRE on the open market and burn it, and a share is paid to the launcher. The app itself is free to use.
+You submit an idea. A coin for that idea is launched on the venue you choose: through **PONS v2** on **Robinhood Chain**, or through **pump.fun** on **Solana**. The creator fees that coin earns are collected by the platform and split three ways: most is spent on an AI agent that writes, deploys, and maintains the app, a share is used by the platform to buy a coin on the open market and burn it, and a share is paid to the launcher. On Robinhood Chain the burned coin is $PYRE; on Solana it is the app's own coin. The app itself is free to use.
+
+**$PYRE is one coin, on Robinhood Chain, and nowhere else.** We have not launched, bridged, wrapped or endorsed a $PYRE on Solana or any other chain. Any "PYRE" you find on another chain is not ours, and nothing on Pyre ever buys, burns or refers to it.
 
 Pyre therefore does two things: it runs the build agent and it hosts the apps. It does not process payments inside apps, because there are none.
 
@@ -16,20 +18,21 @@ You must be 18 or older and legally able to enter a contract. Do not use Pyre if
 
 ## 3. Coins, buybacks, and burns — read this part
 
-- Coins are created by the **PONS v2** launch contracts and traded on a PONS bonding curve and, after graduation, in a **Uniswap v4** pool on Robinhood Chain. PONS, Uniswap and Robinhood Chain are third parties. Pyre does not issue the coins, does not set or support their price, and cannot reverse a trade.
-- **A buyback is a burn, not a payment.** When the platform spends a coin's fee share on $PYRE, it buys on the open market and destroys the tokens it receives by calling the token's own `burn` function. Supply goes down. Nothing is sent to you. App coins are not bought back by the platform at all. Buybacks are **not** distributions, dividends, interest, staking rewards, fee sharing, or yield, and no holder acquires a claim against Pyre, a launcher, or an app by holding a coin.
+- Coins are created by third-party launch contracts and traded on third-party venues. On Robinhood Chain: the **PONS v2** launch contracts, a PONS bonding curve and, after graduation, a **Uniswap v4** pool. On Solana: the **pump.fun** program, its bonding curve and, after graduation, a **PumpSwap** pool. PONS, Uniswap, Robinhood Chain, pump.fun, PumpSwap and Solana are third parties. Pyre does not issue the coins, does not set or support their price, and cannot reverse a trade.
+- **A buyback is a burn, not a payment.** When the platform spends a coin's fee share, it buys on the open market and destroys the tokens it receives: $PYRE, by calling the token's own `burn` function, for coins on Robinhood Chain; the coin itself, by a token-program burn, for coins on Solana (because $PYRE does not exist there). Supply goes down. Nothing is sent to you. Robinhood Chain app coins are not bought back by the platform at all; a Solana coin is bought back only with its own fee share. Buybacks are **not** distributions, dividends, interest, staking rewards, fee sharing, or yield, and no holder acquires a claim against Pyre, a launcher, or an app by holding a coin.
 - We do not promise that buybacks will happen, continue, reach any size, or affect price. Burn history published on the site is a record of what happened, never a forecast.
+- **Creator fees are set by the venue, not by Pyre, and can change.** On PONS the creator share is 70% of a 1% trade fee. On pump.fun the creator fee is whatever pump.fun's fee program pays — at the time of writing 30 bps of bonding-curve trades and a market-cap-tiered share of PumpSwap trades — which pump.fun has changed before and may change again without notice to us or to you. pump.fun's own terms state that creator fees carry no warranty and that a coin's creator fees can be re-routed under its community-takeover ("CTO") process, in which case the app's fee stream may stop entirely. Pyre does not control any of that, makes no promise that a coin will earn any fee on any venue, and owes nothing if a venue reduces, re-routes or ends creator fees.
 - Holding a coin gets you whatever in-app features that app chooses to unlock for holders and a capped vote in its build queue. It is not equity, not a security in our view, not a profit share, and not a governance right over Pyre.
 - Nothing on Pyre is investment, tax, or legal advice. Assume you can lose everything you spend on a coin.
 
 ## 4. Launching an app
 
-- You put down a **refundable stake of 0.05 ETH**. It is a spam control, not a fee: the platform pays the coin-creation transaction itself. The stake is returned once the app reaches its first build threshold, or promptly if the launch fails. It is **not** returned if the app is killed for breaking these terms or the [Content Policy](/legal/content-policy).
-- The coin is created from a wallet the platform derives for the app, so that wallet — not you — is the creator of record on PONS and the recipient of creator fees. You never hold that wallet's key.
-- Your prompt, name, ticker, and image must comply with the Content Policy, must not infringe anyone's rights, and must not impersonate anyone. Coin details are written to the chain at creation and cannot be changed afterwards.
-- Launchers receive a share of their coin's creator fees for launching and specifying the app. That share is paid in the platform's accounting to the wallet on your account and is published on the site; we may change it prospectively with notice.
-- **Launchers receive no equity in Pyre and no allocation of any coin's supply.** There is no team allocation, no pre-mine, and no vesting grant. The entire supply is minted to the PONS bonding curve and is bought on the open market like anyone else's.
-- One launch does not reserve a name, ticker, or idea. We may refuse, delay, or remove any launch. If PONS declines a launch, the launch fails and the stake is returned.
+- You put down a **refundable stake in the native asset of the venue: 0.05 ETH on Robinhood Chain, 1 SOL on Solana**. It is a spam control, not a fee: the platform pays the coin-creation transaction itself. The stake is returned on the same chain once the app reaches its first build threshold, or promptly if the launch fails. It is **not** returned if the app is killed for breaking these terms or the [Content Policy](/legal/content-policy).
+- The coin is created from a wallet the platform derives for the app on the chosen chain, so that wallet — not you — is the creator of record on PONS or pump.fun and the recipient of creator fees. You never hold that wallet's key.
+- Your prompt, name, ticker, and image must comply with the Content Policy, must not infringe anyone's rights, and must not impersonate anyone. Coin details are written to the chain at creation and cannot be changed afterwards. On Solana the coin's metadata document is served by Pyre and is subject to these terms and the Content Policy.
+- Launchers receive a share of their coin's creator fees for launching and specifying the app. That share is paid in the platform's accounting, in ETH on Robinhood Chain to the wallet on your account whatever chain your coin is on, and is published on the site; we may change it prospectively with notice.
+- **Launchers receive no equity in Pyre and no allocation of any coin's supply.** There is no team allocation, no pre-mine, and no vesting grant. The entire supply is minted to the venue's bonding curve and is bought on the open market like anyone else's.
+- One launch does not reserve a name, ticker, or idea. We may refuse, delay, or remove any launch. If the venue declines a launch, the launch fails and the stake is returned. We may enable or disable a venue at any time; disabling one does not affect coins already launched on it.
 
 ## 5. Code, IP, and contributions
 
@@ -38,16 +41,16 @@ You must be 18 or older and legally able to enter a contract. Do not use Pyre if
 - Contributors who open pull requests contribute under the repository's MIT licence and may be paid bounties, escrowed in ETH and released on merge, as shown on the app page.
 - Forking a Pyre app is allowed and sends a permanent royalty to the app you forked.
 
-## 6. Apps are free; your wallet is custodial
+## 6. Apps are free; your wallets are custodial
 
 - Every app hosted on Pyre is **free to use**. Apps do not sell anything, do not charge for features or calls, do not run subscriptions, and do not show ads. Pyre is not a merchant of record for anything, issues no receipts, and has nothing to refund.
 - An app may unlock a feature for wallets that hold at least a stated amount of its coin. That is a product feature decided by reading your balance on chain. Holding is never charged and never pays out, and the app can change or remove the feature at any time.
-- **Your Pyre wallet is custodial.** The Robinhood Chain wallet Pyre creates for you is held by the platform: Pyre holds its private key and signs transactions on your behalf. You **authorise** on-chain actions; you never sign them in your browser and we never expose the private key to you. You can deposit to and withdraw from this wallet, subject to a daily withdrawal limit published on the site. If you instead sign in with your own wallet, you sign your own transactions and Pyre never holds a key for you. You are responsible for keeping your account credentials secure, and every blockchain transaction is irreversible once submitted.
-- The only money you can move on Pyre is: buying and selling coins (section 7), the refundable launch stake (section 4), an optional ETH top-up to an app's build budget, and deposits to and withdrawals from your custodial wallet.
+- **Your Pyre wallets are custodial.** The Robinhood Chain wallet and the Solana wallet Pyre creates for you are held by the platform: Pyre holds their private keys and signs transactions on your behalf. You **authorise** on-chain actions; you never sign them in your browser and we never expose a private key to you. You can deposit to and withdraw from these wallets, subject to a daily withdrawal limit published on the site. Send only ETH on Robinhood Chain to your Robinhood address and only SOL on Solana to your Solana address; anything else sent to them is lost. If you instead sign in with your own wallet, you sign your own Robinhood Chain transactions and Pyre never holds a key for you — but **on Solana, Pyre is custodial only**: there is no Solana wallet sign-in, Solana coins are staked and traded from the custodial Solana wallet only, and if you want to trade a Solana coin with your own key you do it on pump.fun, outside Pyre. You are responsible for keeping your account credentials secure, and every blockchain transaction is irreversible once submitted.
+- The only money you can move on Pyre is: buying and selling coins (section 7), the refundable launch stake (section 4), an optional ETH top-up to an app's build budget, and deposits to and withdrawals from your custodial wallets.
 
 ## 7. Trading inside Pyre
 
-Pyre lets you buy and sell coins from the site against the same PONS curve or Uniswap pool that everyone else uses. Quotes are estimates; the chain decides the final price, and your order can fail or fill worse than quoted within the slippage you set. Pyre charges nothing on top of the venue's own fee. We are not a broker, an exchange, or a market maker, and we do not hold coins for you beyond executing the order you asked for.
+Pyre lets you buy and sell coins from the site against the same venue that everyone else uses: the PONS curve or Uniswap pool on Robinhood Chain, the pump.fun curve or PumpSwap pool on Solana. Quotes are estimates; the chain decides the final price, and your order can fail or fill worse than quoted within the slippage you set. Pyre charges nothing on top of the venue's own fee. We are not a broker, an exchange, or a market maker, and we do not hold coins for you beyond executing the order you asked for.
 
 ## 8. Build queue and holder features
 
@@ -65,13 +68,13 @@ Pyre is moderated at three points and can be stopped at any of them.
 2. **Reviewer gate.** Before any version goes live, an automated reviewer reads the change and blocks deploys that add wallet or auth code, ask users for money, load external scripts, open raw network access, or break the Content Policy.
 3. **Kill switch.** We can kill any app at any time, with or without notice. Builds stop, the app stops serving, and its page shows that it was removed. We can also cancel a build, pause all builds, remove content, or ban an account.
 
-Killing an app does not touch its coin: the coin lives in the PONS contracts on Robinhood Chain and is outside our control. Report abuse, impersonation, or copyright infringement through the report link on any app page or the addresses in the [Content Policy](/legal/content-policy) — including **DMCA notices and counter-notices**, which we act on as described there.
+Killing an app does not touch its coin: the coin lives in the PONS contracts on Robinhood Chain or the pump.fun program on Solana and is outside our control. Report abuse, impersonation, or copyright infringement through the report link on any app page or the addresses in the [Content Policy](/legal/content-policy) — including **DMCA notices and counter-notices**, which we act on as described there.
 
 ## 11. No warranty
 
 Pyre is provided **"as is" and "as available", with no warranty of any kind**, express or implied, including merchantability, fitness for a particular purpose, and non-infringement.
 
-Be specific about what this means here: the apps are written by an AI agent with minimal human review. They may contain bugs, broken logic, or security flaws. They may lose data, go offline, stop being maintained, or never be finished. We do not warrant that any app is fit for any purpose, that a build will start, that an app will keep working after it does, or that a coin will earn any fees. The PONS v2 contracts are third-party code that has not completed a public audit. Blockchain transactions are irreversible — check the address and the amount before you authorise it. We are not responsible for PONS, Uniswap, Robinhood Chain, Google, Anthropic, GitHub, RPC and explorer providers, bridges, wallets, or any other third party.
+Be specific about what this means here: the apps are written by an AI agent with minimal human review. They may contain bugs, broken logic, or security flaws. They may lose data, go offline, stop being maintained, or never be finished. We do not warrant that any app is fit for any purpose, that a build will start, that an app will keep working after it does, or that a coin will earn any fees on any venue. The PONS v2 contracts are third-party code that has not completed a public audit; the pump.fun and PumpSwap programs, their fee schedule and their community-takeover process are pump.fun's and can change without notice. Blockchain transactions are irreversible — check the address, the chain and the amount before you authorise it. We are not responsible for PONS, Uniswap, Robinhood Chain, pump.fun, PumpSwap, Solana, Google, Anthropic, GitHub, RPC, price and explorer providers, bridges, wallets, or any other third party.
 
 ## 12. Limitation of liability
 

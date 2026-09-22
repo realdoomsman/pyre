@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AppDetailDto, OpsDto } from "@pyre/shared";
-import { explorerAddressUrl } from "@pyre/shared";
+import { VENUES, explorerAddressUrl } from "@pyre/shared";
 import { api, isHttpError } from "../../api/client.js";
 import { useMe } from "../../api/queries.js";
 import { useAuth } from "../../auth/useAuth.js";
-import { formatEth, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
+import { SOL, formatEth, formatNative, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
 import { Address, Button, Card, CardHeader, Chip, EmptyState, Field, Input, Progress, Skeleton, StatusLed, cx, toast, type ChipTone } from "../../ui/index.js";
 
 const opsKey = ["admin", "ops"] as const;
@@ -148,6 +148,14 @@ export const OpsPage = () => {
           <div className="num mt-1 text-22 text-ink">{formatEth(d.treasury.ethWei)}</div>
           <Address address={d.treasury.address} chars={5} explorerUrl={explorerAddressUrl(d.treasury.address)} className="mt-1 text-12" />
         </Card>
+        {d.solana && (
+          <Card>
+            <div className="eyebrow">Treasury SOL · {d.solana.cluster}</div>
+            <div className="num mt-1 text-22 text-ink">{formatNative(d.solana.lamports, SOL)}</div>
+            <Address address={d.solana.address} chars={5} explorerUrl={VENUES.pump_fun.explorerAddressUrl(d.solana.address, d.solana.cluster)} className="mt-1 text-12" />
+            {!d.solana.rpcOk && <div className="small text-burn">Solana RPC down</div>}
+          </Card>
+        )}
         <Card>
           <div className="eyebrow">Treasury USDG</div>
           <div className="num mt-1 text-22 text-ink">{formatTokenUnits(d.treasury.usdgUnits, { decimals: 6 })}</div>
@@ -247,10 +255,12 @@ export const OpsPage = () => {
         <Card>
           <CardHeader eyebrow="Money" title="Flows" />
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-13">
-            <Kv k="Fees total" v={formatEth(d.money.feesTotalWei)} />
-            <Kv k="Fees 24h" v={formatEth(d.money.fees24hWei)} tone="earn" />
+            <Kv k="Fees total" v={`${formatEth(d.money.feesTotalWei)} · ${formatNative(d.money.feesTotalLamports, SOL)}`} />
+            <Kv k="Fees 24h" v={`${formatEth(d.money.fees24hWei)} · ${formatNative(d.money.fees24hLamports, SOL)}`} tone="earn" />
             <Kv k="PYRE burns pending" v={String(d.money.pyreBurnsPending)} />
             <Kv k="PYRE burns stuck" v={String(d.money.pyreBurnsStuck)} tone={d.money.pyreBurnsStuck > 0 ? "burn" : undefined} />
+            <Kv k="Coin burns pending" v={String(d.money.coinBurnsPending)} />
+            <Kv k="Coin burns stuck" v={String(d.money.coinBurnsStuck)} tone={d.money.coinBurnsStuck > 0 ? "burn" : undefined} />
             <Kv k="Credit fundings stuck" v={String(d.money.creditFundingsStuck)} tone={d.money.creditFundingsStuck > 0 ? "burn" : undefined} />
             <Kv k="Open flags / reports" v={`${d.flags.open} / ${d.flags.reportsOpen}`} tone={d.flags.open + d.flags.reportsOpen > 0 ? "warn" : undefined} />
           </dl>

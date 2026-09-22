@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../../api/queries.js";
-import { formatCount, formatEth, formatUsdCompact } from "../../lib/format.js";
+import { formatCount, formatNative, formatUsdCompact } from "../../lib/format.js";
 import { Avatar } from "../../ui/index.js";
 import { ShareFrame } from "./ShareFrame.js";
 
@@ -41,7 +41,7 @@ export const ShareCoin = () => {
       }
       stats={[
         { label: "market cap", value: app ? formatUsdCompact(Math.round(app.mcapUsd * 1e6)) : "—" },
-        { label: "fees claimed", value: app ? formatEth(app.feesWei) : "—" },
+        { label: "fees claimed", value: app ? formatNative(app.feesWei, app.native) : "—" },
         { label: "holders", value: app ? formatCount(app.holders) : "—" },
       ]}
     />

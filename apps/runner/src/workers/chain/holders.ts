@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import { big, dec, prisma, type Prisma } from "@pyre/db";
-import { DEAD_ADDRESS, LOG_CHUNK_BLOCKS, getHolders, ponsAddresses, publicClient, readLaunch, tokenAbi } from "@pyre/chain";
+import { DEAD_ADDRESS, LOG_CHUNK_BLOCKS, adapterFor, getHolders, ponsAddresses, publicClient, readLaunch, solanaEnabled, tokenAbi } from "@pyre/chain";
 import type { Logger } from "pino";
 import { getAbiItem, getAddress, zeroAddress, type Address } from "viem";
 import { withLock } from "../../lib/lock.js";
@@ -18,7 +18,8 @@ const HOLDER_LIMIT = 1000;
 /** Transfer-log indexing: at most this many 10k-block chunks per app per pass (≈8 h of chain time), so a backfill converges over a few passes. */
 const MAX_CHUNKS_PER_PASS = 30n;
 
-type HolderApp = Prisma.AppGetPayload<{ select: { id: true; tokenAddress: true; holdersCount: true; launchBlock: true } }>;
+type HolderApp = Prisma.AppGetPayload<{ select: { id: true; chain: true; launchpad: true; tokenAddress: true; holdersCount: true; launchBlock: true } }>;
+const HOLDER_APP_SELECT = { id: true, chain: true, launchpad: true, tokenAddress: true, holdersCount: true, launchBlock: true } as const;
 
 /** Protocol-owned balances (curve, locker, vault, pool manager, burn sink) never count as holders. */
 function systemAddresses(curve: Address): Record<string, true> {
@@ -50,6 +51,29 @@ async function refreshFromBlockscout(ctx: ChainWorkerContext, app: HolderApp, lo
   });
   if (holdersCount !== app.holdersCount) await publishGlobal(ctx.redis, app.id);
   log.info({ appId: app.id, rows: holders.length, holders: holdersCount }, "holders refreshed from explorer");
+}
+
+/**
+ * Non-PONS venues: the adapter returns the largest accounts with protocol-owned rows tagged
+ * (curve/pool liquidity), and the tag is stored so the API can label them without knowing venue
+ * internals. Same "never replace a populated snapshot with an empty one" rule as the explorer path.
+ */
+async function refreshFromVenue(ctx: ChainWorkerContext, app: HolderApp, log: Logger): Promise<void> {
+  const holders = await adapterFor(app.launchpad).holders(app.tokenAddress!, HOLDER_LIMIT);
+  if (holders.length === 0 && app.holdersCount > 0) {
+    log.warn({ appId: app.id, token: app.tokenAddress, knownHolders: app.holdersCount }, "venue returned no holders for an app that has them; keeping the previous snapshot");
+    return;
+  }
+  const holdersCount = holders.filter((h) => h.system === null && h.units > 0n).length;
+  await prisma.$transaction(async (tx) => {
+    await tx.holderBalance.deleteMany({ where: { appId: app.id } });
+    for (let i = 0; i < holders.length; i += INSERT_BATCH) {
+      await tx.holderBalance.createMany({ data: holders.slice(i, i + INSERT_BATCH).map((h) => ({ appId: app.id, wallet: h.address, amount: dec(h.units), tag: h.system })) });
+    }
+    await tx.app.update({ where: { id: app.id }, data: { holdersCount } });
+  });
+  if (holdersCount !== app.holdersCount) await publishGlobal(ctx.redis, app.id);
+  log.info({ appId: app.id, rows: holders.length, holders: holdersCount }, "holders refreshed from venue");
 }
 
 const cursorKey = (appId: string) => `holdersCursor:${appId}`;
@@ -131,11 +155,13 @@ export async function runHolderRefresh(ctx: ChainWorkerContext): Promise<void> {
     const explorer = chainWorkerEnv().BLOCKSCOUT_API_KEY !== undefined;
     const apps = await prisma.app.findMany({
       where: { tokenAddress: { not: null }, status: { in: ["LIVE", "DORMANT"] } },
-      select: { id: true, tokenAddress: true, holdersCount: true, launchBlock: true },
+      select: HOLDER_APP_SELECT,
     });
     for (const app of apps) {
       try {
-        if (explorer) await refreshFromBlockscout(ctx, app, log);
+        if (app.chain !== "robinhood") {
+          if (solanaEnabled()) await refreshFromVenue(ctx, app, log);
+        } else if (explorer) await refreshFromBlockscout(ctx, app, log);
         else await refreshFromLogs(ctx, app, log);
       } catch (err) {
         log.warn({ err, appId: app.id, token: app.tokenAddress }, "holder refresh failed for app");

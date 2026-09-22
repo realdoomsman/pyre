@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { PositionDto } from "@pyre/shared";
+import { VENUES } from "@pyre/shared";
 import { useReducedMotion } from "../../lib/motion.js";
 import { formatPriceUsd, formatTokenUnits, formatUsd } from "../../lib/format.js";
 import { Avatar, Button, EmptyState, Table, TickFlash, cx, type Column } from "../../ui/index.js";
@@ -88,7 +89,7 @@ export const Positions = ({ positions }: { positions: PositionDto[] }) => {
         </span>
       ),
     },
-    { key: "units", header: "Balance", numeric: true, collapse: true, render: (p) => formatTokenUnits(p.units, { compact: true }) },
+    { key: "units", header: "Balance", numeric: true, collapse: true, render: (p) => formatTokenUnits(p.units, { compact: true, decimals: VENUES[p.app.launchpad].tokenDecimals }) },
     { key: "price", header: "Price", numeric: true, collapse: true, render: (p) => formatPriceUsd(p.app.priceUsd) },
     {
       key: "value",

@@ -79,9 +79,11 @@ export interface Market {
   phase: number;
 }
 
+/** Only Robinhood Chain coins can be traded from an injected wallet; addresses are EVM there. */
 const marketOf = (app: AppDetailDto): Market => {
+  if (app.chain !== "robinhood") throw new Error("external wallets trade Robinhood Chain coins only");
   if (!app.tokenAddress || !app.curveAddress) throw new Error("this coin has not launched yet");
-  return { token: app.tokenAddress, curve: app.curveAddress, phase: app.phase };
+  return { token: app.tokenAddress as Address, curve: app.curveAddress as Address, phase: app.phase };
 };
 
 const launchCache: Record<string, Promise<LaunchRecord>> = {};

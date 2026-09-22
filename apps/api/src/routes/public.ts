@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { big, prisma } from "@pyre/db";
-import { getEthPriceUsd, publicClient } from "@pyre/chain";
+import { adapterFor, getEthPriceUsd, publicClient, solanaEnabled } from "@pyre/chain";
 import { type BurnsPageDto, type StatsDto } from "@pyre/shared";
 import { env } from "../env.js";
 import { APPS_TAG, cacheKey, cached } from "../lib/cache.js";
@@ -29,8 +29,9 @@ const loadStats = async (): Promise<StatsDto> => {
   const since30d = new Date(now - 30 * DAY_MS);
   const dayStart = new Date(new Date(now).toISOString().slice(0, 10));
   // One batched transaction for every platform aggregate: a single round trip, one snapshot.
-  const [totals, live, building, total, jobsToday, pyreAll, pyre24h, pyre30d] = await db.$transaction([
-    db.app.aggregate({ _sum: { feesWei: true } }),
+  const [totals, totalsSol, live, building, total, jobsToday, pyreAll, pyre24h, pyre30d] = await db.$transaction([
+    db.app.aggregate({ where: { chain: "robinhood" }, _sum: { feesWei: true } }),
+    db.app.aggregate({ where: { chain: "solana" }, _sum: { feesWei: true } }),
     db.app.count({ where: { status: "LIVE" } }),
     db.app.count({ where: { jobs: { some: { status: { in: ["RUNNING", "QUEUED"] } } } } }),
     db.app.count({ where: { status: { in: ["LIVE", "DORMANT"] }, tokenAddress: { not: null } } }),
@@ -55,6 +56,7 @@ const loadStats = async (): Promise<StatsDto> => {
     appsBuilding: building,
     appsTotal: total,
     feesTotalWei: big(totals._sum.feesWei).toString(),
+    feesTotalLamports: big(totalsSol._sum.feesWei).toString(),
     burnedEthWei: big(pyreAll._sum.ethWei).toString(),
     burnedEth24hWei: big(pyre24h._sum.ethWei).toString(),
     burnedEth30dWei: big(pyre30d._sum.ethWei).toString(),
@@ -62,6 +64,7 @@ const loadStats = async (): Promise<StatsDto> => {
     pyreBurnsCount: pyreAll._count,
     agentHoursToday: Math.round((agentMs / 3_600_000) * 100) / 100,
     ethPriceUsd: market?.ethPriceUsd ?? 0,
+    solPriceUsd: market?.solPriceUsd ?? null,
     pyreToken: pyre
       ? {
           address: pyre.address,
@@ -155,7 +158,7 @@ const timed = async <T>(work: () => Promise<T>): Promise<{ ok: boolean; latencyM
 publicRoutes.get(
   "/status",
   wrap(async (_req, res) => {
-    const [dbCheck, redisCheck, rpcCheck, queueCheck, price] = await Promise.all([
+    const [dbCheck, redisCheck, rpcCheck, queueCheck, price, solana] = await Promise.all([
       timed(() => prisma.$queryRaw`SELECT 1`),
       timed(() => redis.ping()),
       timed(() => publicClient().getBlockNumber()),
@@ -170,6 +173,7 @@ publicRoutes.get(
         return depths;
       }),
       timed(() => getEthPriceUsd()),
+      solanaEnabled() ? timed(() => adapterFor("pump_fun").currentBlock()) : Promise.resolve(null),
     ]);
     const ok = dbCheck.ok && redisCheck.ok && rpcCheck.ok;
     res.status(ok ? 200 : 503);
@@ -183,6 +187,7 @@ publicRoutes.get(
           db: { ok: dbCheck.ok, latencyMs: dbCheck.latencyMs },
           redis: { ok: redisCheck.ok, latencyMs: redisCheck.latencyMs },
           rpc: { ok: rpcCheck.ok, latencyMs: rpcCheck.latencyMs, blockNumber: rpcCheck.value === null ? null : Number(rpcCheck.value) },
+          solana: solana ? { ok: solana.ok, latencyMs: solana.latencyMs, slot: solana.value, cluster: env.SOLANA_CLUSTER } : null,
           queues: { ok: queueCheck.ok, depths: queueCheck.value ?? {} },
         },
         chain: { chainId: env.CHAIN_ID, ethPriceUsd: price.value ?? 0 },

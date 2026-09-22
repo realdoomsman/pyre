@@ -34,6 +34,7 @@ Production configuration:
 | `ZENTRO_STATE` | unset | credits slice accrues on `CREDITS:<appId>` ledger only (`credits_accrue_only` on /ops) |
 | `X_API_*` | unset | growth posts are recorded as `[X not connected]` |
 | `APP_DOMAIN` / `VITE_APP_DOMAIN` | `pyre.fun` | apps serve at `<slug>.pyre.fun` |
+| `SOLANA_RPC_URL` / `SOLANA_CLUSTER` / `SOLANA_WSS_URL` / `PUMP_LAUNCH_ENABLED` | unset | the Solana · pump.fun venue is dark in production; `/v1/venues` lists `pons_v2` only (see *Solana venue* below) |
 
 ## Verified against production
 
@@ -58,7 +59,7 @@ Production was purged on 2026-09-21: `seed-demo-data.mjs --remove` and `seed-dem
 
 1. **Treasury ETH.** `0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6` holds 0 ETH. It pre-funds every launch (0.0005 ETH fee + gas), pays gas for sweeps, the $PYRE buyback, burns, attestations and stake refunds, and refuses to act below a 0.01 ETH floor — so nothing on-chain moves until it is funded. Send **~0.05 ETH on Robinhood Chain** (bridge from Arbitrum One or Ethereum, or withdraw directly from an exchange that supports chain 4663). Confirm at `https://robinhoodchain.blockscout.com/address/0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6`. The ops page raises `treasury_low` under 0.02 ETH.
 2. **Anthropic credit balance.** The key is set and the reviewer model answered during a production build, but the balance has not been checked. Confirm it in the Anthropic Console and set auto-reload; an empty balance fails every agent call with `credit balance is too low` while E2B sandboxes still bill. If you want builds held until then: `POST /v1/admin/settings { "key": "pause_builds", "value": true }`. To make fees pay for compute afterwards, set the Zentro card as the billing method with auto-reload and set `ZENTRO_STATE` on `runner` (see `docs/runbook.md` → Model-credit funding).
-3. **$PYRE launch.** `PYRE_TOKEN` is empty, so the $PYRE share (25% of every coin's creator fees) accrues on the `PYRE_TOKEN` ledger without being swapped or burned, staking and platform governance are closed, and `/pyre` shows the pre-launch state. Launch from the treasury after step 1 (procedure in `docs/runbook.md` → Launching $PYRE), then set `PYRE_TOKEN` on `api` and `runner` and `VITE_PYRE_TOKEN` on `web` and redeploy.
+3. **$PYRE launch.** `PYRE_TOKEN` is empty, so the $PYRE share (25% of every Robinhood coin's creator fees) accrues on the `PYRE_TOKEN` ledger without being swapped or burned, staking and platform governance are closed, and `/pyre` shows the pre-launch state. Launch from the treasury after step 1 (procedure in `docs/runbook.md` → Launching $PYRE), then set `PYRE_TOKEN` on `api` and `runner` and `VITE_PYRE_TOKEN` on `web` and redeploy.
 4. **Optional keys.** (a) **Alchemy** — create a Robinhood Chain app, set `RPC_URL` on `api` and `runner`; the public RPC is rate-limited per origin and shared by the indexer, price, holders, reconcile and every browser read. (b) **Blockscout API key** — set `BLOCKSCOUT_API_KEY` on `runner` so holder lists come from the explorer instead of self-indexed logs. (c) **X API keys** — `X_API_*` on `runner` so the growth agent publishes instead of recording.
 
 ## First real launch
@@ -71,3 +72,21 @@ Production was purged on 2026-09-21: `seed-demo-data.mjs --remove` and `seed-dem
 6. `feeSweep` claims creator fees every 5 minutes and splits them 60/25/15: 60% to the build budget (half of it as the credits slice), 25% to the `PYRE_TOKEN` ledger, 15% to the launcher.
 7. At $50 of accrued budget the scheduler starts the first build; watch it stream on the coin page. The app that deploys is free to use; holding the coin can unlock features inside it.
 8. Once `PYRE_TOKEN` is set and the ledger holds $5, `buyback` buys and burns $PYRE every 10 minutes and sends the `0x5059524501‖sha256(ids)` attestation from the treasury.
+
+## Solana venue (pump.fun) — staging on devnet, not in production
+
+The `multichain` branch adds a second venue: coins can launch on Solana through pump.fun behind the same loop (`docs/economics.md` → Venues). It is **not deployed to production** and nothing above changes until it is: the venue only exists when `SOLANA_RPC_URL` is set, and production does not set it. $PYRE stays a single coin on Robinhood Chain; there is no $PYRE on Solana and any that appears there is not ours.
+
+What ships dark, and what enabling it looks like (procedure in `docs/runbook.md` → Enabling the pump.fun venue):
+
+| Item | State |
+| --- | --- |
+| Adapter, workers, API, web | on the branch; `pons_v2` behaviour byte-for-byte unchanged; the existing suite is the integration gate |
+| Prisma migration `20260923000000_multichain` | adds `App.chain` / `App.launchpad` (backfilled `robinhood` / `pons_v2`), `User.solWallet`, `CoinBurn`; runs on the next `prisma migrate deploy`, harmless with the venue dark |
+| Railway `staging` environment | **pending** — `SOLANA_RPC_URL` (devnet), `SOLANA_CLUSTER=devnet` on `api` and `runner` |
+| Devnet treasury Solana wallet | **pending** — needs 3–5 devnet SOL from a human-run faucet or `solana airdrop`; the address is `adapterFor('pump_fun').treasury().address` from the production seed (same key on devnet and mainnet) |
+| Devnet integration run (`packages/chain/scripts/pump-devnet.mjs`: launch → buy → claim → burn → memo attest, signatures recorded here) | **pending** |
+| Staging product smoke (deposit SOL, launch on the Solana card, 1 SOL stake, custodial buy, `FeeEvent` in lamports, `CoinBurn` with memo, `BURNS` reconcile clean) | **pending** |
+| Mainnet: fund the treasury Solana wallet, keyed `SOLANA_RPC_URL`, `SOLANA_CLUSTER=mainnet-beta` on `api` + `runner` | **not before** the two rows above pass |
+
+Facts the staging run must confirm before mainnet, all read from pump.fun's live programs today and subject to pump.fun changing them: create costs 0 SOL platform fee plus ≈ 0.005 SOL of rent; the creator earns 30 bps of curve trades and a market-cap-tiered 0.30%–0.95% (declining to 0.05%) on the canonical PumpSwap pool; `collect_creator_fee` / `collect_coin_creator_fee` are permissionless and always pay the recorded creator; devnet graduates at ≈ 2.83 SOL raised, mainnet at ≈ 85 SOL.

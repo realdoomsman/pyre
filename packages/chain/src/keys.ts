@@ -21,16 +21,25 @@ export interface DerivedWallet {
 const MAX_INDEX = 0x7fffffff;
 const masters = new Map<string, HDKey>();
 
-function master(seedHex: string): HDKey {
-  let hd = masters.get(seedHex);
-  if (hd) return hd;
+/**
+ * Bytes of a platform master seed. BIP-32/SLIP-0010 seeds are 16–64 bytes: 32 for a generated
+ * platform seed, 64 when it came out of a BIP-39 mnemonic. Shared by the EVM and Solana trees.
+ */
+export function masterSeedBytes(seedHex: string): Uint8Array {
   const clean = seedHex.startsWith("0x") ? seedHex.slice(2) : seedHex;
-  // BIP-32 master seeds are 16–64 bytes: 32 bytes for a generated platform seed, 64 when it came
-  // out of a BIP-39 mnemonic.
   if (!/^[0-9a-fA-F]+$/.test(clean) || clean.length % 2 !== 0 || clean.length < 32 || clean.length > 128) {
     throw new Error("master seed must be 16–64 bytes of hex");
   }
-  hd = HDKey.fromMasterSeed(hexToBytes(`0x${clean}`));
+  return hexToBytes(`0x${clean}`);
+}
+
+/** Largest hardened-capable child index (2^31 − 1). */
+export const MAX_WALLET_INDEX = MAX_INDEX;
+
+function master(seedHex: string): HDKey {
+  let hd = masters.get(seedHex);
+  if (hd) return hd;
+  hd = HDKey.fromMasterSeed(masterSeedBytes(seedHex));
   masters.set(seedHex, hd);
   return hd;
 }

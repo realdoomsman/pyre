@@ -136,9 +136,12 @@ const Footer = () => (
       <div>
         <Lockup height={20} />
         <p className="small mt-3 max-w-sm text-ink-2">
-          coins that build apps. fees pay an agent to build the app; 25% of every coin's fees buys and <span className="text-ink">burns</span> PYRE.
+          coins that build apps. fees pay an agent to build the app; 25% of every coin's fees buys and <span className="text-ink">burns</span> PYRE on Robinhood Chain, or the coin itself on Solana.
         </p>
         <p className="micro mt-3 max-w-sm text-ink-3">coins are not investments. apps can fail. buybacks are burns, never distributions. not financial advice.</p>
+        <p className="micro mt-2 max-w-sm text-ink-3">
+          <span className="text-ink-2">PYRE lives on Robinhood Chain only</span> — any PYRE on another chain is not ours.
+        </p>
         <div className="mt-4 flex items-center gap-3">
           <span className="num inline-flex items-center gap-1.5 rounded-pill border border-line px-2.5 py-1 text-12 text-ink-2">
             <span className="h-1.5 w-1.5 rounded-pill bg-earn" aria-hidden />

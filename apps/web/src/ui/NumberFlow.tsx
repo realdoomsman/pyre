@@ -46,7 +46,12 @@ export const UsdFlow = ({ micros, className, compact }: { micros: bigint | numbe
   />
 );
 
-/** ETH from wei as an odometer. */
+/** Native base units (wei / lamports) as an odometer with the asset's symbol. */
+export const NativeFlow = ({ units, native, digits = 4, className }: { units: bigint | number; native: { symbol: string; decimals: number }; digits?: number; className?: string }) => (
+  <NumberFlow value={Number(units) / 10 ** native.decimals} format={{ minimumFractionDigits: digits, maximumFractionDigits: digits }} suffix={` ${native.symbol}`} className={className} />
+);
+
+/** ETH from wei as an odometer — Robinhood-only amounts (PYRE burns, treasury). */
 export const EthFlow = ({ wei, digits = 4, className }: { wei: bigint | number; digits?: number; className?: string }) => (
-  <NumberFlow value={Number(wei) / 1e18} format={{ minimumFractionDigits: digits, maximumFractionDigits: digits }} suffix=" ETH" className={className} />
+  <NativeFlow units={wei} native={{ symbol: "ETH", decimals: 18 }} digits={digits} className={className} />
 );

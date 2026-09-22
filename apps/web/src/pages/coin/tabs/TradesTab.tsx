@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppDetailDto, TradeDto } from "@pyre/shared";
+import { venueOf } from "@pyre/shared";
 import { AddressLink, TxLink } from "../../../components/TxLink.js";
-import { formatEth, formatTokenUnits, formatUsd, timeAgo } from "../../../lib/format.js";
+import { formatNative, formatTokenUnits, formatUsd, nativeUsdMicros, timeAgo } from "../../../lib/format.js";
+import { useVenueLinks } from "../../../lib/venue.js";
 import { Button, EmptyState, Skeleton, Table, cx, type Column } from "../../../ui/index.js";
 
 interface Props {
@@ -10,7 +12,8 @@ interface Props {
   rows: ReadonlyArray<TradeDto> | undefined;
   /** Stream arrivals, newest first. */
   live: ReadonlyArray<TradeDto>;
-  ethPriceUsd: number;
+  /** USD price of the app's native asset. */
+  nativePriceUsd: number;
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
@@ -44,7 +47,7 @@ const useNow = (ms = 10_000): number => {
  * table the tape holds so a row cannot slide out from under a click, and the
  * held fills are released on leave.
  */
-export const TradesTab = ({ app, rows, live, ethPriceUsd, hasMore, loadingMore, onLoadMore }: Props) => {
+export const TradesTab = ({ app, rows, live, nativePriceUsd, hasMore, loadingMore, onLoadMore }: Props) => {
   const now = useNow();
   const [paused, setPaused] = useState(false);
   const shown = useRef<TradeDto[]>([]);
@@ -52,6 +55,9 @@ export const TradesTab = ({ app, rows, live, ethPriceUsd, hasMore, loadingMore, 
   if (!paused) shown.current = merged;
   const visible = shown.current;
   const held = paused ? merged.length - visible.length : 0;
+  const venue = venueOf(app);
+  const links = useVenueLinks(app);
+  const solana = venue.chain === "solana";
 
   const columns = useMemo<Column<TradeDto>[]>(
     () => [
@@ -65,19 +71,19 @@ export const TradesTab = ({ app, rows, live, ethPriceUsd, hasMore, loadingMore, 
           </span>
         ),
       },
-      { key: "tokens", header: `$${app.ticker}`, numeric: true, render: (r) => formatTokenUnits(r.tokenUnits) },
-      { key: "eth", header: "ETH", numeric: true, render: (r) => formatEth(r.quoteWei) },
-      { key: "usd", header: "USD", numeric: true, collapse: true, render: (r) => formatUsd(BigInt(Math.round((Number(r.quoteWei) / 1e18) * ethPriceUsd * 1e6))) },
-      { key: "wallet", header: "Wallet", collapse: true, render: (r) => <AddressLink address={r.wallet} chars={4} copy={false} /> },
-      { key: "venue", header: "Venue", collapse: true, render: (r) => <span className="text-ink-3">{r.venue === "CURVE" ? "curve" : "v4"}</span> },
+      { key: "tokens", header: `$${app.ticker}`, numeric: true, render: (r) => formatTokenUnits(r.tokenUnits, { decimals: venue.tokenDecimals }) },
+      { key: "native", header: venue.native.symbol, numeric: true, render: (r) => formatNative(r.quoteWei, venue.native) },
+      { key: "usd", header: "USD", numeric: true, collapse: true, render: (r) => formatUsd(nativeUsdMicros(r.quoteWei, venue.native, nativePriceUsd)) },
+      { key: "wallet", header: "Wallet", collapse: true, render: (r) => <AddressLink address={r.wallet} chars={4} copy={false} venue={links} /> },
+      { key: "venue", header: "Venue", collapse: true, render: (r) => <span className="text-ink-3">{r.venue === "CURVE" ? "curve" : solana ? "pumpswap" : "v4"}</span> },
       { key: "age", header: "Age", numeric: true, width: 72, render: (r) => <span className="text-ink-2">{timeAgo(r.ts, now)}</span> },
-      { key: "tx", header: "Tx", width: 40, render: (r) => <TxLink hash={r.txHash} chars={2} copy={false} /> },
+      { key: "tx", header: "Tx", width: 40, render: (r) => <TxLink hash={r.txHash} chars={2} copy={false} venue={links} /> },
     ],
-    [app.ticker, ethPriceUsd, now],
+    [app.ticker, venue, links, solana, nativePriceUsd, now],
   );
 
   if (!rows) return <Skeleton lines={8} />;
-  if (visible.length === 0) return <EmptyState title="No trades yet" body="Fills on the curve or the v4 pool stream in here as they land." />;
+  if (visible.length === 0) return <EmptyState title="No trades yet" body={`Fills on the curve or the ${solana ? "PumpSwap" : "v4"} pool stream in here as they land.`} />;
 
   return (
     <div className="flex flex-col gap-3">

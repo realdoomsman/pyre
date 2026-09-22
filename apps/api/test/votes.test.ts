@@ -1,5 +1,5 @@
 import { big, type Decimalish } from "@pyre/db";
-import { PROMPT_QUEUE_MIN_HOLD_BPS, VOTE_WALLET_CAP_BPS } from "@pyre/shared";
+import { CONTRIBUTOR_MIN_HOLD_BPS, PUMP_TOTAL_SUPPLY, VOTE_WALLET_CAP_BPS } from "@pyre/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -46,26 +46,41 @@ vi.mock("@pyre/db", async (importOriginal) => ({
 vi.mock("@pyre/chain", () => ({ getErc20Balance: async () => 0n }));
 vi.mock("../src/lib/cache.js", () => ({ cached: <T,>(_k: unknown, _ttl: unknown, fn: () => Promise<T>) => fn() }));
 
-import { QUEUE_MIN_HOLD, SUPPLY_BASE_UNITS, VOTE_CAP, cappedElectorate, holderBalance, isElected, voteWeight } from "../src/lib/votes.js";
+import { SUPPLY_BASE_UNITS, cappedElectorate, contributorMinHold, holderBalance, holderWallet, isElected, voteCap, voteWeight, type GovApp } from "../src/lib/votes.js";
 
-const APP = "app_gov";
+const APP: GovApp = { id: "app_gov", chain: "robinhood", launchpad: "pons_v2" };
+const PUMP_APP: GovApp = { id: "app_pump", chain: "solana", launchpad: "pump_fun" };
+const VOTE_CAP = voteCap(APP);
+const QUEUE_MIN_HOLD = contributorMinHold(APP);
 
 beforeEach(() => {
   holders.length = 0;
 });
 
-const hold = (wallet: string, amount: bigint, appId = APP): void => {
+const hold = (wallet: string, amount: bigint, appId = APP.id): void => {
   holders.push({ appId, wallet, amount });
 };
 
 describe("cap and floor constants", () => {
-  it("derive from supply and basis points, not hardcoded token counts", () => {
+  it("derive from the venue's supply and basis points, not hardcoded token counts", () => {
     expect(VOTE_CAP).toBe((SUPPLY_BASE_UNITS * BigInt(VOTE_WALLET_CAP_BPS)) / 10_000n);
-    expect(QUEUE_MIN_HOLD).toBe((SUPPLY_BASE_UNITS * BigInt(PROMPT_QUEUE_MIN_HOLD_BPS)) / 10_000n);
-    // 2% of 1B tokens with 18 decimals, and 0.1% for the submission floor.
+    expect(QUEUE_MIN_HOLD).toBe((SUPPLY_BASE_UNITS * BigInt(CONTRIBUTOR_MIN_HOLD_BPS)) / 10_000n);
+    // 2% of 1B tokens with 18 decimals for both the cap and the contributor floor.
     expect(VOTE_CAP).toBe(20_000_000n * 10n ** 18n);
-    expect(QUEUE_MIN_HOLD).toBe(1_000_000n * 10n ** 18n);
-    expect(QUEUE_MIN_HOLD).toBeLessThan(VOTE_CAP);
+    expect(QUEUE_MIN_HOLD).toBe(20_000_000n * 10n ** 18n);
+  });
+
+  it("scale with the coin's own supply on pump.fun (6 decimals), so the same 2% gate applies", () => {
+    expect(voteCap(PUMP_APP)).toBe((PUMP_TOTAL_SUPPLY * BigInt(VOTE_WALLET_CAP_BPS)) / 10_000n);
+    expect(voteCap(PUMP_APP)).toBe(20_000_000n * 10n ** 6n);
+    expect(contributorMinHold(PUMP_APP)).toBe(20_000_000n * 10n ** 6n);
+  });
+
+  it("keys the holder snapshot by the viewer's wallet on the coin's chain", () => {
+    const user = { wallet: "0xabc", solWallet: "So1ana" };
+    expect(holderWallet(APP, user)).toBe("0xabc");
+    expect(holderWallet(PUMP_APP, user)).toBe("So1ana");
+    expect(holderWallet(PUMP_APP, { wallet: "0xabc", solWallet: null })).toBeNull();
   });
 });
 
@@ -96,14 +111,20 @@ describe("voteWeight", () => {
     expect(await voteWeight(APP, "holder")).toBe(0n);
     expect(await voteWeight(APP, "never_seen")).toBe(0n);
     expect(await voteWeight(APP, null)).toBe(0n);
-    expect(await holderBalance(APP, null)).toBe(0n);
+    expect(await holderBalance(APP.id, null)).toBe(0n);
+  });
+
+  it("caps a pump.fun whale at 2% of the 6-decimal supply", async () => {
+    hold("sol_whale", PUMP_TOTAL_SUPPLY, PUMP_APP.id);
+    expect(await voteWeight(PUMP_APP, "sol_whale")).toBe(voteCap(PUMP_APP));
+    expect(await voteWeight(PUMP_APP, "sol_whale")).toBeLessThan(VOTE_CAP);
   });
 
   it("does not let a dust holder pass the prompt-queue submission floor", async () => {
     hold("dust", QUEUE_MIN_HOLD - 1n);
     hold("eligible", QUEUE_MIN_HOLD);
-    expect((await holderBalance(APP, "dust")) >= QUEUE_MIN_HOLD).toBe(false);
-    expect((await holderBalance(APP, "eligible")) >= QUEUE_MIN_HOLD).toBe(true);
+    expect((await holderBalance(APP.id, "dust")) >= QUEUE_MIN_HOLD).toBe(false);
+    expect((await holderBalance(APP.id, "eligible")) >= QUEUE_MIN_HOLD).toBe(true);
     // Submitting requires the floor, but voting only requires a non-zero capped weight.
     expect(await voteWeight(APP, "dust")).toBe(QUEUE_MIN_HOLD - 1n);
   });

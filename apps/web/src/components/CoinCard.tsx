@@ -8,6 +8,7 @@ import { useWatchlist } from "../lib/watchlist.js";
 import { Avatar, Button, Card, Chip, GraduationRing, HeatGauge, Sparkline, TickFlash, cx, type ChipTone } from "../ui/index.js";
 import { Delta } from "./Money.js";
 import { IconEye } from "./icons.js";
+import { VenueChip } from "./VenueChip.js";
 
 export const AGENT_CHIP: Record<AgentState, { label: string; tone: ChipTone; dot: boolean }> = {
   idle: { label: "idle", tone: "neutral", dot: false },
@@ -125,6 +126,7 @@ export const CoinCard = ({ app, rank, onTrade, className }: CoinCardProps) => {
         <Chip tone={agent.tone} dot={agent.dot} size="sm" mono>
           {agent.label}
         </Chip>
+        <VenueChip app={app} />
         {app.liveUrl && (
           <a href={app.liveUrl} target="_blank" rel="noreferrer noopener" className="num text-12 text-ink-3 hover:text-ink">
             v{app.liveVersion}

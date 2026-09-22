@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, type Mock } from "vitest";
 import type { Address, Hash } from "viem";
 
 /**
@@ -14,12 +14,13 @@ vi.mock("../src/lib/custodial.js", () => ({
   custodialAccount: () => ({ address: "0x84F8E5a324466Deb7447048C014CF0245ce04afA" }),
   custodialEthBalance: vi.fn(),
   GAS_RESERVE_WEI: 20_000_000_000_000n,
+  GAS_RESERVE_BY_CHAIN: { robinhood: 20_000_000_000_000n, solana: 2_000_000n },
 }));
 vi.mock("../src/lib/events.js", () => ({ publishEvent: vi.fn(), publishGlobal: vi.fn() }));
 
 import { BPS, quoteBuy, quoteSell, type CurveState, type LaunchRecord } from "@pyre/chain";
 import { TradeBody } from "@pyre/shared";
-import { buildQuote, executeTrade, quoteTrade, type TradeChain } from "../src/lib/trade.js";
+import { buildQuote, executeTrade, executeVenueTrade, quoteTrade, quoteVenueTrade, type TradeChain, type VenueTradeChain } from "../src/lib/trade.js";
 
 const ETH = 10n ** 18n;
 const TOKEN = "0x3333333333333333333333333333333333333333" as Address;
@@ -53,7 +54,7 @@ const curve = (snipeTaxBps = 0n): CurveState => ({
   snipeTaxBps,
 });
 
-const app = { id: "app1", slug: "cool", tokenAddress: TOKEN, curveAddress: CURVE, launchPhase: 0, status: "LIVE" as const, priceUsd: 0.000002 };
+const app = { id: "app1", slug: "cool", chain: "robinhood" as const, launchpad: "pons_v2" as const, tokenAddress: TOKEN, curveAddress: CURVE, launchPhase: 0, status: "LIVE" as const, priceUsd: 0.000002 };
 
 const chain = (over: Partial<TradeChain> = {}): TradeChain => ({
   readLaunch: async () => launch(0),
@@ -213,5 +214,91 @@ describe("executeTrade", () => {
       message: "trade_failed",
       extra: { reason: "execution reverted: SlippageExceeded" },
     });
+  });
+});
+
+/* ─────────────────────────── pump.fun (generic venue path) ─────────────────────────── */
+
+const SOL = 10n ** 9n;
+const UNIT = 10n ** 6n;
+const MINT = "7LSsdY1uSQ2eR1vUSp7cw2jxBkm4bkkPrzHhrFeNpump";
+const SOL_WALLET = "So1anaUser111111111111111111111111111111111";
+const SIG = "5wHu1qwD4E3vTd9nJqvUeYtWuDL1yiLFJVXDQzVdYc3PtLHRZAx9y1n2Cz3wVn3nS4eZfLPaJRBk6eZB4bHzAYS";
+const pumpApp = { ...app, id: "app2", slug: "solcool", chain: "solana" as const, launchpad: "pump_fun" as const, tokenAddress: MINT, curveAddress: "CurveAddr111111111111111111111111111111111", priceUsd: 0.00003 };
+
+/** A pump curve quoting 1M coins per 0.1 SOL with the 1.25% launchpad fee (0.95 protocol + 0.30 creator). */
+const pump = (over: Partial<VenueTradeChain> = {}, phase: 0 | 1 | 2 = 0): VenueTradeChain & { buy: Mock; sell: Mock; quoteBuy: Mock } => ({
+  info: { chain: "solana", launchpad: "pump_fun", native: { symbol: "SOL", decimals: 9 }, tokenDecimals: 6, totalSupplyUnits: 10n ** 15n, chainLabel: "Solana", launchpadLabel: "pump.fun", explorerTxUrl: (t) => t, explorerAddressUrl: (a) => a, explorerTokenUrl: (t) => t, launchpadUrl: (t) => t },
+  readLaunch: async () => ({ exists: true, token: MINT, curve: pumpApp.curveAddress, pool: phase === 2 ? "Poo1111111111111111111111111111111111111111" : null, phase, progress: 0.1, raisedNative: 8n * SOL, graduationNative: 85n * SOL, priceNative: 1e-7, totalSupplyUnits: 10n ** 15n, circulatingUnits: 10n ** 14n, burnedUnits: 0n }),
+  quoteBuy: vi.fn(async (_t: string, spend: bigint) => ({ native: spend, tokenUnits: (spend * 10_000_000n * UNIT) / SOL, priceNative: 1e-7, feeBps: 125, impact: 0.004 })),
+  quoteSell: vi.fn(async (_t: string, units: bigint) => ({ native: (units * SOL) / (10_000_000n * UNIT), tokenUnits: units, priceNative: 1e-7, feeBps: 125, impact: 0.004 })),
+  buy: vi.fn(async (_a, _t, spend: bigint) => ({ hash: SIG, block: 300_000_001, tokenUnits: (spend * 10_000_000n * UNIT) / SOL, spentNative: spend })),
+  sell: vi.fn(async (_a, _t, units: bigint) => ({ hash: SIG, block: 300_000_002, receivedNative: (units * SOL) / (10_000_000n * UNIT) })),
+  nativeBalance: async () => 5n * SOL,
+  tokenBalance: async () => 50_000_000n * UNIT,
+  nativePriceUsd: async () => 120,
+  userWallet: () => ({ chain: "solana", address: SOL_WALLET, signer: {} }),
+  ...over,
+});
+
+describe("quoteVenueTrade (pump.fun)", () => {
+  it("quotes a curve buy from the adapter math in lamports/6-decimal units with the launchpad fee and a 1% floor", async () => {
+    const c = pump();
+    const q = await quoteVenueTrade(pumpApp, { slug: "solcool", side: "buy", amount: (SOL / 10n).toString(), slippageBps: 100 }, SOL_WALLET, c);
+    expect(q).toMatchObject({ venue: "CURVE", phase: 0, chain: "solana", native: { symbol: "SOL", decimals: 9 }, snipeTaxBps: 0, refundWei: "0", nativePriceUsd: 120 });
+    expect(q.amountOut).toBe((1_000_000n * UNIT).toString());
+    expect(q.minOut).toBe(((1_000_000n * UNIT * 9900n) / BPS).toString());
+    // 1.25% of 0.1 SOL.
+    expect(q.feeWei).toBe(((SOL / 10n) * 125n) / BPS + "");
+    expect(q.priceImpactPct).toBeCloseTo(0.4, 9);
+    expect(q.priceUsd).toBeCloseTo(1e-7 * 120, 12);
+    expect(c.quoteBuy).toHaveBeenCalledWith(MINT, SOL / 10n, SOL_WALLET);
+  });
+
+  it("routes a graduated coin to the pool and pauses while migrating", async () => {
+    const graduated = await quoteVenueTrade({ ...pumpApp, launchPhase: 2 }, { slug: "solcool", side: "sell", amount: (1_000_000n * UNIT).toString(), slippageBps: 100 }, SOL_WALLET, pump({}, 2));
+    expect(graduated.venue).toBe("POOL");
+    expect(graduated.amountOut).toBe((SOL / 10n).toString());
+    await expect(quoteVenueTrade(pumpApp, { slug: "solcool", side: "buy", amount: SOL.toString(), slippageBps: 100 }, SOL_WALLET, pump({}, 1))).rejects.toMatchObject({ status: 409, message: "trading_paused" });
+  });
+
+  it("never accepts an explicit floor looser than 50% slippage", async () => {
+    await expect(
+      quoteVenueTrade(pumpApp, { slug: "solcool", side: "buy", amount: (SOL / 10n).toString(), minOut: "1", slippageBps: 100 }, SOL_WALLET, pump()),
+    ).rejects.toMatchObject({ status: 400, message: "min_out_too_low" });
+  });
+});
+
+describe("executeVenueTrade (pump.fun)", () => {
+  const user = { id: "u1", wallet: WALLET, walletIndex: 5 };
+
+  it("buys from the custodial Solana wallet with the quote's minOut and reports the fill in lamports", async () => {
+    const c = pump();
+    const { quote, trade } = await executeVenueTrade(pumpApp, user, { slug: "solcool", side: "buy", amount: (SOL / 10n).toString(), slippageBps: 100 }, c);
+    expect(c.buy).toHaveBeenCalledTimes(1);
+    const [account, mint, spend, minOut] = c.buy.mock.calls[0]!;
+    expect(account).toMatchObject({ chain: "solana", address: SOL_WALLET });
+    expect(mint).toBe(MINT);
+    expect(spend).toBe(SOL / 10n);
+    expect(minOut).toBe(BigInt(quote.minOut));
+    expect(trade).toMatchObject({ txHash: SIG, block: 300_000_001n, wallet: SOL_WALLET, quoteWei: SOL / 10n, tokenUnits: 1_000_000n * UNIT });
+    // 0.1 SOL for 1M coins = 1e-7 SOL/coin at $120: the price must respect 9 vs 6 decimals.
+    expect(trade.priceUsd).toBeCloseTo(1e-7 * 120, 12);
+  });
+
+  it("keeps the rent reserve on a buy and blocks a sell without it or without the coins", async () => {
+    const tight = pump({ nativeBalance: async () => SOL / 10n });
+    await expect(executeVenueTrade(pumpApp, user, { slug: "solcool", side: "buy", amount: (SOL / 10n).toString(), slippageBps: 100 }, tight)).rejects.toMatchObject({ message: "insufficient_balance", extra: { asset: "SOL" } });
+    expect(tight.buy).not.toHaveBeenCalled();
+    const noGas = pump({ nativeBalance: async () => 0n });
+    await expect(executeVenueTrade(pumpApp, user, { slug: "solcool", side: "sell", amount: UNIT.toString(), slippageBps: 100 }, noGas)).rejects.toMatchObject({ message: "insufficient_gas" });
+    const short = pump({ tokenBalance: async () => UNIT });
+    await expect(executeVenueTrade(pumpApp, user, { slug: "solcool", side: "sell", amount: (2n * UNIT).toString(), slippageBps: 100 }, short)).rejects.toMatchObject({ message: "insufficient_balance", extra: { asset: "TOKEN" } });
+    expect(short.sell).not.toHaveBeenCalled();
+  });
+
+  it("maps a failed send to 502 trade_failed", async () => {
+    const c = pump({ buy: vi.fn(async () => Promise.reject(new Error("Transaction simulation failed: custom program error: 0x1772"))) });
+    await expect(executeVenueTrade(pumpApp, user, { slug: "solcool", side: "buy", amount: SOL.toString(), slippageBps: 100 }, c)).rejects.toMatchObject({ status: 502, message: "trade_failed" });
   });
 });

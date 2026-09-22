@@ -47,18 +47,20 @@ describe("TxHash", () => {
 });
 
 describe("money bodies", () => {
-  it("withdraws only ETH or USDG to a checksummed address", () => {
+  it("withdraws ETH or USDG to a checksummed address and SOL to a base58 one", () => {
     const parsed = WithdrawBody.parse({ asset: "USDG", to: USDG.toLowerCase(), amount: 12.5 });
     expect(parsed.to).toBe(USDG);
     expect(WithdrawBody.safeParse({ asset: "SOL", to: USDG, amount: 1 }).success).toBe(false);
+    expect(WithdrawBody.safeParse({ asset: "SOL", to: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin", amount: 1 }).success).toBe(true);
+    expect(WithdrawBody.safeParse({ asset: "ETH", to: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin", amount: 1 }).success).toBe(false);
     expect(WithdrawBody.safeParse({ asset: "ETH", to: "0x5fc5360d0400a0Fd4f2af552ADD042D716F1d168", amount: 1 }).success).toBe(false);
     expect(WithdrawBody.safeParse({ asset: "ETH", to: USDG, amount: 0 }).success).toBe(false);
   });
 
-  it("denominates top-ups and bounties in ETH with a sane ceiling", () => {
-    expect(TopupBody.parse({ eth: 0.05 })).toEqual({ eth: 0.05 });
-    expect(TopupBody.safeParse({ sol: 0.05 }).success).toBe(false);
-    expect(TopupBody.safeParse({ eth: 1001 }).success).toBe(false);
+  it("denominates top-ups in the app's native asset and bounties in ETH with a sane ceiling", () => {
+    expect(TopupBody.parse({ amount: 0.05 })).toEqual({ amount: 0.05 });
+    expect(TopupBody.safeParse({ eth: 0.05 }).success).toBe(false);
+    expect(TopupBody.safeParse({ amount: 1001 }).success).toBe(false);
     expect(BountyBody.safeParse({ title: "Fix login", description: "Login breaks on Safari", eth: 0.01 }).success).toBe(true);
     expect(BountyBody.safeParse({ title: "Fix login", description: "Login breaks on Safari", eth: 0 }).success).toBe(false);
   });
@@ -83,6 +85,12 @@ describe("CreateLaunchBody", () => {
       expect(CreateLaunchBody.safeParse({ ...base, website: url }).success).toBe(false);
       expect(CreateLaunchBody.safeParse({ ...base, twitter: url }).success).toBe(false);
     }
+  });
+
+  it("defaults the launchpad to pons v2 and accepts pump.fun", () => {
+    expect(CreateLaunchBody.parse(base).launchpad).toBe("pons_v2");
+    expect(CreateLaunchBody.parse({ ...base, launchpad: "pump_fun" }).launchpad).toBe("pump_fun");
+    expect(CreateLaunchBody.safeParse({ ...base, launchpad: "raydium" }).success).toBe(false);
   });
 });
 

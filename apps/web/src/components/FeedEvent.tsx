@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { BuildEventDto, BuildEventPayload } from "@pyre/shared";
-import { formatEth, formatTokenUnits, formatUsd, shortAddress, timeAgo } from "../lib/format.js";
+import { formatEth, formatNative, formatTokenUnits, formatUsd, shortAddress, timeAgo, type NativeUnit } from "../lib/format.js";
+import type { VenueLinks } from "../lib/venue.js";
 import { Chip, type ChipTone, type ConsoleKind, type ConsoleRow, cx } from "../ui/index.js";
 import { AddressLink, TxLink } from "./TxLink.js";
 import { IconExternal } from "./icons.js";
@@ -11,13 +12,18 @@ import { IconExternal } from "./icons.js";
  *   - `feedLine`   one plain sentence (cards, notifications, tape)
  *   - `consoleRow` a ConsoleFrame row (kind + text)
  *   - `FeedEvent`  the full row with links, chips and any block content
+ * Chain amounts (`wei`, `quoteWei`) are in the app's native units, so every
+ * shape takes the app's venue. Bounties are always ETH: they escrow from the
+ * Robinhood Chain custodial wallet whatever chain the coin is on.
  */
 
 type Payload = BuildEventPayload;
 
 const usd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: n >= 100 ? 0 : 2 })}`;
 
-export const feedLine = (p: Payload): string => {
+export const feedLine = (p: Payload, venue: VenueLinks): string => {
+  const native: NativeUnit = venue.meta.native;
+  const decimals = venue.meta.tokenDecimals;
   switch (p.type) {
     case "JOB_QUEUED":
       return `queued ${p.stage.toLowerCase()} · ${usd(p.budgetUsd)} budget`;
@@ -62,15 +68,15 @@ export const feedLine = (p: Payload): string => {
     case "GROWTH_POST":
       return `posted: ${p.text}`;
     case "LAUNCH":
-      return `coin live on PONS · ${shortAddress(p.tokenAddress)}`;
+      return `coin live on ${venue.meta.launchpadLabel} · ${shortAddress(p.tokenAddress)}`;
     case "LAUNCH_GATED":
-      return `launch gated for ${shortAddress(p.wallet)} — PONS whitelist pending`;
+      return `launch gated for ${shortAddress(p.wallet)} — ${venue.meta.launchpadLabel} not accepting launches yet`;
     case "FEES":
-      return `fees claimed ${formatEth(p.wei)} · ${formatUsd(p.buildMicros)} to the build budget`;
+      return `fees claimed ${formatNative(p.wei, native)} · ${formatUsd(p.buildMicros)} to the build budget`;
     case "TRADE":
-      return `${p.side.toLowerCase()} ${formatTokenUnits(p.tokenUnits)} for ${formatEth(p.quoteWei)} by ${shortAddress(p.wallet)}`;
+      return `${p.side.toLowerCase()} ${formatTokenUnits(p.tokenUnits, { decimals })} for ${formatNative(p.quoteWei, native)} by ${shortAddress(p.wallet)}`;
     case "GRADUATED":
-      return "graduated — liquidity moved to the uniswap v4 pool";
+      return venue.meta.chain === "solana" ? "graduated — liquidity moved to the pumpswap pool" : "graduated — liquidity moved to the uniswap v4 pool";
   }
 };
 
@@ -118,10 +124,10 @@ const TOOL_KIND: Record<string, ConsoleKind> = {
 export const isBuildEvent = (p: Payload): boolean =>
   p.type !== "TRADE" && p.type !== "FEES" && p.type !== "GROWTH_POST" && p.type !== "LAUNCH" && p.type !== "GRADUATED";
 
-export const consoleRow = (e: BuildEventDto): ConsoleRow => {
+export const consoleRow = (e: BuildEventDto, venue: VenueLinks): ConsoleRow => {
   const p = e.payload;
   const kind = p.type === "TOOL_CALL" ? (TOOL_KIND[p.tool.toLowerCase()] ?? "read") : (p.type === "STAGE" && p.status === "FAIL" ? "error" : KIND[p.type]);
-  return { id: e.id, at: e.createdAt, kind, text: feedLine(p) };
+  return { id: e.id, at: e.createdAt, kind, text: feedLine(p, venue) };
 };
 
 const TONE: Partial<Record<Payload["type"], ChipTone>> = {
@@ -178,7 +184,8 @@ const Ext = ({ href, children }: { href: string; children: ReactNode }) => (
 );
 
 /** Rich body for kinds that carry more than a sentence. */
-const Body = ({ p }: { p: Payload }) => {
+const Body = ({ p, venue }: { p: Payload; venue: VenueLinks }) => {
+  const native: NativeUnit = venue.meta.native;
   switch (p.type) {
     case "COMMIT":
       return (
@@ -271,62 +278,66 @@ const Body = ({ p }: { p: Payload }) => {
     case "LAUNCH":
       return (
         <>
-          coin live on <Ext href={p.ponsUrl}>PONS</Ext> · token <AddressLink address={p.tokenAddress} /> · tx <TxLink hash={p.txHash} copy={false} />
+          coin live on <Ext href={p.launchpadUrl}>{venue.meta.launchpadLabel}</Ext> · token <AddressLink address={p.tokenAddress} venue={venue} /> · tx{" "}
+          <TxLink hash={p.txHash} copy={false} venue={venue} />
         </>
       );
     case "LAUNCH_GATED":
       return (
         <>
-          PONS v2 refused <AddressLink address={p.wallet} copy={false} /> — launch retries when the whitelist opens
+          {venue.meta.launchpadLabel} refused <AddressLink address={p.wallet} copy={false} venue={venue} /> — launch retries automatically
         </>
       );
     case "FEES":
       return (
         <>
-          claimed <span className="num text-earn">{formatEth(p.wei)}</span> ({formatUsd(p.usdMicros)}) · <span className="num">{formatUsd(p.buildMicros)}</span> to the build budget · tx{" "}
-          <TxLink hash={p.txHash} copy={false} />
+          claimed <span className="num text-earn">{formatNative(p.wei, native)}</span> ({formatUsd(p.usdMicros)}) · <span className="num">{formatUsd(p.buildMicros)}</span> to the build
+          budget · tx <TxLink hash={p.txHash} copy={false} venue={venue} />
         </>
       );
     case "TRADE":
       return (
         <>
-          <span className={cx("num uppercase", p.side === "BUY" ? "text-earn" : "text-burn")}>{p.side}</span> <span className="num">{formatTokenUnits(p.tokenUnits)}</span> for{" "}
-          <span className="num">{formatEth(p.quoteWei)}</span> by <AddressLink address={p.wallet} copy={false} /> · <TxLink hash={p.txHash} copy={false} />
+          <span className={cx("num uppercase", p.side === "BUY" ? "text-earn" : "text-burn")}>{p.side}</span>{" "}
+          <span className="num">{formatTokenUnits(p.tokenUnits, { decimals: venue.meta.tokenDecimals })}</span> for <span className="num">{formatNative(p.quoteWei, native)}</span> by{" "}
+          <AddressLink address={p.wallet} copy={false} venue={venue} /> · <TxLink hash={p.txHash} copy={false} venue={venue} />
         </>
       );
     case "GRADUATED":
       return (
         <>
-          graduated — liquidity moved to the uniswap v4 pool
+          {venue.meta.chain === "solana" ? "graduated — liquidity moved to the pumpswap pool" : "graduated — liquidity moved to the uniswap v4 pool"}
           {p.txHash && (
             <>
               {" · "}
-              <TxLink hash={p.txHash} copy={false} />
+              <TxLink hash={p.txHash} copy={false} venue={venue} />
             </>
           )}
         </>
       );
     default:
-      return <>{feedLine(p)}</>;
+      return <>{feedLine(p, venue)}</>;
   }
 };
 
 export interface FeedEventProps {
   event: BuildEventDto;
+  /** The app's venue: resolves native units, token decimals and explorer links. */
+  venue: VenueLinks;
   /** Compact: one line, no block content (cards, rails). */
   compact?: boolean;
   className?: string;
 }
 
 /** One feed row: label chip, body, relative time. */
-export const FeedEvent = ({ event, compact, className }: FeedEventProps) => {
+export const FeedEvent = ({ event, venue, compact, className }: FeedEventProps) => {
   const p = event.payload;
   return (
     <div className={cx("flex items-start gap-3 py-2", className)}>
       <Chip tone={TONE[p.type] ?? "neutral"} size="sm" mono className="mt-0.5 w-[5.5rem] shrink-0 justify-center">
         {LABEL[p.type]}
       </Chip>
-      <div className={cx("min-w-0 flex-1 text-13 text-ink-2", compact && "truncate")}>{compact ? feedLine(p) : <Body p={p} />}</div>
+      <div className={cx("min-w-0 flex-1 text-13 text-ink-2", compact && "truncate")}>{compact ? feedLine(p, venue) : <Body p={p} venue={venue} />}</div>
       <time dateTime={event.createdAt} className="num shrink-0 text-12 text-ink-3" title={new Date(event.createdAt).toLocaleString()}>
         {timeAgo(event.createdAt)}
       </time>

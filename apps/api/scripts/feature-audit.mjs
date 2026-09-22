@@ -652,7 +652,7 @@ async function moneyChecks() {
       for (const hasParent of [false, true]) {
         for (const hasStakers of [false, true]) {
           const s = splitFees(usd, hasParent, hasStakers);
-          const sum = s.buildMicros + s.creditsMicros + s.pyreMicros + s.launcherMicros + s.upstreamMicros + s.stakersMicros;
+          const sum = s.buildMicros + s.creditsMicros + s.pyreMicros + s.coinBurnMicros + s.launcherMicros + s.upstreamMicros + s.stakersMicros;
           if (sum !== usd) {
             e.ok(false, `conservation broken at ${usd} (parent=${hasParent}, stakers=${hasStakers}): parts ${sum}`);
             i = 400;
@@ -1235,15 +1235,15 @@ async function governanceChecks() {
 
   await check("topup_funding_gate", async () => {
     const e = expect();
-    const malformed = await call(local(`/v1/apps/${app.slug}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ eth: 0 }) });
+    const malformed = await call(local(`/v1/apps/${app.slug}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ amount: 0 }) });
     e.eq(malformed.status, 400, "zero eth status").eq(malformed.json?.error, "validation_failed", "zero eth code");
-    const missing = await call(local(`/v1/apps/no-such-app-${RUN}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ eth: 0.01 }) });
+    const missing = await call(local(`/v1/apps/no-such-app-${RUN}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ amount: 0.01 }) });
     e.eq(missing.status, 404, "unknown app status").eq(missing.json?.error, "app_not_found", "unknown app code");
-    const noWallet = await call(local(`/v1/apps/${state.apps.dormant.slug}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ eth: 0.01 }) });
+    const noWallet = await call(local(`/v1/apps/${state.apps.dormant.slug}/topup`), { method: "POST", headers: jsonHeaders(holder), body: JSON.stringify({ amount: 0.01 }) });
     e.eq(noWallet.status, 409, "app without a wallet status").eq(noWallet.json?.error, "app_has_no_wallet", "app without a wallet code");
 
     // The launcher fixture never receives ETH (the holder may hold a real bounty payout by now).
-    const funded = await call(local(`/v1/apps/${app.slug}/topup`), { method: "POST", headers: jsonHeaders(state.users.launcher), body: JSON.stringify({ eth: 0.01 }) });
+    const funded = await call(local(`/v1/apps/${app.slug}/topup`), { method: "POST", headers: jsonHeaders(state.users.launcher), body: JSON.stringify({ amount: 0.01 }) });
     const fees = await prisma.feeEvent.count({ where: { appId: app.id, source: "REVIVE_BUY" } });
     e.eq(fees, 0, "no REVIVE_BUY fee event may be written before the transfer settles");
     if (unreachable(funded)) {

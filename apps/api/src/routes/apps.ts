@@ -1,36 +1,38 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { z } from "zod";
-import type { Address } from "viem";
 import { big, dec, prisma, type Prisma } from "@pyre/db";
-import { getEthPriceUsd, transferEth } from "@pyre/chain";
 import {
   AppSort,
   AppSpec,
   CandleIntervalDto,
-  FEE_SPLIT_BPS,
+  FEE_SPLIT_BPS_BY_CHAIN,
   PONS_GRADUATION_THRESHOLD_WEI,
   TopupBody,
-  ethToWei,
-  usdMicrosFromWei,
+  VENUES,
+  decimalToUnits,
+  usdMicrosFromNative,
   type AppDetailDto,
   type AppSummaryDto,
   type AppsPageDto,
   type CandlesDto,
+  type CoinBurnsPageDto,
 } from "@pyre/shared";
 import { optionalAuth, requireAuth } from "../lib/auth.js";
 import { APPS_TAG, appTag, cacheKey, cached } from "../lib/cache.js";
-import { custodialAccount, custodialEthBalance, GAS_RESERVE_WEI } from "../lib/custodial.js";
+import { GAS_RESERVE_BY_CHAIN } from "../lib/custodial.js";
 import {
   APP_SUMMARY_SELECT,
   USER_REF_SELECT,
   appExtrasByApp,
   appSummary,
   candleDto,
+  coinBurnDto,
   eventDto,
   feeEventDto,
   holderDto,
   jobDto,
+  nativeUsd,
   queueItemDto,
   tokens,
   tradeDto,
@@ -38,6 +40,7 @@ import {
   userRef,
   type AppExtras,
   type AppSummaryRow,
+  type NativePrices,
 } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
 import { GLOBAL_FEED_CHANNEL, publishEvent, publishGlobal } from "../lib/events.js";
@@ -46,7 +49,8 @@ import { logger } from "../lib/logger.js";
 import { marketSnapshot } from "../lib/market.js";
 import { db, sseConnections } from "../lib/metrics.js";
 import { subscribeChannel } from "../lib/redis.js";
-import { SUPPLY_BASE_UNITS } from "../lib/votes.js";
+import { adapterOf, metaOf, venuesDto } from "../lib/venue.js";
+import { env } from "../env.js";
 import { feedStream } from "./feed-stream.js";
 
 export const apps = Router();
@@ -65,23 +69,18 @@ const since24h = () => new Date(Date.now() - DAY_MS);
  */
 interface RankInputs {
   extras: AppExtras;
-  ethPriceUsd: number;
+  prices: NativePrices;
 }
 
 const FILTERS: Record<AppSort, { where: () => Prisma.AppWhereInput; orderBy?: Prisma.AppOrderByWithRelationInput[]; rank?: (a: AppSummaryDto, r: RankInputs) => number }> = {
-  /** 24h volume + 2× 24h fees (USD) + heat: what is actually moving through the loop. */
   trending: {
     where: () => PUBLIC,
-    rank: (a, r) => a.volume24hUsd + 2 * tokens(r.extras.fees24hWei) * r.ethPriceUsd + 100 * a.heat,
+    rank: (a, r) => a.volume24hUsd + 2 * nativeUsd(r.extras.fees24hWei, a.chain, r.prices) + 100 * a.heat,
   },
   new: { where: () => PUBLIC, orderBy: [{ launchedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }, { id: "desc" }] },
   heating: { where: () => ({ ...PUBLIC, launchPhase: 0 }), orderBy: [{ progress: "desc" }, { volume24hUsd: "desc" }, { id: "desc" }] },
   graduated: { where: () => ({ ...PUBLIC, launchPhase: 2 }), orderBy: [{ graduatedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }] },
-  /** The agent is on it now (a queued or running job), or it deployed in the last 24h. */
-  shipping: {
-    where: () => ({ ...PUBLIC, OR: [{ jobs: { some: { status: { in: ["RUNNING", "QUEUED"] } } } }, { deployments: { some: { createdAt: { gte: since24h() } } } }] }),
-    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-  },
+  shipping: { where: () => ({ ...PUBLIC, liveVersion: { gt: 0 } }), orderBy: [{ liveVersion: "desc" }, { updatedAt: "desc" }, { id: "desc" }] },
 };
 
 /** In-memory ranked sorts load at most this many candidates. */
@@ -97,11 +96,11 @@ const offsetOf = (cursor: string | undefined): number => {
 
 export const ListQuery = pageQuery(24, 100).extend({ sort: AppSort.default("trending"), q: z.string().trim().min(1).max(64).optional() });
 
-/** Rows → summaries. The ETH price comes from the runner's snapshot row (cached, DB-only): this sits on every list and detail read. */
-const summarize = async (rows: AppSummaryRow[]): Promise<{ items: AppSummaryDto[]; extras: Record<string, AppExtras>; ethPriceUsd: number }> => {
+/** Rows → summaries. Native prices come from the runner's snapshot row (cached, DB-only): this sits on every list and detail read. */
+const summarize = async (rows: AppSummaryRow[]): Promise<{ items: AppSummaryDto[]; extras: Record<string, AppExtras>; prices: NativePrices }> => {
   const [extras, market] = await Promise.all([appExtrasByApp(rows.map((a) => a.id)), marketSnapshot()]);
-  const ethPriceUsd = market?.ethPriceUsd ?? 0;
-  return { items: rows.map((a) => appSummary(a, extras[a.id]!, ethPriceUsd)), extras, ethPriceUsd };
+  const prices: NativePrices = { ethPriceUsd: market?.ethPriceUsd ?? 0, solPriceUsd: market?.solPriceUsd ?? 0 };
+  return { items: rows.map((a) => appSummary(a, extras[a.id]!, prices)), extras, prices };
 };
 
 export const listApps = async (q: z.infer<typeof ListQuery>): Promise<AppsPageDto> => {
@@ -109,10 +108,10 @@ export const listApps = async (q: z.infer<typeof ListQuery>): Promise<AppsPageDt
   if (filter.rank) {
     const offset = offsetOf(q.cursor);
     const rows = await db.app.findMany({ where: filter.where(), orderBy: [{ updatedAt: "desc" }], take: RANK_WINDOW, select: APP_SUMMARY_SELECT });
-    const { items, extras, ethPriceUsd } = await summarize(rows);
+    const { items, extras, prices } = await summarize(rows);
     const rank = filter.rank;
     const scored = items
-      .map((a) => ({ a, s: rank(a, { extras: extras[a.id]!, ethPriceUsd }) }))
+      .map((a) => ({ a, s: rank(a, { extras: extras[a.id]!, prices }) }))
       .sort((x, y) => y.s - x.s || x.a.id.localeCompare(y.a.id));
     const page = scored.slice(offset, offset + q.limit).map((x) => x.a);
     return { items: page, nextCursor: offset + q.limit < scored.length ? `offset_${offset + q.limit}` : null };
@@ -139,10 +138,11 @@ export const coinSummary = async (slug: string): Promise<AppSummaryDto | null> =
 
 /** OHLCV page for a live coin, or null; shared by `/v1/apps/:slug/candles` and the app host. */
 export const coinCandles = async (slug: string, q: z.infer<typeof CandleQuery>): Promise<{ appId: string; body: CandlesDto } | null> => {
-  const app = await db.app.findFirst({ where: { ...PUBLIC, slug }, select: { id: true } });
+  const app = await db.app.findFirst({ where: { ...PUBLIC, slug }, select: { id: true, launchpad: true } });
   if (!app) return null;
+  const venue = VENUES[app.launchpad];
   const candles = await db.candle.findMany({ where: { appId: app.id, interval: q.interval }, orderBy: { t: "desc" }, take: q.limit });
-  return { appId: app.id, body: { interval: q.interval, candles: candles.reverse().map(candleDto), supply: tokens(SUPPLY_BASE_UNITS) } };
+  return { appId: app.id, body: { interval: q.interval, candles: candles.reverse().map(candleDto), supply: tokens(venue.totalSupplyUnits, venue.tokenDecimals) } };
 };
 
 /** Total rows per sort — the tab counts on the home feed. */
@@ -183,9 +183,9 @@ apps.get(
   }),
 );
 
-const APP_IDENTITY_SELECT = { id: true, slug: true, ticker: true, name: true } as const;
+const APP_IDENTITY_SELECT = { id: true, slug: true, ticker: true, name: true, chain: true, launchpad: true } as const;
 
-/** SSE of `feed:*global*`, each frame labelled with the app so the live tape needs no lookup. */
+/** SSE of `feed:*global*`, each frame labelled with the app (and its venue, so native amounts format right) so the live tape needs no lookup. */
 apps.get("/stream", (req, res) => {
   res.status(200);
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -207,7 +207,7 @@ apps.get("/stream", (req, res) => {
     cached(cacheKey("apps.identity", { appId }), 60_000, () => db.app.findUnique({ where: { id: appId }, select: APP_IDENTITY_SELECT }))
       .then((app) => {
         if (!app || res.writableEnded) return;
-        const frame = { appId, slug: app.slug, ticker: app.ticker, name: app.name, type: typeof parsed.type === "string" ? parsed.type : "UPDATE", event: parsed.event };
+        const frame = { appId, slug: app.slug, ticker: app.ticker, name: app.name, chain: app.chain, launchpad: app.launchpad, type: typeof parsed.type === "string" ? parsed.type : "UPDATE", event: parsed.event };
         res.write(`data: ${JSON.stringify(frame)}\n\n`);
       })
       .catch((err: unknown) => logger.warn({ err, appId }, "global stream frame dropped"));
@@ -224,10 +224,39 @@ apps.get("/stream", (req, res) => {
 const appBySlug = async (slug: string) => {
   const app = await db.app.findUnique({
     where: { slug },
-    select: { id: true, tokenAddress: true, curveAddress: true, launchPhase: true, launcher: { select: { wallet: true } } },
+    select: { id: true, chain: true, launchpad: true, tokenAddress: true, curveAddress: true, launchPhase: true, launcher: { select: { wallet: true, solWallet: true } } },
   });
   if (!app || !app.tokenAddress) throw new HttpError(404, "app_not_found");
   return app;
+};
+
+/**
+ * Native raised on the curve at which the coin graduates: a PONS constant on Robinhood Chain; on
+ * pump.fun it follows the program's global config, read through the adapter and cached (it only
+ * changes with pump's parameters, never per coin).
+ */
+const graduationThreshold = (app: Pick<AppSummaryRow, "chain" | "launchpad" | "tokenAddress">): Promise<bigint> =>
+  app.chain === "robinhood" || !app.tokenAddress
+    ? Promise.resolve(PONS_GRADUATION_THRESHOLD_WEI)
+    : cached(cacheKey("venue.graduation", { launchpad: app.launchpad }), 600_000, async () => (await adapterOf(app).readLaunch(app.tokenAddress!)).graduationNative.toString()).then(BigInt);
+
+/** `COINBURN:<appId>` balance plus the app's burn history for the coin page; null on Robinhood Chain where that leg burns PYRE. */
+const coinBurnsOf = async (app: Pick<AppSummaryRow, "id" | "chain" | "launchpad">): Promise<AppDetailDto["coinBurns"]> => {
+  if (app.chain === "robinhood") return null;
+  const [burned, pending, last] = await Promise.all([
+    db.coinBurn.aggregate({ where: { appId: app.id, status: "BURNED" }, _sum: { nativeWei: true, burnedUnits: true, tokensBurned: true }, _count: { _all: true } }),
+    db.ledgerEntry.aggregate({ where: { account: `COINBURN:${app.id}` }, _sum: { deltaMicros: true } }),
+    db.coinBurn.findFirst({ where: { appId: app.id, status: "BURNED" }, orderBy: { completedAt: "desc" } }),
+  ]);
+  const burnedUnits = big(burned._sum.burnedUnits) > 0n ? big(burned._sum.burnedUnits) : big(burned._sum.tokensBurned);
+  return {
+    count: burned._count._all,
+    nativeWei: big(burned._sum.nativeWei).toString(),
+    burnedUnits: burnedUnits.toString(),
+    burnedPctOfSupply: Number((burnedUnits * 1_000_000n) / metaOf(app).totalSupplyUnits) / 10_000,
+    pendingMicros: (pending._sum.deltaMicros ?? 0n).toString(),
+    last: last ? coinBurnDto(last, app) : null,
+  };
 };
 
 /** Every column the coin-detail response reads — no `Bytes` column, no unused metadata. */
@@ -277,29 +306,31 @@ const loadAppDetail = async (slug: string) => {
     }),
     db.bounty.aggregate({ where: { appId: app.id, status: "OPEN" }, _sum: { wei: true }, _count: { _all: true } }),
   ]);
-  const { items } = await summarize([app]);
+  const [{ items }, graduationNative, coinBurns] = await Promise.all([summarize([app]), graduationThreshold(app), coinBurnsOf(app)]);
   const summary = items[0]!;
   const milestones = z.array(z.string()).safeParse(app.milestones);
   const counts: Record<string, number> = {};
   for (const r of roadmapCounts) counts[r.status] = r._count._all;
+  const split = FEE_SPLIT_BPS_BY_CHAIN[app.chain];
   const body: AppDetailDto = {
     ...summary,
     spec: AppSpec.safeParse(app.spec).success ? (app.spec as AppDetailDto["spec"]) : null,
     prompt: app.prompt,
     killedReason: app.killedReason,
-    walletAddress: app.walletAddress as Address | null,
+    walletAddress: app.walletAddress,
     stakeWei: big(app.stakeWei).toString(),
-    stakeTx: app.stakeTx as AppDetailDto["stakeTx"],
-    stakeRefundTx: app.stakeRefundTx as AppDetailDto["stakeRefundTx"],
-    launchTx: app.launchTx as AppDetailDto["launchTx"],
+    stakeTx: app.stakeTx,
+    stakeRefundTx: app.stakeRefundTx,
+    launchTx: app.launchTx,
     spentMicros: app.spentMicros.toString(),
     usersCount: app.usersCount,
     uptimeBps: app.uptimeBps,
     healthy: app.healthy,
     unsweptWei: big(app.unsweptWei).toString(),
     escrowWei: big(app.escrowWei).toString(),
-    feeSplit: { buildBudget: FEE_SPLIT_BPS.BUILD_BUDGET, pyreToken: FEE_SPLIT_BPS.PYRE_TOKEN, launcher: FEE_SPLIT_BPS.LAUNCHER },
-    graduationThresholdWei: PONS_GRADUATION_THRESHOLD_WEI.toString(),
+    feeSplit: { buildBudget: split.BUILD_BUDGET, pyreToken: split.PYRE_TOKEN, coinBurn: split.COIN_BURN, launcher: split.LAUNCHER },
+    graduationThresholdWei: graduationNative.toString(),
+    coinBurns,
     budgetHistory: fees.map(feeEventDto),
     lastBuild: lastBuild ? jobDto(lastBuild) : null,
     lastEvent: lastEvent ? eventDto(lastEvent) : null,
@@ -326,7 +357,8 @@ apps.get(
       sendCached(res, detail.body, { maxAge: 5, swr: 30 });
       return;
     }
-    const wallets = [user.wallet, user.authWallet].filter((w): w is string => typeof w === "string");
+    // The viewer's wallets on the coin's chain: custodial + proven external on Robinhood Chain, custodial Solana on Solana.
+    const wallets = (detail.body.chain === "solana" ? [user.solWallet] : [user.wallet, user.authWallet]).filter((w): w is string => typeof w === "string");
     const itemIds = detail.body.roadmap.top.map((q) => q.id);
     const [balances, votes, contributor] = await Promise.all([
       wallets.length ? db.holderBalance.findMany({ where: { appId: detail.appId, wallet: { in: wallets } }, select: { amount: true } }) : Promise.resolve([]),
@@ -341,7 +373,7 @@ apps.get(
       roadmap: { ...detail.body.roadmap, top: detail.body.roadmap.top.map((q) => ({ ...q, votedByMe: voted[q.id] === true })) },
       viewer: {
         units: units.toString(),
-        pctOfSupply: Number((units * 1_000_000n) / SUPPLY_BASE_UNITS) / 10_000,
+        pctOfSupply: Number((units * 1_000_000n) / VENUES[detail.body.launchpad].totalSupplyUnits) / 10_000,
         isLauncher: detail.launcherId === user.id,
         isContributor: contributor !== null,
         isMaintainer: detail.maintainerId === user.id,
@@ -455,14 +487,14 @@ apps.get(
           where: { appId: app.id, amount: { gt: 0 } },
           orderBy: { amount: "desc" },
           take: q.limit,
-          select: { wallet: true, amount: true },
+          select: { wallet: true, amount: true, tag: true },
         });
-        const ctx = { curveAddress: app.curveAddress, launcherWallet: app.launcher.wallet };
+        const ctx = { chain: app.chain, launchpad: app.launchpad, curveAddress: app.curveAddress, launcherWallet: app.chain === "solana" ? app.launcher.solWallet : app.launcher.wallet };
         return {
           appId: app.id,
           body: {
             holders: holders.map((h) => holderDto(h, ctx)),
-            supplyUnits: SUPPLY_BASE_UNITS.toString(),
+            supplyUnits: metaOf(app).totalSupplyUnits.toString(),
           },
         };
       },
@@ -472,7 +504,10 @@ apps.get(
   }),
 );
 
-/** Direct ETH top-up to the app's wallet from the caller's custodial wallet: 100% to build budget, revives dormant apps. */
+/**
+ * Direct native top-up to the app's wallet from the caller's custodial wallet on the app's chain:
+ * 100% to build budget, revives dormant apps. `amount` is whole ETH or SOL.
+ */
 export const topupHandler = async (req: Request, res: Response): Promise<void> => {
   const app = await prisma.app.findUnique({ where: { slug: req.params.slug! } });
   if (!app) throw new HttpError(404, "app_not_found");
@@ -481,20 +516,23 @@ export const topupHandler = async (req: Request, res: Response): Promise<void> =
   const user = req.user!;
   if (!user.wallet) throw new HttpError(400, "wallet_required");
   const body = parse(TopupBody, req.body);
-  const wei = ethToWei(body.eth);
+  const venue = adapterOf(app);
+  const { decimals } = venue.info.native;
+  const wei = decimalToUnits(String(body.amount), decimals);
   if (wei <= 0n) throw new HttpError(400, "invalid_amount");
-  const balance = await custodialEthBalance(user.wallet as Address);
-  const need = wei + GAS_RESERVE_WEI;
+  const account = venue.userWallet(user.walletIndex);
+  const balance = await venue.nativeBalance(account.address);
+  const need = wei + GAS_RESERVE_BY_CHAIN[app.chain];
   if (balance < need) throw new HttpError(400, "insufficient_balance", { needWei: need.toString(), haveWei: balance.toString() });
   let txHash: string;
   try {
-    txHash = await transferEth(custodialAccount(user), app.walletAddress as Address, wei);
+    txHash = (await venue.transferNative(account, app.walletAddress, wei)).hash;
   } catch (err) {
     logger.error({ err, appId: app.id, userId: user.id }, "top-up transfer failed");
     throw new HttpError(502, "topup_failed");
   }
-  const ethPriceUsd = await getEthPriceUsd();
-  const usdMicros = usdMicrosFromWei(wei, ethPriceUsd);
+  const ethPriceUsd = await venue.nativePriceUsd();
+  const usdMicros = usdMicrosFromNative(wei, ethPriceUsd, decimals);
   const reviving = app.status === "DORMANT";
   const updated = await prisma.$transaction(async (tx) => {
     const fee = await tx.feeEvent.create({
@@ -526,11 +564,88 @@ export const topupHandler = async (req: Request, res: Response): Promise<void> =
     type: "BUDGET",
     budgetUsd: usd(updated.budgetMicros),
     delta: usd(usdMicros),
-    reason: `top-up from ${user.wallet}`,
+    reason: `top-up from ${account.address}`,
   });
-  if (reviving) await publishEvent(app.id, { type: "REVIVED", by: user.wallet, budgetUsd: usd(updated.budgetMicros) });
+  if (reviving) await publishEvent(app.id, { type: "REVIVED", by: account.address, budgetUsd: usd(updated.budgetMicros) });
   await publishGlobal(app.id);
   res.json({ budgetMicros: updated.budgetMicros.toString(), status: updated.status, txHash, wei: wei.toString() });
 };
 
 apps.post("/:slug/topup", requireAuth, wrap(topupHandler));
+
+const BurnsQuery = pageQuery(20, 100);
+
+/** Coin buy-and-burns of a Solana app, newest settled first; empty on Robinhood Chain where the leg burns PYRE. */
+apps.get(
+  "/:slug/burns",
+  wrap(async (req, res) => {
+    const slug = req.params.slug!;
+    const q = parse(BurnsQuery, req.query);
+    const page = await cached(
+      cacheKey("apps.burns", { slug, cursor: q.cursor ?? null, limit: q.limit }),
+      15_000,
+      async () => {
+        const app = await appBySlug(slug);
+        const rows = await db.coinBurn.findMany({
+          where: { appId: app.id, status: "BURNED" },
+          orderBy: [{ completedAt: "desc" }, { id: "desc" }],
+          take: q.limit + 1,
+          ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
+        });
+        const items = rows.slice(0, q.limit);
+        const body: CoinBurnsPageDto = { items: items.map((b) => coinBurnDto(b, app)), nextCursor: rows.length > q.limit ? items[items.length - 1]!.id : null };
+        return { appId: app.id, body };
+      },
+      (v) => [appTag(v.appId)],
+    );
+    sendCached(res, page.body, { maxAge: 15, swr: 60 });
+  }),
+);
+
+/**
+ * Coin metadata JSON the launchpad points its on-chain URI at (pump.fun reads `image` from it).
+ * Hosted by Pyre — no pinning service — so it is public, cacheable and available before the
+ * launch transaction that references it.
+ */
+apps.get(
+  "/:slug/metadata.json",
+  wrap(async (req, res) => {
+    const slug = req.params.slug!;
+    const meta = await cached(
+      cacheKey("apps.metadata", { slug }),
+      60_000,
+      async () => {
+        const app = await db.app.findUnique({
+          where: { slug },
+          select: { id: true, name: true, ticker: true, imageUrl: true, spec: true, prompt: true, websiteUrl: true, twitterUrl: true, status: true },
+        });
+        if (!app || app.status === "DRAFT" || app.status === "SPEC_READY") throw new HttpError(404, "app_not_found");
+        const spec = AppSpec.safeParse(app.spec);
+        return {
+          appId: app.id,
+          body: {
+            name: app.name,
+            symbol: app.ticker,
+            description: spec.success ? spec.data.oneLiner : app.prompt.slice(0, 200),
+            image: app.imageUrl,
+            showName: true,
+            createdOn: "https://pyre.fun",
+            website: app.websiteUrl ?? `${env.WEB_ORIGIN}/a/${slug}`,
+            ...(app.twitterUrl ? { twitter: app.twitterUrl } : {}),
+          },
+        };
+      },
+      (v) => [appTag(v.appId)],
+    );
+    sendCached(res, meta.body, { maxAge: 300, swr: 3600 });
+  }),
+);
+
+/** Launch venues and whether each accepts launches in this environment. */
+export const venues = Router();
+venues.get(
+  "/",
+  wrap(async (_req, res) => {
+    sendCached(res, { venues: venuesDto() }, { maxAge: 30, swr: 300 });
+  }),
+);

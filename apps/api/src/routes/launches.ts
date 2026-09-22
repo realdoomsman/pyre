@@ -7,8 +7,7 @@ import { HttpError, parse, wrap } from "../lib/errors.js";
 import { publishEvent } from "../lib/events.js";
 import { createLaunch, settleStake } from "../lib/launch.js";
 import { queues } from "../lib/queues.js";
-import { TREASURY_WALLET } from "../lib/treasury.js";
-import { env } from "../env.js";
+import { adapterOf, requiredStake } from "../lib/venue.js";
 
 export const launches = Router();
 
@@ -61,7 +60,7 @@ launches.get(
   }),
 );
 
-/** Approves the generated spec; the launch now waits for the refundable ETH stake. */
+/** Approves the generated spec; the launch now waits for the refundable stake in the venue's native asset. */
 launches.post(
   "/launches/:id/approve",
   requireAuth,
@@ -73,7 +72,7 @@ launches.post(
       where: { id: app.id },
       data: { spec, template: spec.template, specApprovedAt: new Date(), status: "AWAITING_STAKE" },
     });
-    res.json({ launch: launchDto(updated), stake: { to: TREASURY_WALLET, wei: env.LAUNCH_STAKE_WEI.toString() } });
+    res.json({ launch: launchDto(updated), stake: { to: adapterOf(updated).treasury().address, wei: requiredStake(updated.chain).toString() } });
   }),
 );
 

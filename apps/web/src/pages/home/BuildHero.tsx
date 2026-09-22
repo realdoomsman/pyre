@@ -11,6 +11,7 @@ import { AGENT_CHIP } from "../../components/CoinCard.js";
 import { IconArrowRight } from "../../components/icons.js";
 import { useLiveFrames } from "../../layout/LiveContext.js";
 import { formatCount, formatUsdCompact, timeAgo } from "../../lib/format.js";
+import { ROBINHOOD, useVenueLinks } from "../../lib/venue.js";
 import { Button, Chip, ConsoleFrame, EmptyState, Skeleton, useIsMobile, type ConsoleRow } from "../../ui/index.js";
 
 interface FeedPage {
@@ -77,7 +78,9 @@ export const BuildHero = () => {
     return merged.slice(-MAX_ROWS);
   }, [tail.data, liveRows]);
 
-  const rows = useMemo<ConsoleRow[]>(() => events.map(consoleRow), [events]);
+  // Only build-loop rows reach the console, so the venue just resolves labels; Robinhood until a subject exists.
+  const venue = useVenueLinks(subject?.app ?? ROBINHOOD.meta);
+  const rows = useMemo<ConsoleRow[]>(() => events.map((e) => consoleRow(e, venue)), [events, venue]);
   const screenshot = useMemo(() => latestScreenshot(events), [events]);
   const lastFinished = useMemo(() => {
     for (let i = events.length - 1; i >= 0; i--) {

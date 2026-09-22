@@ -1,7 +1,8 @@
-import type { AppSummaryDto, LaunchDraftDto, MeDto } from "@pyre/shared";
-import { LAUNCH_PHASE } from "@pyre/shared";
+import type { AppSummaryDto, Launchpad, LaunchDraftDto, MeDto } from "@pyre/shared";
+import { LAUNCH_PHASE, VENUES } from "@pyre/shared";
 
 export interface CoinDraft {
+  launchpad: Launchpad;
   name: string;
   ticker: string;
   imageUrl: string;
@@ -10,7 +11,7 @@ export interface CoinDraft {
   website: string;
 }
 
-export const EMPTY_DRAFT: CoinDraft = { name: "", ticker: "", imageUrl: "", prompt: "", twitter: "", website: "" };
+export const EMPTY_DRAFT: CoinDraft = { launchpad: "pons_v2", name: "", ticker: "", imageUrl: "", prompt: "", twitter: "", website: "" };
 
 /**
  * The exact home-feed card, fed from what the user has typed so far. Numbers are zero because
@@ -18,9 +19,13 @@ export const EMPTY_DRAFT: CoinDraft = { name: "", ticker: "", imageUrl: "", prom
  */
 export const previewApp = (draft: CoinDraft, launch: LaunchDraftDto | undefined, me: MeDto | null): AppSummaryDto => {
   const now = new Date().toISOString();
+  const venue = launch ? VENUES[launch.launchpad] : VENUES[draft.launchpad];
   return {
     id: launch?.id ?? "preview",
     slug: launch?.slug ?? "preview",
+    chain: venue.chain,
+    launchpad: venue.launchpad,
+    native: venue.native,
     name: draft.name || launch?.name || "Your coin",
     ticker: (draft.ticker || launch?.ticker || "TICKER").toUpperCase(),
     imageUrl: draft.imageUrl || launch?.imageUrl || "",
@@ -54,7 +59,7 @@ export const previewApp = (draft: CoinDraft, launch: LaunchDraftDto | undefined,
     createdAt: launch?.createdAt ?? now,
     launchedAt: null,
     graduatedAt: null,
-    ponsUrl: null,
+    launchpadUrl: null,
     explorerUrl: null,
   };
 };

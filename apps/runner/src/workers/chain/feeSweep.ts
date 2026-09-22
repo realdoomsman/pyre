@@ -1,8 +1,8 @@
 import { Worker } from "bullmq";
 import type { Logger } from "pino";
 import { big, dec, prisma, type Prisma } from "@pyre/db";
-import { ITERATION_BUDGET_USD, explorerTxUrl, splitFees, usdMicrosFromWei } from "@pyre/shared";
-import { accruingFees, claimEscrow, getEthBalance, getEthPriceUsd, readLaunch, sweepCreatorFees, transferEth, treasury } from "@pyre/chain";
+import { ITERATION_BUDGET_USD, VENUES, explorerTxUrl, splitFees, usdMicrosFromNative, usdMicrosFromWei } from "@pyre/shared";
+import { accruingFees, adapterFor, claimEscrow, getEthBalance, getEthPriceUsd, readLaunch, solanaEnabled, sweepCreatorFees, transferEth, treasury } from "@pyre/chain";
 import type { Address, Hash } from "viem";
 import { audit } from "../../lib/audit.js";
 import { withLock } from "../../lib/lock.js";
@@ -15,6 +15,8 @@ import { APP_GAS_LOW_WEI, APP_GAS_RESERVE_WEI, TREASURY_FLOOR_WEI, appWallet, to
 
 /** Claimed ETH below this stays in the app wallet until the next claim; moving dust costs more than it is worth. */
 const MIN_MOVE_WEI = 100_000_000_000_000n; // 0.0001 ETH
+/** Native float a non-EVM app wallet keeps for its own claim transactions (rent exemption + fees on Solana). */
+const VENUE_WALLET_FLOAT: Record<string, bigint> = { solana: 20_000_000n };
 
 export type SweepApp = Prisma.AppGetPayload<{ include: { launcher: { select: { id: true; wallet: true } }; forkOf: { select: { id: true; status: true } } } }>;
 export const SWEEP_APP_INCLUDE = { launcher: { select: { id: true, wallet: true } }, forkOf: { select: { id: true, status: true } } } as const;
@@ -31,12 +33,12 @@ export interface FeeCredit {
  * royalty to the parent and staker payouts. Returns null when that tx was already recorded, so
  * the sweep pass and the reconcile repair can both call it safely.
  */
-export async function recordCreatorFee(app: SweepApp, wei: bigint, txHash: Hash, ethPriceUsd: number, log: Logger): Promise<FeeCredit | null> {
+export async function recordCreatorFee(app: SweepApp, wei: bigint, txHash: string, ethPriceUsd: number, log: Logger): Promise<FeeCredit | null> {
   if (await prisma.feeEvent.findUnique({ where: { txHash }, select: { id: true } })) return null;
-  const usdMicros = usdMicrosFromWei(wei, ethPriceUsd);
+  const usdMicros = usdMicrosFromNative(wei, ethPriceUsd, VENUES[app.launchpad].native.decimals);
   const parent = app.forkOf && app.forkOf.status !== "KILLED" && app.forkOf.status !== "FAILED" ? app.forkOf : null;
   const stakes = await prisma.pyreStake.findMany({ where: { appId: app.id, withdrawnAt: null, amount: { gt: 0 } }, select: { id: true, amount: true } });
-  const split = splitFees(usdMicros, parent !== null, stakes.length > 0);
+  const split = splitFees(usdMicros, parent !== null, stakes.length > 0, app.chain);
 
   const credit = await prisma.$transaction(async (tx) => {
     const fee = await tx.feeEvent.create({
@@ -48,6 +50,7 @@ export async function recordCreatorFee(app: SweepApp, wei: bigint, txHash: Hash,
         usdMicros: split.usdMicros,
         buildMicros: split.buildMicros,
         pyreMicros: split.pyreMicros,
+        coinBurnMicros: split.coinBurnMicros,
         launcherMicros: split.launcherMicros,
         upstreamMicros: split.upstreamMicros,
         creditsMicros: split.creditsMicros,
@@ -59,9 +62,12 @@ export async function recordCreatorFee(app: SweepApp, wei: bigint, txHash: Hash,
       data: { budgetMicros: { increment: split.buildMicros }, feesWei: { increment: dec(wei) } },
       select: { budgetMicros: true },
     });
+    // The 25% burn leg: PYRE_TOKEN on Robinhood Chain, the coin's own COINBURN account elsewhere.
     const ledger: Prisma.LedgerEntryCreateManyInput[] = [
       { account: `BUILD:${app.id}`, deltaMicros: split.buildMicros, refType: "FeeEvent", refId: fee.id, memo: "creator fee" },
-      { account: "PYRE_TOKEN", deltaMicros: split.pyreMicros, refType: "FeeEvent", refId: fee.id, memo: "creator fee" },
+      app.chain === "robinhood"
+        ? { account: "PYRE_TOKEN", deltaMicros: split.pyreMicros, refType: "FeeEvent", refId: fee.id, memo: "creator fee" }
+        : { account: `COINBURN:${app.id}`, deltaMicros: split.coinBurnMicros, refType: "FeeEvent", refId: fee.id, memo: "creator fee" },
       { account: `LAUNCHER:${app.launcherId}`, deltaMicros: split.launcherMicros, refType: "FeeEvent", refId: fee.id, memo: "creator fee" },
     ];
     if (split.creditsMicros > 0n) {
@@ -124,14 +130,14 @@ export async function recordCreatorFee(app: SweepApp, wei: bigint, txHash: Hash,
 }
 
 /** Announces a credit on the feed and revives a DORMANT app whose budget is back above the iteration minimum. */
-async function announceCredit(ctx: ChainWorkerContext, app: SweepApp, credit: FeeCredit, wei: bigint, txHash: Hash): Promise<void> {
+async function announceCredit(ctx: ChainWorkerContext, app: SweepApp, credit: FeeCredit, wei: bigint, txHash: string): Promise<void> {
   await publishEvent(prisma, ctx.redis, app.id, {
     type: "FEES",
     wei: wei.toString(),
     usdMicros: credit.usdMicros.toString(),
     buildMicros: credit.buildMicros.toString(),
     txHash,
-    explorerUrl: explorerTxUrl(txHash),
+    explorerUrl: app.chain === "robinhood" ? explorerTxUrl(txHash) : adapterFor(app.launchpad).info.explorerTxUrl(txHash),
   });
   if (app.status === "DORMANT" && credit.budgetMicros >= BigInt(ITERATION_BUDGET_USD.MIN) * 1_000_000n) {
     await prisma.app.update({ where: { id: app.id }, data: { status: "LIVE" } });
@@ -146,6 +152,45 @@ async function announceCredit(ctx: ChainWorkerContext, app: SweepApp, credit: Fe
     ctx.log.info({ appId: app.id, budgetMicros: credit.budgetMicros.toString() }, "app revived by fees");
   }
   await publishGlobal(ctx.redis, app.id);
+}
+
+/**
+ * One non-PONS app: creator fees accrue in the launchpad's own vault (no sweep step on pump), the
+ * app wallet claims them to itself, the claim is credited with the chain's split, and everything
+ * above the wallet's float moves to the treasury on that chain.
+ */
+export async function sweepVenueApp(ctx: ChainWorkerContext, app: SweepApp, log: Logger): Promise<void> {
+  const venue = adapterFor(app.launchpad);
+  const wallet = venue.appWallet(app.keypairIndex);
+  const token = app.tokenAddress!;
+  const state = await venue.readLaunch(token);
+  if (!state.exists) {
+    log.warn({ token }, "token is not a launch on its venue; skipping");
+    return;
+  }
+  await syncLaunchPhase(ctx, app, state);
+  const before = await venue.accruingFees(token, wallet.address);
+  if (before.unswept > 0n) {
+    const swept = await venue.sweepFees(wallet, token);
+    if (swept.swept) log.info({ hash: swept.hash }, "creator fees swept");
+  }
+  const claimed = await venue.claimFees(wallet, token);
+  if (claimed.hash && claimed.amount > 0n) {
+    log.info({ amount: claimed.amount.toString(), hash: claimed.hash }, "creator fees claimed into app wallet");
+    const credit = await recordCreatorFee(app, claimed.amount, claimed.hash, await venue.nativePriceUsd(), log);
+    if (credit) await announceCredit(ctx, app, credit, claimed.amount, claimed.hash);
+  }
+  const float = VENUE_WALLET_FLOAT[app.chain] ?? 0n;
+  const excess = (await venue.nativeBalance(wallet.address)) - float;
+  if (excess >= float) {
+    const { hash } = await venue.transferNative(wallet, venue.treasury().address, excess);
+    log.info({ amount: excess.toString(), hash }, "app wallet swept to treasury");
+    await audit({ actor: "worker:feeSweep", action: "FEE_SWEEP", targetType: "App", targetId: app.id, meta: { wei: excess, hash, from: wallet.address, chain: app.chain, keptWei: float, claimedWei: claimed.amount, claimTx: claimed.hash } });
+  }
+  const after = claimed.amount > 0n ? await venue.accruingFees(token, wallet.address) : before;
+  if (after.unswept !== big(app.unsweptWei) || after.claimable !== big(app.escrowWei)) {
+    await prisma.app.update({ where: { id: app.id }, data: { unsweptWei: dec(after.unswept), escrowWei: dec(after.claimable) } });
+  }
 }
 
 /**
@@ -301,7 +346,9 @@ export async function runFeeSweep(ctx: ChainWorkerContext): Promise<void> {
       for (const app of apps) {
         const appPass = await withLock(ctx.redis, `lock:feeSweep:app:${app.id}`, APP_LOCK_TTL_SECONDS, async () => {
           try {
-            await sweepApp(ctx, app, log.child({ appId: app.id, token: app.tokenAddress }));
+            if (app.chain !== "robinhood") {
+              if (solanaEnabled()) await sweepVenueApp(ctx, app, log.child({ appId: app.id, token: app.tokenAddress }));
+            } else await sweepApp(ctx, app, log.child({ appId: app.id, token: app.tokenAddress }));
           } catch (err) {
             log.error({ err, appId: app.id }, "fee sweep failed for app");
           }

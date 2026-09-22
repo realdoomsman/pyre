@@ -26,6 +26,7 @@ import { CHAIN_QUEUES, type ChainWorkerContext } from "./context.js";
 import { chainWorkerEnv } from "./env.js";
 import { isPaused } from "./money.js";
 import { TREASURY_FLOOR_WEI } from "./wallet.js";
+import { runCoinBurns } from "./coinBurn.js";
 
 export const MIN_BUYBACK_MICROS = BigInt(MIN_BUYBACK_USD) * 1_000_000n;
 const LOCK_TTL_SECONDS = 900;
@@ -222,6 +223,8 @@ export async function runBuybackJob(ctx: ChainWorkerContext, job: Job): Promise<
     } catch (err) {
       log.error({ err }, "$PYRE buyback failed");
     }
+    // Coin burns: the same 25% leg on chains where PYRE cannot be bought, one machine per app.
+    await runCoinBurns(log);
   });
   if (!held.acquired) log.info("$PYRE buyback already in progress; skipping");
 }

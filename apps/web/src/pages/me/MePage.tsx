@@ -1,9 +1,11 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { explorerAddressUrl } from "@pyre/shared";
+import type { Chain } from "@pyre/shared";
+import { VENUES } from "@pyre/shared";
 import { useMe } from "../../api/queries.js";
 import { useAuth } from "../../auth/useAuth.js";
-import { formatEth, formatTokenUnits, formatUsd, shortAddress } from "../../lib/format.js";
+import { ETH, SOL, formatNative, formatTokenUnits, formatUsd, nativeToNumber, nativeUsdMicros, shortAddress } from "../../lib/format.js";
+import { ROBINHOOD, useVenueLinks } from "../../lib/venue.js";
 import { Address, Avatar, Button, Card, Chip, EthFlow, Skeleton, Tabs, UsdFlow, cx, panelId, tabId } from "../../ui/index.js";
 import { Launched } from "./Launched.js";
 import { Notifications } from "./Notifications.js";
@@ -28,10 +30,11 @@ export const MePage = () => {
   const me = useMe();
   const navigate = useNavigate();
   const [section, setSection] = useState<Section>("positions");
-  const [deposit, setDeposit] = useState(false);
+  const [deposit, setDeposit] = useState<Chain | null>(null);
   const [withdraw, setWithdraw] = useState(false);
-  const depositMounted = useMounted(deposit);
+  const depositMounted = useMounted(deposit !== null);
   const withdrawMounted = useMounted(withdraw);
+  const solanaLinks = useVenueLinks(VENUES.pump_fun);
 
   useEffect(() => {
     document.title = "Account — Pyre";
@@ -45,9 +48,10 @@ export const MePage = () => {
     const valueUsd = data.positions.reduce((s, p) => s + p.valueUsd, 0);
     const delta = data.positions.reduce((s, p) => (p.app.change24hPct == null ? s : s + p.valueUsd - p.valueUsd / (1 + p.app.change24hPct / 100)), 0);
     const price = data.balances.ethPriceUsd;
-    const ethBalanceUsd = (Number(BigInt(data.balances.ethWei)) / 1e18) * price;
+    const ethBalanceUsd = nativeToNumber(data.balances.ethWei, ETH) * price;
+    const solBalanceUsd = nativeToNumber(data.balances.solLamports, SOL) * data.balances.solPriceUsd;
     const usdgUsd = Number(BigInt(data.balances.usdgUnits)) / 1e6;
-    const total = valueUsd + ethBalanceUsd + usdgUsd;
+    const total = valueUsd + ethBalanceUsd + solBalanceUsd + usdgUsd;
     return { total, valueUsd, delta, deltaPct: valueUsd - delta > 0 ? (delta / (valueUsd - delta)) * 100 : 0, totalEth: price > 0 ? total / price : 0 };
   }, [data]);
 
@@ -83,16 +87,16 @@ export const MePage = () => {
             <div className="eyebrow mb-2">Custodial wallet</div>
             <h2 className="h3 mb-1">Sign in with Google</h2>
             <p className="small text-ink-2">
-              Pyre derives a Robinhood Chain wallet for you and signs on your behalf: one-click stakes, trades, withdrawals. You deposit ETH or USDG to it and can withdraw any
-              time. Pyre holds the key; you never see it.
+              Pyre derives a Robinhood Chain wallet and a Solana wallet for you and signs on your behalf: one-click stakes, trades, withdrawals. You deposit ETH, USDG or SOL and can
+              withdraw any time. Pyre holds the keys; you never see them.
             </p>
           </Card>
           <Card>
             <div className="eyebrow mb-2">External wallet</div>
             <h2 className="h3 mb-1">Sign in with your own wallet</h2>
             <p className="small text-ink-2">
-              Prove the address with one signed message. You sign every transaction yourself, in your wallet, on chain 4663. Pyre never holds a key for you. You still get a
-              custodial balance for one-click stakes and trades if you want one.
+              Prove the address with one signed message. You sign every Robinhood Chain transaction yourself, in your wallet, on chain 4663. Pyre never holds a key for you. You still get
+              custodial balances for one-click stakes and trades — and they are the only way to hold Solana coins here.
             </p>
           </Card>
         </div>
@@ -102,6 +106,7 @@ export const MePage = () => {
 
   const ethWei = BigInt(data.balances.ethWei);
   const usdgUnits = BigInt(data.balances.usdgUnits);
+  const solLamports = BigInt(data.balances.solLamports);
   const up = (portfolio?.delta ?? 0) >= 0;
 
   return (
@@ -113,10 +118,18 @@ export const MePage = () => {
             <div className="min-w-0">
               <div className="truncate text-15 font-medium text-ink">{data.user.displayName ?? shortAddress(data.wallet, 6)}</div>
               <div className="flex flex-wrap items-center gap-2 text-12 text-ink-3">
-                <Address address={data.wallet} chars={6} explorerUrl={explorerAddressUrl(data.wallet)} label={undefined} className="text-12" />
+                <Address address={data.wallet} chars={6} explorerUrl={ROBINHOOD.address(data.wallet)} label={undefined} className="text-12" />
                 <Chip size="sm" mono>
-                  custodial
+                  custodial · robinhood
                 </Chip>
+                {data.solWallet && (
+                  <>
+                    <Address address={data.solWallet} chars={5} explorerUrl={solanaLinks.address(data.solWallet)} label={undefined} className="text-12" />
+                    <Chip size="sm" mono>
+                      custodial · solana
+                    </Chip>
+                  </>
+                )}
                 {data.authWallet && (
                   <Chip size="sm" mono tone="accent">
                     {shortAddress(data.authWallet)} external
@@ -148,10 +161,10 @@ export const MePage = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setDeposit(true)}>
+          <Button variant="secondary" onClick={() => setDeposit("robinhood")}>
             Deposit
           </Button>
-          <Button variant="secondary" onClick={() => setWithdraw(true)} disabled={ethWei === 0n && usdgUnits === 0n}>
+          <Button variant="secondary" onClick={() => setWithdraw(true)} disabled={ethWei === 0n && usdgUnits === 0n && solLamports === 0n}>
             Withdraw
           </Button>
           <Button
@@ -166,18 +179,40 @@ export const MePage = () => {
         </div>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2" aria-label="Balances">
+      <section className="grid gap-4 sm:grid-cols-3" aria-label="Balances">
         <Card>
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="eyebrow">ETH</div>
-              <div className="num mt-1 text-22 text-ink">{formatEth(ethWei, { unit: false })}</div>
-              <div className="small text-ink-3">≈ {formatUsd(BigInt(Math.round((Number(ethWei) / 1e18) * data.balances.ethPriceUsd * 1e6)))} · gas, stakes, coin buys</div>
+              <div className="num mt-1 text-22 text-ink">{formatNative(ethWei, ETH, { unit: false })}</div>
+              <div className="small text-ink-3">≈ {formatUsd(nativeUsdMicros(ethWei, ETH, data.balances.ethPriceUsd))} · gas, stakes, coin buys</div>
             </div>
             <Chip size="sm" mono>
               chain 4663
             </Chip>
           </div>
+          <Button variant="ghost" size="sm" className="mt-3" onClick={() => setDeposit("robinhood")}>
+            Deposit ETH
+          </Button>
+        </Card>
+        <Card>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="eyebrow">SOL</div>
+              <div className="num mt-1 text-22 text-ink">{formatNative(solLamports, SOL, { unit: false })}</div>
+              <div className="small text-ink-3">
+                {data.solWallet ? <>≈ {formatUsd(nativeUsdMicros(solLamports, SOL, data.balances.solPriceUsd))} · stakes and buys on pump.fun</> : "Solana launches are paused right now"}
+              </div>
+            </div>
+            <Chip size="sm" mono>
+              solana
+            </Chip>
+          </div>
+          {data.solWallet && (
+            <Button variant="ghost" size="sm" className="mt-3" onClick={() => setDeposit("solana")}>
+              Deposit SOL
+            </Button>
+          )}
         </Card>
         <Card>
           <div className="flex items-start justify-between gap-3">
@@ -212,7 +247,14 @@ export const MePage = () => {
       </section>
 
       <Suspense fallback={null}>
-        {depositMounted && <DepositTray open={deposit} onClose={() => setDeposit(false)} address={data.wallet} />}
+        {depositMounted && (
+          <DepositTray
+            open={deposit !== null}
+            onClose={() => setDeposit(null)}
+            chain={deposit === "solana" ? "solana" : "robinhood"}
+            address={deposit === "solana" && data.solWallet ? data.solWallet : data.wallet}
+          />
+        )}
         {withdrawMounted && <WithdrawTray open={withdraw} onClose={() => setWithdraw(false)} me={data} />}
       </Suspense>
     </div>
