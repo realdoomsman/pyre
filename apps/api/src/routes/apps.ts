@@ -351,7 +351,9 @@ apps.get(
   }),
 );
 
-const FeedQuery = pageQuery(50, 200);
+/** `kind=build` leaves out market noise (trades, fee claims, growth posts) so a log tail is a log tail. */
+const FeedQuery = pageQuery(50, 200).extend({ kind: z.enum(["all", "build"]).default("all") });
+const MARKET_EVENT_TYPES = ["TRADE", "FEES", "GROWTH_POST", "LAUNCH", "GRADUATED"];
 
 apps.get(
   "/:slug/feed",
@@ -359,12 +361,12 @@ apps.get(
     const slug = req.params.slug!;
     const q = parse(FeedQuery, req.query);
     const page = await cached(
-      cacheKey("apps.feed", { slug, cursor: q.cursor ?? null, limit: q.limit }),
+      cacheKey("apps.feed", { slug, cursor: q.cursor ?? null, limit: q.limit, kind: q.kind }),
       15_000,
       async () => {
         const app = await appBySlug(slug);
         const rows = await db.buildEvent.findMany({
-          where: { appId: app.id },
+          where: q.kind === "build" ? { appId: app.id, type: { notIn: MARKET_EVENT_TYPES } } : { appId: app.id },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: q.limit + 1,
           ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),

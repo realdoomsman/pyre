@@ -21,7 +21,7 @@ export const latestScreenshot = (events: ReadonlyArray<BuildEventDto>): Screensh
 export const useLatestScreenshot = (slug: string | undefined) =>
   useQuery({
     queryKey: ["feed", slug, "screenshot"],
-    queryFn: ({ signal }) => api.get<{ events: BuildEventDto[] }>(`/v1/apps/${slug}/feed?limit=40`, signal),
+    queryFn: ({ signal }) => api.get<{ events: BuildEventDto[] }>(`/v1/apps/${slug}/feed?limit=40&kind=build`, signal),
     enabled: !!slug,
     staleTime: 5 * 60_000,
     select: (p) => latestScreenshot([...p.events].sort((a, b) => a.createdAt.localeCompare(b.createdAt))),

@@ -32,7 +32,7 @@ const pickSubject = (apps: AppSummaryDto[]): { app: AppSummaryDto; live: boolean
 const useFeedTail = (slug: string | undefined) =>
   useQuery({
     queryKey: ["feed", slug, "tail"],
-    queryFn: ({ signal }) => api.get<FeedPage>(`/v1/apps/${slug}/feed?limit=80`, signal),
+    queryFn: ({ signal }) => api.get<FeedPage>(`/v1/apps/${slug}/feed?limit=80&kind=build`, signal),
     enabled: !!slug,
     staleTime: 60_000,
     select: (p) => [...p.events].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
