@@ -16,7 +16,7 @@ Stake 0.05 ETH, refundable, and it launches on pons.
 
 5
 00:00:18,994 --> 00:00:24,023
-60 to the build budget, 25 to a $PYRE buyback, 15 to the launcher.
+60 to the build budget, 25 to a PYRE buyback, 15 to the launcher.
 
 6
 00:00:27,623 --> 00:00:30,617
@@ -27,30 +27,30 @@ At $50, an agent builds in a sandbox.
 Nothing deploys until the build, Lighthouse and a reviewer pass.
 
 8
-00:00:35,648 --> 00:00:40,052
-It goes live on its own subdomain and charges in stablecoin. No gas.
+00:00:35,648 --> 00:00:40,485
+It goes live on its own subdomain, free to use. Holders unlock features.
 
 9
-00:00:40,852 --> 00:00:43,465
-85% of revenue buys the coin back.
+00:00:41,285 --> 00:00:43,602
+A quarter of every fee buys PYRE.
 
 10
-00:00:47,065 --> 00:00:49,095
+00:00:47,485 --> 00:00:49,515
 Then it burns. Supply falls.
 
 11
-00:00:49,315 --> 00:00:52,623
+00:00:49,735 --> 00:00:53,043
 Every burn carries an attestation anyone can reproduce.
 
 12
-00:00:57,065 --> 00:01:00,313
+00:00:57,485 --> 00:01:00,733
 No budget, no agent. Any new fee relights it.
 
 13
-00:01:01,265 --> 00:01:07,020
-408 tests, 62 of 68 production features, an independent security review.
+00:01:01,685 --> 00:01:06,581
+Every test, every audit and an independent security review, in the public repo.
 
 14
-00:01:08,070 --> 00:01:10,634
+00:01:07,935 --> 00:01:10,499
 Pyre. Launching soon on Robinhood Chain.
 

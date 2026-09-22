@@ -39,6 +39,9 @@ function envScript(ctx: HostContext): string {
     version: ctx.deployment?.version ?? 0,
     holderMin: manifest?.holderTier?.minHoldTokens ?? 0,
     functions: manifest?.functions ?? [],
+    // Chain constant. Bundles built with the SDK that predates the payments removal refuse to boot
+    // without it, and every deployed app keeps working after a platform change, so it stays.
+    usdg: env.USDG_ADDRESS,
   };
   // `</script>` can never appear in the payload, even if an app name tries.
   return `window.__PYRE__ = ${JSON.stringify(payload).replace(/</g, "\\u003c")};\nObject.freeze(window.__PYRE__);\n`;
