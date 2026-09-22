@@ -81,7 +81,11 @@ const FILTERS: Record<AppSort, { where: () => Prisma.AppWhereInput; orderBy?: Pr
   new: { where: () => PUBLIC, orderBy: [{ launchedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }, { id: "desc" }] },
   heating: { where: () => ({ ...PUBLIC, launchPhase: 0 }), orderBy: [{ progress: "desc" }, { volume24hUsd: "desc" }, { id: "desc" }] },
   graduated: { where: () => ({ ...PUBLIC, launchPhase: 2 }), orderBy: [{ graduatedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }] },
-  shipping: { where: () => ({ ...PUBLIC, deployments: { some: { createdAt: { gte: since24h() } } } }), orderBy: [{ updatedAt: "desc" }, { id: "desc" }] },
+  /** The agent is on it now (a queued or running job), or it deployed in the last 24h. */
+  shipping: {
+    where: () => ({ ...PUBLIC, OR: [{ jobs: { some: { status: { in: ["RUNNING", "QUEUED"] } } } }, { deployments: { some: { createdAt: { gte: since24h() } } } }] }),
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+  },
   burning: {
     where: () => ({ ...PUBLIC, buybacks: { some: { status: "BURNED", completedAt: { gte: since24h() } } } }),
     rank: (_a, r) => Number(r.burned24hWei),

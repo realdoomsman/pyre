@@ -29,7 +29,7 @@ const loadStats = async (): Promise<StatsDto> => {
   const since30d = new Date(now - 30 * DAY_MS);
   const dayStart = new Date(new Date(now).toISOString().slice(0, 10));
   // One batched transaction for every platform aggregate: a single round trip, one snapshot.
-  const [totals, live, building, total, rev24h, rev30d, burned24h, burned30d, burnsAll, jobsToday] = await db.$transaction([
+  const [totals, live, building, total, rev24h, rev30d, burned24h, burned30d, burnsAll, jobsToday, pyreAll, pyre24h, pyre30d] = await db.$transaction([
     db.app.aggregate({ _sum: { revenueMicros: true, feesWei: true, buybackWei: true } }),
     db.app.count({ where: { status: "LIVE" } }),
     db.app.count({ where: { jobs: { some: { status: { in: ["RUNNING", "QUEUED"] } } } } }),
@@ -43,6 +43,10 @@ const loadStats = async (): Promise<StatsDto> => {
       where: { startedAt: { gte: dayStart } },
       select: { startedAt: true, finishedAt: true },
     }),
+    // $PYRE's own buy-and-burns count as ETH burned too; they are the platform's share of every fee and sale.
+    db.pyreBurn.aggregate({ where: { status: "BURNED" }, _sum: { ethWei: true }, _count: true }),
+    db.pyreBurn.aggregate({ where: { status: "BURNED", completedAt: { gte: since24h } }, _sum: { ethWei: true } }),
+    db.pyreBurn.aggregate({ where: { status: "BURNED", completedAt: { gte: since30d } }, _sum: { ethWei: true } }),
   ]);
   const [market, counts] = await Promise.all([marketSnapshot(), listCounts()]);
   const pyre = market?.pyreToken ?? null;
@@ -58,12 +62,12 @@ const loadStats = async (): Promise<StatsDto> => {
     revenueTotalMicros: (totals._sum.revenueMicros ?? 0n).toString(),
     revenue24hMicros: (rev24h._sum.usdMicros ?? 0n).toString(),
     feesTotalWei: big(totals._sum.feesWei).toString(),
-    burnedEthWei: big(totals._sum.buybackWei).toString(),
-    burnedEth24hWei: big(burned24h._sum.ethWei).toString(),
-    burnedEth30dWei: big(burned30d._sum.ethWei).toString(),
+    burnedEthWei: (big(totals._sum.buybackWei) + big(pyreAll._sum.ethWei)).toString(),
+    burnedEth24hWei: (big(burned24h._sum.ethWei) + big(pyre24h._sum.ethWei)).toString(),
+    burnedEth30dWei: (big(burned30d._sum.ethWei) + big(pyre30d._sum.ethWei)).toString(),
     revenue30dMicros: (rev30d._sum.usdMicros ?? 0n).toString(),
     counts,
-    buybacksCount: burnsAll,
+    buybacksCount: burnsAll + pyreAll._count,
     agentHoursToday: Math.round((agentMs / 3_600_000) * 100) / 100,
     ethPriceUsd: market?.ethPriceUsd ?? 0,
     pyreToken: pyre

@@ -56,11 +56,18 @@ export const askJson = async <T>(opts: {
   };
   const inputSchema = zodToToolSchema(opts.schema);
   let lastError = "";
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const user = attempt === 0 ? opts.user : `${opts.user}\n\nYour previous answer was invalid: ${lastError}\nAnswer again, strictly matching the schema.`;
+  let lastRaw: unknown;
+  let maxTokens = opts.maxTokens;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    // A retry carries the previous answer: the model fixes the named fields instead of
+    // re-inventing everything (and dropping required fields on the way).
+    const user =
+      attempt === 0
+        ? opts.user
+        : `${opts.user}\n\nYour previous answer was:\n${JSON.stringify(lastRaw ?? null)}\n\nIt was invalid: ${lastError}\nSubmit the complete answer again with only those problems fixed, strictly matching the schema (every required field present, every length limit respected).`;
     const res = await anthropic.messages.create({
       model: opts.model,
-      max_tokens: opts.maxTokens,
+      max_tokens: maxTokens,
       system: opts.system,
       messages: [{ role: "user", content: user }],
       tools: [
@@ -84,8 +91,11 @@ export const askJson = async <T>(opts: {
     if (parsed.success) {
       return { value: parsed.data, usage, costMicros: costMicrosFor(opts.model, usage) };
     }
+    lastRaw = raw;
     lastError = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
-    log.warn({ model: opts.model, tool: opts.toolName, attempt, lastError }, "structured answer failed validation");
+    // A cut-off tool call shows up as missing required fields; give the retry room to finish.
+    if (res.stop_reason === "max_tokens") maxTokens = Math.min(maxTokens * 2, 16_000);
+    log.warn({ model: opts.model, tool: opts.toolName, attempt, lastError, stopReason: res.stop_reason }, "structured answer failed validation");
   }
   throw new Error(`Model ${opts.model} returned invalid ${opts.toolName}: ${lastError}`);
 };
