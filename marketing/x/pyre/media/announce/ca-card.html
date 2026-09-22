@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0A0A0C;width:1600px;height:900px;overflow:hidden}
+  #stage{position:relative;width:1600px;height:900px;background:#0A0A0C;color:#F3F2EE;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .mono{font-family:"Geist Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
+  .serif{font-family:"Instrument Serif",serif;font-weight:400;letter-spacing:-0.02em;line-height:1.05}
+  #heat{position:absolute;left:0;right:0;bottom:0;height:330px;opacity:.6;
+    background:linear-gradient(to top,#E9F1FF 0%,#9CD2FF 7%,#3E8BFF 18%,#7A66F5 38%,#3B2F7A 62%,#1C1B2E 82%,rgba(10,10,12,0) 100%)}
+  #heatcore{position:absolute;left:50%;bottom:-130px;width:1200px;height:280px;transform:translateX(-50%);
+    background:radial-gradient(ellipse at center,rgba(233,241,255,.9) 0%,rgba(156,210,255,.4) 35%,rgba(122,102,245,.14) 60%,rgba(10,10,12,0) 75%);filter:blur(6px)}
+  .label{font-size:24px;color:#9B9891;margin-bottom:30px}
+  .h1{font-size:112px}
+  .h1 .accent{color:#9D8CFF;font-style:italic}
+  .ca{font-family:"Geist Mono",monospace;font-size:44px;letter-spacing:.02em;color:#F3F2EE;
+    margin-top:56px;padding:30px 44px;border:1px solid rgba(157,140,255,.4);border-radius:16px;background:#121215;
+    box-shadow:0 0 44px rgba(122,102,245,.16)}
+  .chain{font-size:24px;color:#9B9891;margin-top:34px}
+  .warn{font-family:Geist,sans-serif;font-size:30px;color:#9B9891;margin-top:40px}
+  .warn b{color:#F3F2EE;font-weight:600}
+  #foot{position:absolute;left:56px;bottom:34px;font-size:19px;color:#8A877F}
+</style></head>
+<body>
+<div id="stage">
+  <div id="heat"></div><div id="heatcore"></div>
+  <div class="mono label">the only PYRE contract · ever · on any chain</div>
+  <div class="serif h1">one PYRE. <span class="accent">one chain.</span></div>
+  <div class="ca">0xc8488bE2e4f430420A364E64f4D8af428b74D903</div>
+  <div class="mono chain">robinhood chain · 4663 · verify on blockscout</div>
+  <div class="warn">any other "PYRE" on any other chain is <b>not us</b>.</div>
+  <div class="mono" id="foot">PYRE.FUN</div>
+</div>
+</body></html>

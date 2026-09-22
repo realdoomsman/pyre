@@ -1,0 +1,88 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0A0A0C;width:1920px;height:1080px;overflow:hidden}
+  #stage{position:relative;width:1920px;height:1080px;background:#0A0A0C;font-family:Geist,sans-serif;color:#F3F2EE}
+  .mono{font-family:"Geist Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
+  .serif{font-family:"Instrument Serif",serif;font-weight:400;letter-spacing:-0.02em;line-height:1.04}
+  .layer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+  /* heat ramp rising from the bottom edge */
+  #heat{position:absolute;left:0;right:0;bottom:0;height:420px;opacity:.55;
+    background:linear-gradient(to top,#E9F1FF 0%,#9CD2FF 7%,#3E8BFF 18%,#7A66F5 38%,#3B2F7A 62%,#1C1B2E 82%,rgba(10,10,12,0) 100%);}
+  #heatcore{position:absolute;left:50%;bottom:-160px;width:1400px;height:340px;transform:translateX(-50%);
+    background:radial-gradient(ellipse at center,rgba(233,241,255,.85) 0%,rgba(156,210,255,.35) 35%,rgba(122,102,245,.12) 60%,rgba(10,10,12,0) 75%);filter:blur(6px)}
+  #foot{position:absolute;left:64px;bottom:40px;font-size:20px;color:#8A877F;opacity:.9}
+  #frame-tag{display:none}
+  .label{font-size:26px;color:#9B9891;margin-bottom:34px}
+  .h1{font-size:150px}
+  .h2{font-size:118px}
+  .accent{color:#9D8CFF;font-style:italic}
+  .sub{font-family:Geist,sans-serif;font-size:34px;color:#9B9891;margin-top:44px;line-height:1.5;text-transform:none;letter-spacing:0}
+  .chips{display:flex;gap:22px;margin-top:64px}
+  .chip{font-family:"Geist Mono",monospace;font-size:26px;letter-spacing:.05em;padding:18px 30px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:#121215;color:#9B9891}
+  .chip.lit{color:#F3F2EE;border-color:rgba(157,140,255,.45);box-shadow:0 0 34px rgba(122,102,245,.18)}
+  .warn{font-family:"Geist Mono",monospace;font-size:27px;letter-spacing:.05em;color:#9B9891;margin-top:56px;text-transform:none}
+  .warn b{color:#F3F2EE;font-weight:500}
+</style></head>
+<body>
+<div id="stage">
+  <div id="heat"></div><div id="heatcore"></div>
+
+  <div class="layer" id="s1">
+    <div class="mono label">next update</div>
+    <div class="serif h1">launch from <span class="accent">anywhere</span>.</div>
+    <div class="sub">pyre is adding support for other chains and other launchpads.</div>
+  </div>
+
+  <div class="layer" id="s2">
+    <div class="serif h2">same loop, more ground.</div>
+    <div class="chips">
+      <div class="chip lit">pons v2 · robinhood chain</div>
+      <div class="chip" id="c2">+ pump.fun</div>
+      <div class="chip" id="c3">+ more launchpads</div>
+    </div>
+    <div class="sub">fees still hire the agent. the agent still builds the app.<br>revenue still buys the coin back and burns it.</div>
+  </div>
+
+  <div class="layer" id="s3">
+    <div class="serif h1">one PYRE.</div>
+    <div class="serif h2" style="color:#9D8CFF;margin-top:10px">robinhood chain. nowhere else.</div>
+    <div class="warn">PYRE will <b>not</b> deploy on any other chain.<br>a "PYRE" anywhere else is <b>not us</b>.</div>
+  </div>
+
+  <div class="layer" id="s4">
+    <div class="serif h1">Pyre</div>
+    <div class="mono label" style="margin-top:38px">multichain support · coming soon</div>
+  </div>
+
+  <div class="mono" id="foot">PYRE.FUN · ROBINHOOD CHAIN · 4663</div>
+</div>
+<script>
+  const $=id=>document.getElementById(id);
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const ease=x=>1-Math.pow(1-clamp(x,0,1),3);
+  // fade in at t0 over d, fade out at t1 over d2
+  function vis(t,t0,d,t1,d2){ return ease((t-t0)/d) * (1-ease((t-t1)/d2)); }
+  function setFrame(n){
+    const t=n/30;
+    const D=13.0;
+    // heat slowly intensifies across the whole film
+    $('heat').style.opacity = (0.32+0.38*ease(t/D)).toFixed(3);
+    $('heatcore').style.opacity = (0.35+0.55*ease(t/D)).toFixed(3);
+    const set=(el,o,dy)=>{el.style.opacity=o.toFixed(3); el.style.transform='translateY('+(dy||0)+'px)';};
+    let o;
+    o=vis(t,0.25,0.7,2.9,0.45); set($('s1'),o,(1-ease((t-0.25)/0.7))*26);
+    o=vis(t,3.35,0.7,6.9,0.45); set($('s2'),o,(1-ease((t-3.35)/0.7))*26);
+    $('c2').style.opacity = vis(t,4.15,0.5,6.9,0.45).toFixed(3);
+    $('c3').style.opacity = vis(t,4.75,0.5,6.9,0.45).toFixed(3);
+    o=vis(t,7.35,0.7,10.9,0.45); set($('s3'),o,(1-ease((t-7.35)/0.7))*26);
+    o=vis(t,11.3,0.7,12.75,0.35); set($('s4'),o,(1-ease((t-11.3)/0.7))*20);
+    $('foot').style.opacity = (0.9*vis(t,0.6,0.8,12.6,0.4)).toFixed(3);
+    document.title='f'+n;
+  }
+  window.setFrame=setFrame;
+  setFrame(0);
+</script>
+</body></html>

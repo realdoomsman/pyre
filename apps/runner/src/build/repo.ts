@@ -46,7 +46,7 @@ export const commitAndPush = async (
     // nothing a contributor merged into files we did not touch is lost.
     const merge = await run(
       sbx,
-      `git -c http.extraheader="$GIT_AUTH" fetch -q origin main && git -c user.name=pyre -c user.email=agent@pyre.fun merge -q -X ours --no-edit -m "merge remote main (build wins conflicts)" origin/main`,
+      `git -c http.extraheader="$GIT_AUTH" fetch -q origin main && git -c user.name=pyre -c user.email=agent@pyre.fun merge -q -X ours --allow-unrelated-histories --no-edit -m "merge remote main (build wins conflicts)" origin/main`,
       { cwd: APP_DIR, timeoutMs: 120_000, envs },
     );
     if (merge.exitCode !== 0) throw new Error(`git push rejected and merge failed: ${(merge.stdout + merge.stderr).slice(-500)}`);
