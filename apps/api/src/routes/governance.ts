@@ -9,7 +9,7 @@ import { sendCached, sizeQuery } from "../lib/http.js";
 import { db } from "../lib/metrics.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
 import { publishEvent } from "../lib/events.js";
-import { CONTRIBUTOR_MIN_HOLD, cappedElectorate, holderBalance, isElected, VOTE_CAP, voteWeight } from "../lib/votes.js";
+import { cappedElectorate, contributorMinHold, holderBalance, holderWallet, isElected, voteCap, voteWeight } from "../lib/votes.js";
 
 export const governance = Router();
 
@@ -37,7 +37,7 @@ governance.get(
       cacheKey("gov.queue", { slug, limit: q.limit }),
       15_000,
       async () => {
-        const app = await db.app.findUnique({ where: { slug }, select: { id: true, status: true } });
+        const app = await db.app.findUnique({ where: { slug }, select: { id: true, chain: true, launchpad: true, status: true } });
         if (!app) throw new HttpError(404, "app_not_found");
         const items = await db.promptQueueItem.findMany({
           where: { appId: app.id },
@@ -47,10 +47,11 @@ governance.get(
         });
         return {
           appId: app.id,
+          app: { id: app.id, chain: app.chain, launchpad: app.launchpad },
           submittable: app.status === "LIVE" || app.status === "DORMANT",
           body: {
             items: items.map((item) => queueItemDto(item, false)),
-            minHoldUnits: CONTRIBUTOR_MIN_HOLD.toString(),
+            minHoldUnits: contributorMinHold(app).toString(),
             canSubmit: false,
             myWeightUnits: "0",
           },
@@ -64,8 +65,9 @@ governance.get(
       return;
     }
     const itemIds = queue.body.items.map((i) => i.id);
+    const cap = voteCap(queue.app);
     const [balance, votes] = await Promise.all([
-      holderBalance(queue.appId, user.wallet),
+      holderBalance(queue.appId, holderWallet(queue.app, user)),
       itemIds.length > 0
         ? db.vote.findMany({ where: { userId: user.id, itemId: { in: itemIds } }, select: { itemId: true } })
         : Promise.resolve([]),
@@ -77,8 +79,8 @@ governance.get(
       {
         ...queue.body,
         items: queue.body.items.map((item) => ({ ...item, votedByMe: voted[item.id] === true })),
-        canSubmit: balance >= CONTRIBUTOR_MIN_HOLD && queue.submittable,
-        myWeightUnits: (balance > VOTE_CAP ? VOTE_CAP : balance).toString(),
+        canSubmit: balance >= contributorMinHold(queue.app) && queue.submittable,
+        myWeightUnits: (balance > cap ? cap : balance).toString(),
       },
       { maxAge: 0, private: true },
     );
@@ -93,9 +95,11 @@ governance.post(
     const app = await liveAppBySlug(req.params.slug!);
     const body = parse(PromptQueueBody, req.body);
     if (app.status !== "LIVE" && app.status !== "DORMANT") throw new HttpError(409, "app_not_live");
-    const balance = await holderBalance(app.id, user.wallet);
-    if (balance < CONTRIBUTOR_MIN_HOLD) throw new HttpError(403, "insufficient_holding", { minHoldUnits: CONTRIBUTOR_MIN_HOLD.toString() });
-    const weight = balance > VOTE_CAP ? VOTE_CAP : balance;
+    const balance = await holderBalance(app.id, holderWallet(app, user));
+    const minHold = contributorMinHold(app);
+    if (balance < minHold) throw new HttpError(403, "insufficient_holding", { minHoldUnits: minHold.toString() });
+    const cap = voteCap(app);
+    const weight = balance > cap ? cap : balance;
     const item = await prisma.promptQueueItem.create({
       data: {
         appId: app.id,
@@ -115,10 +119,10 @@ governance.post(
   requireAuth,
   wrap(async (req, res) => {
     const user = req.user!;
-    const item = await prisma.promptQueueItem.findUnique({ where: { id: req.params.id! } });
+    const item = await prisma.promptQueueItem.findUnique({ where: { id: req.params.id! }, include: { app: { select: { id: true, chain: true, launchpad: true } } } });
     if (!item) throw new HttpError(404, "queue_item_not_found");
     if (item.status !== "OPEN") throw new HttpError(409, "queue_item_closed");
-    const weight = await voteWeight(item.appId, user.wallet);
+    const weight = await voteWeight(item.app, holderWallet(item.app, user));
     if (weight === 0n) throw new HttpError(403, "not_a_holder");
     const updated = await prisma.$transaction(async (tx) => {
       await tx.vote.upsert({
@@ -146,7 +150,7 @@ governance.post(
     const user = req.user!;
     const app = await liveAppBySlug(req.params.slug!);
     const body = parse(MaintainerVoteBody, req.body);
-    const weight = await voteWeight(app.id, user.wallet);
+    const weight = await voteWeight(app, holderWallet(app, user));
     if (weight === 0n) throw new HttpError(403, "not_a_holder");
     await prisma.maintainerVote.upsert({
       where: { appId_userId: { appId: app.id, userId: user.id } },
@@ -155,7 +159,7 @@ governance.post(
     });
     const [support, electorate] = await Promise.all([
       prisma.maintainerVote.aggregate({ where: { appId: app.id, candidateWallet: body.candidateWallet }, _sum: { weight: true } }),
-      cappedElectorate(app.id),
+      cappedElectorate(app),
     ]);
     const total = big(support._sum.weight);
     const majority = isElected(total, electorate);

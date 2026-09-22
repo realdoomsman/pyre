@@ -8,7 +8,7 @@ This policy covers everything that appears on Pyre: launch prompts, coin names, 
 
 - **Scams and fraud.** Anything built to take money or tokens under false pretences: fake airdrops, "guaranteed returns", Ponzi or referral-chain schemes, rug mechanics, fake exchanges, bridges, or wallets.
 - **Phishing and credential theft.** Apps that ask for a seed phrase, private key, or password, or that imitate a login screen or a wallet prompt. No Pyre app ever needs your seed phrase — sign-in is handled by the platform SDK.
-- **Impersonation.** Using a real person's, company's, project's, or token's name, ticker, logo, or likeness in a way that implies affiliation or endorsement you do not have. That includes PONS, Robinhood, and Pyre itself. Parody has to be obvious.
+- **Impersonation.** Using a real person's, company's, project's, or token's name, ticker, logo, or likeness in a way that implies affiliation or endorsement you do not have. That includes PONS, Robinhood, pump.fun, Solana, and Pyre itself — and PYRE: Pyre's coin lives on Robinhood Chain only, and a coin named or styled as PYRE on Solana or any other chain is impersonation. Parody has to be obvious.
 - **Illegal content and activity.** Unlicensed gambling, sale of controlled goods, malware, doxxing, stalkerware, sanctions evasion, or anything else unlawful where we operate or where you are.
 - **Gambling.** Games of chance for money or tokens, prediction markets, lotteries, and casino mechanics.
 - **Adult content.** Pornography and sexually explicit material, generated or otherwise. Nothing sexualising minors, ever; that is reported to the authorities.
@@ -30,7 +30,7 @@ This policy covers everything that appears on Pyre: launch prompts, coin names, 
 1. **Prompt classifier — before the app exists.** Every prompt, name, ticker, and image is screened by an automated classifier at launch. A rejected launch is never created and you are told which category it failed. Borderline cases are held for human review.
 2. **Reviewer gate — before every deploy.** An automated reviewer reads each change before it goes live and blocks anything that adds wallet or auth code, asks users for money, loads external scripts, opens raw network access, stores secrets in the browser, or violates this policy. A blocked deploy shows up in the app's public build feed.
 3. **Reports — after it is live.** Anyone can report an app from its page or by email. Reports are read by people.
-4. **Kill switch — at any time.** Depending on severity we reject the task or pull request, pause the app pending changes, or **kill** it: builds stop, the app stops serving, and its page shows that it was removed. Repeat or severe violations ban the account. Killing an app does not affect its coin, which lives in the PONS contracts on Robinhood Chain and is outside our control, and the launch stake is not refunded for an app killed under this policy.
+4. **Kill switch — at any time.** Depending on severity we reject the task or pull request, pause the app pending changes, or **kill** it: builds stop, the app stops serving, and its page shows that it was removed. Repeat or severe violations ban the account. Killing an app does not affect its coin, which lives in the PONS contracts on Robinhood Chain or the pump.fun program on Solana and is outside our control, and the launch stake is not refunded for an app killed under this policy.
 
 Appeals: reply to the enforcement email you receive, or write to the abuse address below, with the app slug and what you think we got wrong. A human re-reads it.
 

@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import { prisma } from "@pyre/db";
-import { getEthPriceUsd, getPrice, getTokenInfo, readLaunch } from "@pyre/chain";
+import { adapterFor, getEthPriceUsd, getPrice, getTokenInfo, readLaunch, solanaEnabled } from "@pyre/chain";
 import { MARKET_SNAPSHOT_KEY, type MarketSnapshot } from "@pyre/shared";
 import type { Logger } from "pino";
 import type { Address } from "viem";
@@ -28,13 +28,22 @@ export async function change24hPct(appId: string, priceUsd: number, now = Math.f
 }
 
 /**
- * Writes `MarketSnapshot` (ETH/USD plus $PYRE's on-chain state) to `PlatformSetting` so the API's
- * public reads are served from the database. Runs every price pass (60 s); the API caches the row
- * for 30 s, so a figure is at most ~90 s old and a request never waits on the RPC or a price feed.
- * A pass that cannot read the chain keeps the previous snapshot rather than writing a hole.
+ * Writes `MarketSnapshot` (ETH/USD, SOL/USD while the Solana venue is enabled, plus $PYRE's
+ * on-chain state) to `PlatformSetting` so the API's public reads are served from the database.
+ * Runs every price pass (60 s); the API caches the row for 30 s, so a figure is at most ~90 s old
+ * and a request never waits on the RPC or a price feed. A pass that cannot read the chain keeps
+ * the previous snapshot rather than writing a hole; a failed SOL read leaves the ETH figures intact.
  */
 export async function persistMarketSnapshot(log: Logger): Promise<void> {
   const ethPriceUsd = await getEthPriceUsd();
+  const solPriceUsd = solanaEnabled()
+    ? await adapterFor("pump_fun")
+        .nativePriceUsd()
+        .catch((err: unknown) => {
+          log.warn({ err }, "SOL price read failed; snapshot keeps no SOL price this pass");
+          return null;
+        })
+    : null;
   let pyreToken: MarketSnapshot["pyreToken"] = null;
   const token = chainWorkerEnv().PYRE_TOKEN;
   if (token) {
@@ -57,9 +66,9 @@ export async function persistMarketSnapshot(log: Logger): Promise<void> {
       };
     }
   }
-  const value: MarketSnapshot = { ethPriceUsd, pyreToken, updatedAt: new Date().toISOString() };
+  const value: MarketSnapshot = { ethPriceUsd, solPriceUsd, pyreToken, updatedAt: new Date().toISOString() };
   await prisma.platformSetting.upsert({ where: { key: MARKET_SNAPSHOT_KEY }, create: { key: MARKET_SNAPSHOT_KEY, value }, update: { value } });
-  log.info({ ethPriceUsd, pyre: pyreToken !== null }, "market snapshot persisted");
+  log.info({ ethPriceUsd, solPriceUsd, pyre: pyreToken !== null }, "market snapshot persisted");
 }
 
 export async function runPriceRefresh(ctx: ChainWorkerContext): Promise<void> {
@@ -72,15 +81,26 @@ export async function runPriceRefresh(ctx: ChainWorkerContext): Promise<void> {
     }
     const apps = await prisma.app.findMany({
       where: { tokenAddress: { not: null }, status: { in: ["LIVE", "DORMANT"] } },
-      select: { id: true, tokenAddress: true, launchPhase: true, poolId: true, graduatedAt: true },
+      select: { id: true, chain: true, launchpad: true, tokenAddress: true, launchPhase: true, poolId: true, graduatedAt: true },
     });
     let updated = 0;
     for (const app of apps) {
       try {
-        const launch = await readLaunch(app.tokenAddress as Address);
-        if (!launch.exists) continue;
-        await syncLaunchPhase(ctx, app, launch);
-        const snapshot = await getPrice(launch);
+        let snapshot: { priceUsd: number; mcapUsd: number; progress: number };
+        if (app.chain === "robinhood") {
+          const launch = await readLaunch(app.tokenAddress as Address);
+          if (!launch.exists) continue;
+          await syncLaunchPhase(ctx, app, launch);
+          snapshot = await getPrice(launch);
+        } else {
+          if (!solanaEnabled()) continue;
+          const venue = adapterFor(app.launchpad);
+          const [state, nativePriceUsd] = await Promise.all([venue.readLaunch(app.tokenAddress!), venue.nativePriceUsd()]);
+          if (!state.exists) continue;
+          await syncLaunchPhase(ctx, app, state);
+          const priceUsd = state.priceNative * nativePriceUsd;
+          snapshot = { priceUsd, mcapUsd: priceUsd * (Number(state.circulatingUnits) / 10 ** venue.info.tokenDecimals), progress: state.progress };
+        }
         const change = await change24hPct(app.id, snapshot.priceUsd);
         await prisma.app.update({
           where: { id: app.id },

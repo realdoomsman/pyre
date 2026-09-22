@@ -32,6 +32,10 @@ const chainEnv: { BLOCKSCOUT_API_KEY?: string } = {};
 vi.mock("@pyre/db", async (importOriginal) => ({ ...(await importOriginal<typeof Db>()), prisma }));
 vi.mock("@pyre/chain", () => ({
   getHolders,
+  solanaEnabled: () => false,
+  adapterFor: () => {
+    throw new Error("unused");
+  },
   readLaunch,
   publicClient: () => ({ getLogs, getBlockNumber }),
   ponsAddresses: () => ({ locker: LOCKER, poolManager: "0x00000000000000000000000000000000000000e0", buybackVault: "0x00000000000000000000000000000000000000f0" }),
@@ -71,7 +75,7 @@ describe("explorer snapshot (BLOCKSCOUT_API_KEY set)", () => {
   });
 
   it("keeps the previous snapshot when the explorer returns nothing for a coin that has holders", async () => {
-    app.findMany.mockResolvedValue([{ id: "a1", tokenAddress: TOKEN, holdersCount: 1213, launchBlock: 1n }]);
+    app.findMany.mockResolvedValue([{ id: "a1", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 1213, launchBlock: 1n }]);
     getHolders.mockResolvedValue([]);
 
     await runHolderRefresh(ctx);
@@ -82,7 +86,7 @@ describe("explorer snapshot (BLOCKSCOUT_API_KEY set)", () => {
   });
 
   it("writes the new snapshot and counts only non-system rows as holders", async () => {
-    app.findMany.mockResolvedValue([{ id: "a1", tokenAddress: TOKEN, holdersCount: 1, launchBlock: 1n }]);
+    app.findMany.mockResolvedValue([{ id: "a1", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 1, launchBlock: 1n }]);
     getHolders.mockResolvedValue([holder(CURVE, 900n, "curve"), holder(W1, 5n), holder(W2, 7n)]);
 
     await runHolderRefresh(ctx);
@@ -99,7 +103,7 @@ describe("explorer snapshot (BLOCKSCOUT_API_KEY set)", () => {
   });
 
   it("accepts an empty snapshot for a coin that already had none", async () => {
-    app.findMany.mockResolvedValue([{ id: "a1", tokenAddress: TOKEN, holdersCount: 0, launchBlock: 1n }]);
+    app.findMany.mockResolvedValue([{ id: "a1", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 0, launchBlock: 1n }]);
     getHolders.mockResolvedValue([]);
 
     await runHolderRefresh(ctx);
@@ -110,8 +114,8 @@ describe("explorer snapshot (BLOCKSCOUT_API_KEY set)", () => {
 
   it("a failure on one app does not stop the rest of the pass", async () => {
     app.findMany.mockResolvedValue([
-      { id: "a1", tokenAddress: TOKEN, holdersCount: 3, launchBlock: 1n },
-      { id: "a2", tokenAddress: TOKEN, holdersCount: 0, launchBlock: 1n },
+      { id: "a1", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 3, launchBlock: 1n },
+      { id: "a2", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 0, launchBlock: 1n },
     ]);
     getHolders.mockRejectedValueOnce(new Error("429 rate limited")).mockResolvedValueOnce([holder(W1, 9n)]);
 
@@ -127,7 +131,7 @@ describe("transfer-log indexing (no explorer key)", () => {
   const ZERO = "0x0000000000000000000000000000000000000000";
 
   it("starts at the launch block, folds deltas, skips system balances and commits the cursor", async () => {
-    app.findMany.mockResolvedValue([{ id: "a1", tokenAddress: TOKEN, holdersCount: 0, launchBlock: 100n }]);
+    app.findMany.mockResolvedValue([{ id: "a1", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 0, launchBlock: 100n }]);
     platformSetting.findUnique.mockResolvedValue(null);
     getBlockNumber.mockResolvedValue(150n);
     readLaunch.mockResolvedValue({ curve: CURVE });
@@ -160,7 +164,7 @@ describe("transfer-log indexing (no explorer key)", () => {
   });
 
   it("resumes from the stored cursor on top of the stored balances", async () => {
-    app.findMany.mockResolvedValue([{ id: "a1", tokenAddress: TOKEN, holdersCount: 1, launchBlock: 100n }]);
+    app.findMany.mockResolvedValue([{ id: "a1", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 1, launchBlock: 100n }]);
     platformSetting.findUnique.mockResolvedValue({ key: "holdersCursor:a1", value: "150" });
     holderBalance.findMany.mockResolvedValue([{ wallet: W1, amount: dec(140n) }]);
     getBlockNumber.mockResolvedValue(160n);
@@ -181,7 +185,7 @@ describe("transfer-log indexing (no explorer key)", () => {
   });
 
   it("does nothing when the cursor is already at the head", async () => {
-    app.findMany.mockResolvedValue([{ id: "a1", tokenAddress: TOKEN, holdersCount: 1, launchBlock: 100n }]);
+    app.findMany.mockResolvedValue([{ id: "a1", chain: "robinhood", launchpad: "pons_v2", tokenAddress: TOKEN, holdersCount: 1, launchBlock: 100n }]);
     platformSetting.findUnique.mockResolvedValue({ key: "holdersCursor:a1", value: "160" });
     getBlockNumber.mockResolvedValue(160n);
 

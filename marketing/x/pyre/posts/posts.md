@@ -280,3 +280,55 @@ we wanted a coin whose fees build something real and burn PYRE, with receipts on
 **2026-09-22.** PYRE launched, basket shipped, 14 burns landed. Every post scheduled on 2026-09-21 (old 02–21, one per day Sep 22 → Oct 11) was written for a pre-launch world and is deleted from x.com/compose/post/unsent/scheduled; the 14 posts above and the 4 in `../media/posts2.md` replace them.
 
 **Cashtag warning.** X's composer auto-resolves the `$PYRE` cashtag to an unrelated asset (`robinhood:0x0d11e308e40c15e1181aed4f4bbfc4744e9deeed`) and shows that in the post. Write `PYRE` (no `$`) in posts and alt text until X maps the cashtag to `0xc8488bE2e4f430420A364E64f4D8af428b74D903`.
+
+## after the multichain update ships — 4 standalone posts, not scheduled
+
+Written 2026-09-22 for the `multichain` branch (Solana · pump.fun as a second venue). None of these go out before the announcement and ship-day posts in `multichain.md`, and none before the venue is live in production; they do not touch the 14 scheduled cards above. Slot them at 15:00 on days with no scheduled card, or after Oct 6. Same rules as the top of this file; `pump.fun` is a bare domain and costs 23 characters each time. Every rate quoted here is pump.fun's, not ours, and can change — never present it as a Pyre number.
+
+### M1 · coin-burn
+
+- purpose: what the 25% does on solana, and why it is not PYRE
+- visual: `FRESH:` a solana coin page's "coin burned" panel at 1600×900 with a real memo signature, no browser chrome
+- alt text: a coin page panel titled coin burned, listing a swap signature, a burn signature and a memo attestation signature with a hash
+- link: none; first reply: the coin's page on pyre.fun
+- count: 268 / 280
+
+```
+a solana coin's 25% cannot buy PYRE, because PYRE only exists on robinhood chain. so it buys the coin itself and burns it: a swap, a burn that lowers supply, and a memo reading pyre:burn:v1:<sha256>. open the signature on solscan and check it. nothing goes to holders.
+```
+
+### M2 · two-wallets
+
+- purpose: the account page now has two custodial wallets; solana is custodial only
+- visual: `FRESH:` `/me` at 1600×900 showing both addresses and deposit trays (SOL QR visible), balances blurred or zero, no browser chrome
+- alt text: the account page with two custodial addresses, one on robinhood chain and one on solana, each with a deposit tray
+- link: none; first reply: https://pyre.fun/me
+- count: 256 / 280
+
+```
+two wallets on /me now: robinhood chain and solana, both custodial, both derived from the same seed on the server. deposit ETH to one, SOL to the other. solana trading on pyre is custodial only; to trade with your own key, trade on pump.fun.
+```
+
+### M3 · whose-fee
+
+- purpose: the pump.fun creator fee is pump.fun's, changeable, re-routable; the terms say so
+- visual: none (text post)
+- alt text: n/a
+- link: none; first reply: https://pyre.fun/legal/terms
+- count: 265 / 280
+
+```
+pump.fun sets its creator fee, not us: 30 bps on the curve, a tiered share after graduation, changeable by them and re-routable under their community takeover process. the terms say so. a coin with no fees funds no build and no burn, on either chain.
+```
+
+### M4 · why-not-bridge
+
+- purpose: founder voice on why PYRE stays on one chain
+- visual: none (text post); or quote the pinned post
+- alt text: n/a
+- link: none; first reply: https://pyre.fun/pyre
+- count: 229 / 280
+
+```
+why not bridge PYRE to solana? because then there would be two of it, and "which one is real" is a question we never want a holder to ask. one coin, one chain, one supply that only goes down. solana coins burn themselves instead.
+```

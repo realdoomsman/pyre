@@ -25,7 +25,8 @@ export const ensureAppRepo = async (
     return { fullName: app.repoFullName, url: `https://github.com/${app.repoFullName}` };
   }
   const owner = env.GITHUB_OWNER;
-  const name = `pyre-${app.slug}`;
+  // Staging keeps its repos apart from production's (`GITHUB_REPO_PREFIX=pyre-staging-`).
+  const name = `${process.env.GITHUB_REPO_PREFIX ?? "pyre-"}${app.slug}`;
   const spec = app.spec && typeof app.spec === "object" && "oneLiner" in app.spec ? app.spec : null;
   const description = typeof spec?.oneLiner === "string" ? spec.oneLiner.slice(0, 300) : `Pyre app ${app.slug}`;
 

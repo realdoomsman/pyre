@@ -1,10 +1,12 @@
 import { useRef, useState, type FormEvent } from "react";
 import { CreateLaunchBody, slugify } from "@pyre/shared";
-import type { CreateLaunchBody as Body } from "@pyre/shared";
+import type { CreateLaunchBody as Body, Launchpad } from "@pyre/shared";
 import { isHttpError, uploadCoinImage } from "../../api/client.js";
+import { useVenues } from "../../lib/venue.js";
 import { Avatar, Button, Field, Input, Textarea, toast } from "../../ui/index.js";
 import { ImageCrop, type ImageCropHandle } from "./ImageCrop.js";
 import type { CoinDraft } from "./preview.js";
+import { VenuePicker } from "./VenuePicker.js";
 
 interface Props {
   draft: CoinDraft;
@@ -13,7 +15,8 @@ interface Props {
   busy: boolean;
   /** Intake moderation refused the previous attempt — shown above the form, form stays editable. */
   rejection: string | null;
-  forking: string | null;
+  /** Forking `$TICKER`: the venue is the parent's and cannot be changed. */
+  forking: { ticker: string; launchpad: Launchpad } | null;
 }
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -24,8 +27,10 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
   const [errors, setErrors] = useState<Partial<Record<keyof CoinDraft, string>>>({});
   const fileInput = useRef<HTMLInputElement>(null);
   const cropper = useRef<ImageCropHandle>(null);
+  const venues = useVenues();
 
   const patch = (p: Partial<CoinDraft>) => onChange({ ...draft, ...p });
+  const venueOff = venues.data?.some((v) => v.launchpad === draft.launchpad && !v.enabled) ?? false;
 
   const pick = (file: File | undefined) => {
     if (!file) return;
@@ -76,6 +81,7 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
       imageUrl = url;
     }
     const candidate = {
+      launchpad: draft.launchpad,
       name: draft.name.trim(),
       ticker: draft.ticker.trim().toUpperCase(),
       imageUrl,
@@ -110,9 +116,18 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
       )}
       {forking && (
         <p className="small rounded-card border border-line bg-fill px-4 py-3 text-ink-2">
-          Forking <span className="num text-ink">${forking}</span>: the parent's spec is the starting prompt and 10% of this coin's creator fees flow upstream, forever.
+          Forking <span className="num text-ink">${forking.ticker}</span>: the parent's spec is the starting prompt and 10% of this coin's creator fees flow upstream, forever.
         </p>
       )}
+
+      <Field label="Where does the coin launch?" required hint={venueOff ? "That venue is paused right now; pick another." : "The chain and launchpad cannot be changed after launch."}>
+        <VenuePicker
+          value={draft.launchpad}
+          onChange={(launchpad) => patch({ launchpad })}
+          venues={venues.data}
+          locked={forking ? { launchpad: forking.launchpad, reason: `A fork launches where its parent did.` } : null}
+        />
+      </Field>
 
       <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Field label="Name" required error={errors.name} hint={slug && draft.name ? <>Lives at <span className="num">{slug}.pyre.fun</span></> : "2–32 characters"}>
@@ -195,7 +210,7 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
 
       <div className="flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="small text-ink-3">Name, ticker and image are written to the chain and cannot be changed after launch.</p>
-        <Button type="submit" size="lg" loading={busy} disabled={uploading}>
+        <Button type="submit" size="lg" loading={busy} disabled={uploading || venueOff}>
           Draft the agent brief
         </Button>
       </div>

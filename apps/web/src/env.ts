@@ -1,4 +1,4 @@
-import { EXPLORER_URL, PONS_URL, ROBINHOOD_CHAIN_ID } from "@pyre/shared";
+import { EXPLORER_URL, ROBINHOOD_CHAIN_ID } from "@pyre/shared";
 
 const read = (key: string): string | undefined => {
   const v = (import.meta.env as Record<string, string | undefined>)[key];
@@ -29,4 +29,3 @@ export const appUrl = (slug: string): string =>
 export const explorerTx = (hash: string): string => `${env.explorerUrl}/tx/${hash}`;
 export const explorerAddress = (address: string): string => `${env.explorerUrl}/address/${address}`;
 export const explorerToken = (token: string): string => `${env.explorerUrl}/token/${token}`;
-export const ponsCoinUrl = (token: string): string => `${PONS_URL}/launchpad/${token}`;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   FEE_SPLIT_BPS,
+  FEE_SPLIT_BPS_BY_CHAIN,
   FORK_ROYALTY_BPS,
   GLOBAL_DAILY_COMPUTE_CEILING_USD,
   ITERATION_BUDGET_USD,
@@ -17,6 +18,8 @@ import {
   WEI_PER_ETH,
   bps,
   splitFees,
+  usdMicrosFromNative,
+  nativeFromUsdMicros,
   usdMicrosFromWei,
   weiFromUsdMicros,
 } from "./index.js";
@@ -222,6 +225,34 @@ describe("splitFees on a real sweep", () => {
     expect(s.pyreMicros).toBe(67_597_250n); // 25%
     expect(s.launcherMicros).toBe(40_558_350n); // 15%
     expect(s.buildMicros + s.creditsMicros + s.pyreMicros + s.launcherMicros + s.upstreamMicros + s.stakersMicros).toBe(usdMicros);
+  });
+});
+
+describe("splitFees per chain", () => {
+  it("moves the 25% PYRE leg to the coin burn on Solana and leaves every other cut identical", () => {
+    const usdMicros = 270_389_000n;
+    const rh = splitFees(usdMicros, true, true, "robinhood");
+    const sol = splitFees(usdMicros, true, true, "solana");
+    expect(rh).toEqual(splitFees(usdMicros, true, true));
+    expect(rh.coinBurnMicros).toBe(0n);
+    expect(sol.pyreMicros).toBe(0n);
+    expect(sol.coinBurnMicros).toBe(rh.pyreMicros);
+    expect(sol.coinBurnMicros).toBe(bps(usdMicros, FEE_SPLIT_BPS_BY_CHAIN.solana.COIN_BURN));
+    expect({ ...sol, pyreMicros: 0n, coinBurnMicros: 0n }).toEqual({ ...rh, pyreMicros: 0n, coinBurnMicros: 0n });
+    expect(sol.buildMicros + sol.creditsMicros + sol.pyreMicros + sol.coinBurnMicros + sol.launcherMicros + sol.upstreamMicros + sol.stakersMicros).toBe(usdMicros);
+  });
+
+  it("every chain's split table sums to 10_000 bps", () => {
+    for (const row of Object.values(FEE_SPLIT_BPS_BY_CHAIN)) {
+      expect(row.BUILD_BUDGET + row.PYRE_TOKEN + row.COIN_BURN + row.LAUNCHER).toBe(10_000);
+    }
+  });
+
+  it("converts native units at the chain's decimals", () => {
+    // 1 SOL at $116.93 and 1 ETH at $116.93 are worth the same dollars.
+    expect(usdMicrosFromNative(1_000_000_000n, 116.93, 9)).toBe(usdMicrosFromWei(WEI_PER_ETH, 116.93));
+    expect(nativeFromUsdMicros(5_000_000n, 100, 9)).toBe(50_000_000n);
+    expect(nativeFromUsdMicros(5_000_000n, 100, 18)).toBe(weiFromUsdMicros(5_000_000n, 100));
   });
 });
 

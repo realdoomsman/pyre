@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { VENUES } from "@pyre/shared";
 import type { GlobalFrame } from "../api/types.js";
-import { formatEth, formatTokenUnits, timeAgoShort } from "../lib/format.js";
+import { formatNative, formatTokenUnits, timeAgoShort } from "../lib/format.js";
 import { StatusLed, cx } from "../ui/index.js";
 
 export interface TapeRow {
@@ -25,18 +26,19 @@ export const tapeRow = (f: GlobalFrame): TapeRow | null => {
   const e = f.event;
   if (!e) return null;
   const p = e.payload;
+  const venue = VENUES[f.launchpad];
   const base = { id: e.id, at: e.createdAt, slug: f.slug, ticker: f.ticker, href: `/c/${f.slug}` };
   switch (p.type) {
     case "TRADE":
-      return { ...base, kind: "trade", side: p.side, amount: formatEth(p.quoteWei), detail: `${formatTokenUnits(p.tokenUnits)} tokens` };
+      return { ...base, kind: "trade", side: p.side, amount: formatNative(p.quoteWei, venue.native), detail: `${formatTokenUnits(p.tokenUnits, { decimals: venue.tokenDecimals })} tokens` };
     case "DEPLOY":
       return { ...base, kind: "deploy", amount: `v${p.version}`, href: p.url };
     case "FEES":
-      return { ...base, kind: "fees", amount: formatEth(p.wei) };
+      return { ...base, kind: "fees", amount: formatNative(p.wei, venue.native) };
     case "LAUNCH":
-      return { ...base, kind: "launch", amount: "on PONS" };
+      return { ...base, kind: "launch", amount: `on ${venue.launchpadLabel}` };
     case "GRADUATED":
-      return { ...base, kind: "graduated", amount: "v4 pool" };
+      return { ...base, kind: "graduated", amount: venue.chain === "solana" ? "pumpswap" : "v4 pool" };
     default:
       return null;
   }

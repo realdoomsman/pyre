@@ -3,7 +3,7 @@
  * (`packages/shared/src/dto.ts`); this file only holds envelopes and frames
  * that are not data the API owns.
  */
-import type { BuildEventDto } from "@pyre/shared";
+import type { BuildEventDto, Chain, Launchpad } from "@pyre/shared";
 
 export interface ApiError {
   status: number;
@@ -45,6 +45,9 @@ export interface GlobalFrame {
   slug: string;
   ticker: string;
   name: string;
+  /** The app's venue, so chain amounts in `event` format in the right native asset. */
+  chain: Chain;
+  launchpad: Launchpad;
   type?: string;
   event?: BuildEventDto;
 }

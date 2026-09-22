@@ -16,6 +16,7 @@ model User {
   authWallet    String?  @unique // external EVM address (0x, checksummed) proved at login via EIP-191 personal_sign
   walletIndex   Int      @unique @default(autoincrement()) // custodial HD index: m/44'/60'/0'/0/{walletIndex} (index 0 = treasury, sequence starts at 1)
   wallet        String?  @unique // custodial EVM address (0x, checksummed) derived from walletIndex (server-signs)
+  solWallet     String?  @unique // custodial Solana address (base58) derived from the same walletIndex at m/44'/501'/{walletIndex}'/0' (backfilled lazily)
   xHandle       String?
   xUserId       String?
   displayName   String?
@@ -125,6 +126,18 @@ model DailyWithdraw {
 
 /* ─────────────────────────── Apps / coins ─────────────────────────── */
 
+/** Chain a coin lives on. PYRE itself is on Robinhood Chain only. */
+enum Chain {
+  robinhood
+  solana
+}
+
+/** Launchpad the coin was created on; fixes the chain (`VENUES` in @pyre/shared). */
+enum Launchpad {
+  pons_v2
+  pump_fun
+}
+
 enum AppStatus {
   DRAFT            // prompt submitted, spec generating
   SPEC_READY       // spec awaiting launcher approval
@@ -161,25 +174,30 @@ model App {
   maintainerId   String?
   maintainer     User?      @relation("Maintainer", fields: [maintainerId], references: [id])
 
-  // on-chain (addresses are 0x checksummed; tx fields are 0x 32-byte hashes)
-  tokenAddress   String?    @unique // PONS v2 launch token (ERC-20, 18 decimals)
-  walletAddress  String?    @unique // per-app derived EVM wallet: PONS creator + creatorFeeRecipient
-  keypairIndex   Int        @unique @default(autoincrement()) // HD index of walletAddress: m/44'/60'/1'/0/{keypairIndex} (separate branch from users)
-  launchPhase    Int        @default(0) // PONS LaunchedToken.phase: 0 curve, 1 swept, 2 v4 pool, 3 rescued (LAUNCH_PHASE)
+  // venue. Every `…Wei` column on this model and its children means native base units of
+  // `chain` (wei on Robinhood Chain, lamports on Solana); `launchpad` fixes the chain.
+  chain          Chain      @default(robinhood)
+  launchpad      Launchpad  @default(pons_v2)
+
+  // on-chain (venue-formatted: 0x checksummed addresses / 32-byte hashes on Robinhood Chain, base58 on Solana)
+  tokenAddress   String?    @unique // PONS v2 launch token (ERC-20, 18 decimals) or pump.fun mint (Token-2022, 6 decimals)
+  walletAddress  String?    @unique // per-app derived wallet on `chain`: PONS creator + creatorFeeRecipient, or pump creator
+  keypairIndex   Int        @unique @default(autoincrement()) // HD index of walletAddress: m/44'/60'/1'/0/{keypairIndex} on EVM, m/44'/501'/{1000000+keypairIndex}'/0' on Solana
+  launchPhase    Int        @default(0) // LaunchedToken.phase-style: 0 curve, 1 swept/migrating, 2 pool, 3 rescued (LAUNCH_PHASE)
   curveAddress   String?    // per-launch bonding curve (phase 0 trading + fee accrual)
-  poolId         String?    // Uniswap v4 poolId (bytes32) once graduated
+  poolId         String?    // Uniswap v4 poolId (bytes32) or PumpSwap pool address once graduated
   launchedAt     DateTime?  // set by the launch worker when launchTx is mined
   graduatedAt    DateTime?
   progress       Float      @default(0) // curve raise ÷ graduation threshold, 0..1 (1 once graduated); refreshed by the price worker
-  unsweptWei     Decimal @db.Decimal(78, 0)     @default(0) // creator fees still accruing on the curve/hook (not yet swept)
-  escrowWei      Decimal @db.Decimal(78, 0)     @default(0) // claimable FeeEscrow balance snapshot
+  unsweptWei     Decimal @db.Decimal(78, 0)     @default(0) // creator fees still accruing on the curve/hook (not yet swept); 0 on pump
+  escrowWei      Decimal @db.Decimal(78, 0)     @default(0) // claimable FeeEscrow / creator-vault balance snapshot
   launchBlock    BigInt?    // block of launchTx (trade indexer start)
   lastIndexedBlock BigInt?  // trade indexer cursor
   launchTx       String?
   twitterUrl     String?
   websiteUrl     String?
 
-  // stake (wei). `stakeTx` is unique: one treasury transfer can only ever settle one launch.
+  // stake (native base units). `stakeTx` is unique: one treasury transfer can only ever settle one launch.
   stakeWei       Decimal @db.Decimal(78, 0)     @default(0)
   stakeTx        String?    @unique
   stakeRefundTx  String?
@@ -190,10 +208,10 @@ model App {
   forkOf         App?       @relation("Forks", fields: [forkOfId], references: [id])
   forks          App[]      @relation("Forks")
 
-  // budgets (USD, 1e6 = $1 for exactness; ETH in wei)
+  // budgets (USD, 1e6 = $1 for exactness; native base units for the fee column)
   budgetMicros   BigInt     @default(0) // accrued, unspent build budget
   spentMicros    BigInt     @default(0) // lifetime agent spend
-  feesWei        Decimal @db.Decimal(78, 0)     @default(0) // lifetime creator fees claimed from the PONS escrow
+  feesWei        Decimal @db.Decimal(78, 0)     @default(0) // lifetime creator fees claimed (escrow on PONS, creator vault on pump)
 
   // metrics
   usersCount     Int        @default(0)
@@ -237,8 +255,10 @@ model App {
   abuseFlags     AbuseFlag[]
   maintainerVotes MaintainerVote[]
   creditFundings CreditFunding[]
+  coinBurns      CoinBurn[]
 
   @@index([status])
+  @@index([chain, status])
   @@index([createdAt])
 }
 
@@ -342,7 +362,7 @@ model DeployFile {
 /* ─────────────────────────── Money ─────────────────────────── */
 
 enum FeeSource {
-  CREATOR_FEE   // PONS v2 creator fee, claimed from the fee escrow (curve + v4 hook sweeps)
+  CREATOR_FEE   // launchpad creator fee: PONS v2 fee escrow (curve + v4 hook sweeps) or pump.fun creator vault
   FORK_ROYALTY
   REVIVE_BUY    // direct budget top-up via revive buy
   MANUAL        // ops credit
@@ -353,21 +373,22 @@ model FeeEvent {
   appId         String
   app           App       @relation(fields: [appId], references: [id], onDelete: Cascade)
   source        FeeSource
-  wei           Decimal @db.Decimal(78, 0)    // ETH claimed
-  ethPriceUsd   Float
+  wei           Decimal @db.Decimal(78, 0)    // native claimed, base units of the app's chain
+  ethPriceUsd   Float     // native/USD at claim time (ETH on Robinhood Chain, SOL on Solana)
   usdMicros     BigInt
   buildMicros   BigInt
-  pyreMicros    BigInt
+  pyreMicros    BigInt    // 25% PYRE buy-and-burn leg (Robinhood Chain only; 0 elsewhere)
+  coinBurnMicros BigInt   @default(0) // 25% coin buy-and-burn leg off Robinhood Chain (COINBURN:<appId>); 0 on Robinhood Chain
   launcherMicros BigInt
   upstreamMicros BigInt   @default(0) // fork royalty routed upstream
   creditsMicros BigInt   @default(0) // build-cut slice routed to the model-credit funding wallet
-  txHash        String?   @unique // escrow.claim() tx
+  txHash        String?   @unique // escrow.claim() tx / creator-fee collect signature
   createdAt     DateTime  @default(now())
 
   @@index([appId, createdAt])
 }
 
-/** Lifecycle of a `PyreBurn`. */
+/** Lifecycle of a `PyreBurn` / `CoinBurn`. */
 enum BuybackStatus {
   PENDING
   SWAPPING // swap CAS won; ETH->token buy in flight (prevents a retry double-swap)
@@ -399,6 +420,35 @@ model PyreBurn {
   createdAt    DateTime      @default(now())
   completedAt  DateTime?
 
+  @@index([status, createdAt])
+}
+
+/**
+ * A Solana coin's own buy-and-burn, funded by the 25% fee leg that buys PYRE on Robinhood Chain.
+ * Mirrors `PyreBurn`: the `COINBURN:<appId>` ledger balance is debited (`LedgerEntry.refType =
+ * "CoinBurn"`, `refId` = this id) when the row opens, then the treasury Solana wallet buys the
+ * coin (curve or PumpSwap pool), `burnChecked`s it and attests with a memo tx, each step
+ * persisted so an interrupted burn resumes. SWAPPING with `error` needs an operator.
+ */
+model CoinBurn {
+  id           String        @id @default(cuid())
+  appId        String
+  app          App           @relation(fields: [appId], references: [id], onDelete: Cascade)
+  status       BuybackStatus @default(PENDING)
+  usdMicros    BigInt        // COINBURN:<appId> ledger balance consumed
+  nativeWei    Decimal @db.Decimal(78, 0)        // lamports quoted, then actually spent once SWAPPED
+  tokensBought Decimal @db.Decimal(78, 0)        @default(0)
+  tokensBurned Decimal @db.Decimal(78, 0)        @default(0)
+  burnedUnits  Decimal? @db.Decimal(78, 0)       // mint supply delta observed after the burn
+  attestHash   String        // sha256 of the COINBURN credit ids consumed, carried in the attest memo
+  swapTx       String?
+  burnTx       String?
+  attestTx     String?
+  error        String?
+  createdAt    DateTime      @default(now())
+  completedAt  DateTime?
+
+  @@index([appId, createdAt])
   @@index([status, createdAt])
 }
 
@@ -565,8 +615,9 @@ model HolderBalance {
   id        String   @id @default(cuid())
   appId     String
   app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
-  wallet    String
-  amount    Decimal @db.Decimal(78, 0)   // base units
+  wallet    String   // venue-formatted (0x / base58)
+  amount    Decimal @db.Decimal(78, 0)   // base units in the coin's decimals
+  tag       String?  // protocol-owned rows as the indexer saw them: liquidity | locked | dead | vault; null for a real holder (EVM rows are tagged by address in the API)
   updatedAt DateTime @updatedAt
 
   @@unique([appId, wallet])
@@ -583,9 +634,9 @@ model Trade {
   ts         DateTime
   side       String   // BUY | SELL
   venue      String   @default("CURVE") // CURVE | POOL
-  wallet     String   // 0x
-  tokenUnits Decimal @db.Decimal(78, 0)   // base units (18 decimals)
-  quoteWei   Decimal @db.Decimal(78, 0)   // ETH leg
+  wallet     String   // venue-formatted (0x / base58)
+  tokenUnits Decimal @db.Decimal(78, 0)   // base units in the coin's decimals (18 on PONS, 6 on pump)
+  quoteWei   Decimal @db.Decimal(78, 0)   // native leg, base units of the app's chain
   priceUsd   Float
   createdAt  DateTime @default(now())
 
@@ -688,9 +739,9 @@ model Report {
 /** Platform-wide treasury ledger (USD micros). Every money movement writes one row. */
 model LedgerEntry {
   id        String   @id @default(cuid())
-  account   String   // TREASURY | PYRE_TOKEN | CREDITS:<appId> | LAUNCHER:<userId> | BUILD:<appId> | STAKERS:<appId> | CONTRIB:<userId>
+  account   String   // TREASURY | PYRE_TOKEN | COINBURN:<appId> | CREDITS:<appId> | LAUNCHER:<userId> | BUILD:<appId> | STAKERS:<appId> | CONTRIB:<userId>
   deltaMicros BigInt
-  refType   String   // FeeEvent | PyreBurn | BuildJob | Payout | CreditFunding
+  refType   String   // FeeEvent | PyreBurn | CoinBurn | BuildJob | Payout | CreditFunding
   refId     String
   memo      String?
   createdAt DateTime @default(now())

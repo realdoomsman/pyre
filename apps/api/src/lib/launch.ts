@@ -1,15 +1,13 @@
-import { deriveAppWallet, transferEth, verifyEthTransfer, type EthTransferCheck } from "@pyre/chain";
+import { adapterFor, type VenueAccount, type VenueAdapter } from "@pyre/chain";
 import { Prisma, prisma, type App, type User } from "@pyre/db";
-import { AppSpec, LAUNCH_RATE_LIMIT_PER_DAY, RESERVED_SLUGS, SPEC_INTAKE_BUDGET_USD, slugify, type CreateLaunchBody, type StakeBody } from "@pyre/shared";
-import type { Address, Hash, LocalAccount } from "viem";
-import { env } from "../env.js";
+import { AppSpec, LAUNCH_RATE_LIMIT_PER_DAY, RESERVED_SLUGS, SPEC_INTAKE_BUDGET_USD, VENUES, slugify, type CreateLaunchBody, type StakeBody } from "@pyre/shared";
 import { reputationTier } from "./auth.js";
-import { custodialAccount, custodialEthBalance, GAS_RESERVE_WEI } from "./custodial.js";
+import { GAS_RESERVE_BY_CHAIN } from "./custodial.js";
 import { HttpError } from "./errors.js";
 import { publishEvent } from "./events.js";
 import { logger } from "./logger.js";
 import { queues } from "./queues.js";
-import { TREASURY_WALLET } from "./treasury.js";
+import { assertVenueEnabled, requiredStake, type VenueRow } from "./venue.js";
 
 /**
  * Launches that count against the daily cap: everything the user created in the last 24h except
@@ -20,17 +18,20 @@ export const launchesLast24h = (userId: string): Promise<number> =>
   prisma.app.count({ where: { launcherId: userId, createdAt: { gte: new Date(Date.now() - 86_400_000) }, status: { not: "FAILED" } } });
 
 /**
- * Creates a DRAFT app for the launcher, assigns a unique slug + derived app wallet (the PONS
- * creator / creatorFeeRecipient), and enqueues the intake job (moderation + spec generation).
+ * Creates a DRAFT app for the launcher on the chosen venue, assigns a unique slug + derived app
+ * wallet on that chain (the PONS creator / creatorFeeRecipient, or the pump.fun creator), and
+ * enqueues the intake job (moderation + spec generation). A fork launches on its parent's venue.
  */
 export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: App | null): Promise<App> => {
   if (!user.wallet) throw new HttpError(400, "wallet_required");
+  const launchpad = forkOf ? forkOf.launchpad : body.launchpad;
+  assertVenueEnabled(launchpad);
+  const venue = VENUES[launchpad];
   const tier = reputationTier(user.reputation);
   const limit = LAUNCH_RATE_LIMIT_PER_DAY[tier];
   if (!user.isAdmin && (await launchesLast24h(user.id)) >= limit) {
     throw new HttpError(429, "launch_rate_limited", { limitPerDay: limit, tier });
   }
-
   let prompt = body.prompt;
   if (forkOf) {
     const parentSpec = AppSpec.safeParse(forkOf.spec);
@@ -67,9 +68,11 @@ export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: A
           twitterUrl: body.twitter ?? null,
           websiteUrl: body.website ?? null,
           forkOfId: forkOf?.id ?? null,
+          chain: venue.chain,
+          launchpad: venue.launchpad,
         },
       });
-      const walletAddress = deriveAppWallet(created.keypairIndex).address;
+      const walletAddress = adapterFor(launchpad).appWallet(created.keypairIndex).address;
       return tx.app.update({ where: { id: created.id }, data: { walletAddress } });
     });
   } catch (err) {
@@ -97,79 +100,81 @@ export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: A
 /* ─────────────────────────── Stake ─────────────────────────── */
 
 export interface StakeSettlement {
-  txHash: Hash;
-  /** The refundable stake credited to the launch: exactly `LAUNCH_STAKE_WEI`, never the transfer's full value. */
+  txHash: string;
+  /** The refundable stake credited to the launch: exactly the chain's stake, never the transfer's full value. */
   wei: bigint;
-  from: Address;
+  from: string;
   /** True when the platform signed the transfer from the user's custodial wallet. */
   custodial: boolean;
 }
 
-/** Minimal chain surface `settleStake` needs; injected so the decision logic is testable offline. */
-export interface StakeChain {
-  verifyEthTransfer: (hash: Hash, opts: { to: Address; minWei: bigint; from: Address }) => Promise<EthTransferCheck>;
-  transferEth: (from: LocalAccount, to: Address, wei: bigint) => Promise<Hash>;
-  ethBalance: (wallet: Address) => Promise<bigint>;
-}
-
-const liveChain: StakeChain = { verifyEthTransfer, transferEth, ethBalance: custodialEthBalance };
+/** The adapter surface `settleStake` needs; injected so the decision logic is testable offline. */
+export type StakeChain = Pick<VenueAdapter, "verifyNativeTransfer" | "transferNative" | "nativeBalance" | "treasury" | "userWallet">;
 
 /**
  * True when `address` is a wallet the platform itself signs for: the treasury, any user's custodial
  * wallet, or any app wallet. Transfers from those are platform money movements (fee sweeps, drains,
  * escrows), never a launcher's stake — even if a launcher somehow proved such an address.
  */
-const isPlatformWallet = async (address: Address): Promise<boolean> => {
-  if (address.toLowerCase() === TREASURY_WALLET.toLowerCase()) return true;
+const isPlatformWallet = async (address: string, treasury: string): Promise<boolean> => {
+  if (address.toLowerCase() === treasury.toLowerCase()) return true;
   const [user, app] = await Promise.all([
-    prisma.user.findFirst({ where: { wallet: { equals: address, mode: "insensitive" } }, select: { id: true } }),
+    prisma.user.findFirst({ where: { OR: [{ wallet: { equals: address, mode: "insensitive" } }, { solWallet: address }] }, select: { id: true } }),
     prisma.app.findFirst({ where: { walletAddress: { equals: address, mode: "insensitive" } }, select: { id: true } }),
   ]);
   return user !== null || app !== null;
 };
 
 /**
- * Settles the refundable launch stake (`LAUNCH_STAKE_WEI`, ETH) into the treasury:
+ * Settles the refundable launch stake (`LAUNCH_STAKE_BY_CHAIN`, in the app chain's native asset)
+ * into the treasury wallet on that chain:
  *  - `{txHash}`: an external-wallet transfer the launcher already sent. Only launchers with a
  *    proven `authWallet` may use it, and the tx must be mined, successful, `to` = treasury,
  *    value ≥ stake and `from` = that `authWallet` — otherwise any inbound treasury tx (fee sweeps,
  *    escrows) could be claimed as a stake and refunded. The sender must not be a platform wallet.
  *    A hash can only ever settle one launch (`App.stakeTx` is unique; checked here for an early
- *    409 and enforced by the database on write).
- *  - `{custodial:true}`: the platform signs the transfer out of the launcher's custodial wallet.
- * The credited stake is always exactly `LAUNCH_STAKE_WEI`: an overpaid external transfer is not
- * refunded beyond the stake.
+ *    409 and enforced by the database on write). A wallet is only ever proven on Robinhood Chain,
+ *    so Solana stakes are custodial.
+ *  - `{custodial:true}`: the platform signs the transfer out of the launcher's custodial wallet on
+ *    the app's chain.
+ * The credited stake is always exactly the chain's stake: an overpaid external transfer is not
+ * refunded beyond it.
  */
 export const settleStake = async (
-  app: Pick<App, "id">,
+  app: Pick<App, "id"> & VenueRow,
   user: Pick<User, "id" | "wallet" | "authWallet" | "walletIndex">,
   body: StakeBody,
-  chain: StakeChain = liveChain,
+  chain: StakeChain = adapterFor(app.launchpad),
 ): Promise<StakeSettlement> => {
-  const wei = env.LAUNCH_STAKE_WEI;
+  const wei = requiredStake(app.chain);
+  const treasury = chain.treasury().address;
   if ("txHash" in body) {
-    if (!user.authWallet) throw new HttpError(400, "external_wallet_required", { hint: "sign in with the wallet that sent the stake, or use {custodial:true}" });
-    const from = user.authWallet as Address;
+    if (!user.authWallet || app.chain !== "robinhood") {
+      throw new HttpError(400, "external_wallet_required", {
+        hint: app.chain === "robinhood" ? "sign in with the wallet that sent the stake, or use {custodial:true}" : "stakes on this chain are paid from your Pyre wallet: use {custodial:true}",
+      });
+    }
+    const from = user.authWallet;
     const reused = await prisma.app.findFirst({ where: { stakeTx: body.txHash, NOT: { id: app.id } }, select: { id: true } });
     if (reused) throw new HttpError(409, "stake_tx_already_used");
-    const check = await chain.verifyEthTransfer(body.txHash, { to: TREASURY_WALLET, minWei: wei, from });
-    if (!check.ok) throw new HttpError(400, "stake_tx_invalid", { reason: check.reason ?? "unverified", to: TREASURY_WALLET, minWei: wei.toString() });
-    if (await isPlatformWallet(check.from)) {
-      throw new HttpError(400, "stake_tx_invalid", { reason: "platform-sender", to: TREASURY_WALLET, minWei: wei.toString() });
+    const check = await chain.verifyNativeTransfer(body.txHash, treasury, wei, from);
+    if (!check.ok) throw new HttpError(400, "stake_tx_invalid", { reason: check.reason ?? "unverified", to: treasury, minWei: wei.toString() });
+    if (await isPlatformWallet(check.from, treasury)) {
+      throw new HttpError(400, "stake_tx_invalid", { reason: "platform-sender", to: treasury, minWei: wei.toString() });
     }
     return { txHash: body.txHash, wei, from: check.from, custodial: false };
   }
   if (!user.wallet) throw new HttpError(400, "wallet_required");
-  const wallet = user.wallet as Address;
-  const balance = await chain.ethBalance(wallet);
-  const need = wei + GAS_RESERVE_WEI;
-  if (balance < need) throw new HttpError(400, "insufficient_balance", { haveWei: balance.toString(), needWei: need.toString(), to: TREASURY_WALLET });
-  let txHash: Hash;
+  const account: VenueAccount = chain.userWallet(user.walletIndex);
+  const balance = await chain.nativeBalance(account.address);
+  const need = wei + GAS_RESERVE_BY_CHAIN[app.chain];
+  if (balance < need) throw new HttpError(400, "insufficient_balance", { haveWei: balance.toString(), needWei: need.toString(), to: treasury });
+  let txHash: string;
   try {
-    txHash = await chain.transferEth(custodialAccount(user), TREASURY_WALLET, wei);
+    txHash = (await chain.transferNative(account, treasury, wei)).hash;
   } catch (err) {
     logger.error({ err, appId: app.id, userId: user.id }, "launch stake transfer failed");
     throw new HttpError(502, "stake_failed");
   }
-  return { txHash, wei, from: wallet, custodial: true };
+  return { txHash, wei, from: account.address, custodial: true };
 };

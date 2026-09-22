@@ -1,5 +1,6 @@
 import type { BuildEventDto, BuildEventPayload } from "@pyre/shared";
-import { formatEth, formatTokenUnits, formatUsd, shortAddress } from "../../lib/format.js";
+import { formatEth, formatNative, formatTokenUnits, formatUsd, shortAddress } from "../../lib/format.js";
+import type { VenueLinks } from "../../lib/venue.js";
 import type { ConsoleRow, ConsoleKind } from "../../ui/index.js";
 
 /*
@@ -28,10 +29,11 @@ const TOOL_KIND: Record<string, ConsoleKind> = {
 
 const toolKind = (tool: string): ConsoleKind => TOOL_KIND[tool.toLowerCase()] ?? "info";
 
-/** Console rendering of a build-log event. Chain events read as `info`, failures as `error`. */
-export const consoleRow = (e: BuildEventDto): ConsoleRow => {
+/** Console rendering of a build-log event. Chain events read as `info`, failures as `error`; chain amounts are in the app's native units. */
+export const consoleRow = (e: BuildEventDto, venue: VenueLinks): ConsoleRow => {
   const p = e.payload;
   const base = { id: e.id, at: e.createdAt } as const;
+  const { native, tokenDecimals, launchpadLabel } = venue.meta;
   switch (p.type) {
     case "JOB_QUEUED":
       return { ...base, kind: "info", text: `queued ${p.stage} · budget ${usd(p.budgetUsd)}` };
@@ -76,15 +78,15 @@ export const consoleRow = (e: BuildEventDto): ConsoleRow => {
     case "GROWTH_POST":
       return { ...base, kind: "info", text: `posted: ${p.text}` };
     case "LAUNCH":
-      return { ...base, kind: "deploy", text: `launched on PONS · token ${shortAddress(p.tokenAddress)} · curve ${shortAddress(p.curveAddress)}` };
+      return { ...base, kind: "deploy", text: `launched on ${launchpadLabel} · token ${shortAddress(p.tokenAddress)} · curve ${shortAddress(p.curveAddress)}` };
     case "LAUNCH_GATED":
-      return { ...base, kind: "error", text: `launch gated: ${shortAddress(p.wallet)} cannot launch on PONS yet` };
+      return { ...base, kind: "error", text: `launch gated: ${shortAddress(p.wallet)} cannot launch on ${launchpadLabel} yet` };
     case "FEES":
-      return { ...base, kind: "info", text: `fees claimed ${formatEth(p.wei)} (${formatUsd(p.usdMicros)}) · ${formatUsd(p.buildMicros)} to the agent` };
+      return { ...base, kind: "info", text: `fees claimed ${formatNative(p.wei, native)} (${formatUsd(p.usdMicros)}) · ${formatUsd(p.buildMicros)} to the agent` };
     case "TRADE":
-      return { ...base, kind: "info", text: `${p.side.toLowerCase()} ${formatTokenUnits(p.tokenUnits)} for ${formatEth(p.quoteWei)} by ${shortAddress(p.wallet)}` };
+      return { ...base, kind: "info", text: `${p.side.toLowerCase()} ${formatTokenUnits(p.tokenUnits, { decimals: tokenDecimals })} for ${formatNative(p.quoteWei, native)} by ${shortAddress(p.wallet)}` };
     case "GRADUATED":
-      return { ...base, kind: "deploy", text: `graduated · liquidity moved to Uniswap v4 (${p.poolId.slice(0, 10)}…)` };
+      return { ...base, kind: "deploy", text: `graduated · liquidity moved to ${venue.meta.chain === "solana" ? "PumpSwap" : "Uniswap v4"} (${p.poolId.slice(0, 10)}…)` };
   }
 };
 
@@ -122,26 +124,33 @@ const THREAD_TYPES: Record<string, true> = {
 export const isThreadEvent = (e: BuildEventDto): boolean => THREAD_TYPES[e.payload.type] === true;
 
 /** Sentence form for the thread. `null` for events that only belong in the console. */
-export const threadItem = (e: BuildEventDto, ticker: string, explorerTx: (hash: string) => string): ThreadItem | null => {
+export const threadItem = (e: BuildEventDto, ticker: string, venue: VenueLinks): ThreadItem | null => {
   const p: BuildEventPayload = e.payload;
   const base = { id: e.id, at: e.createdAt };
+  const { native, tokenDecimals, launchpadLabel } = venue.meta;
   switch (p.type) {
     case "LAUNCH":
-      return { ...base, tone: "build", title: `$${ticker} launched on PONS`, detail: `Token ${shortAddress(p.tokenAddress)}`, href: explorerTx(p.txHash) };
+      return { ...base, tone: "build", title: `$${ticker} launched on ${launchpadLabel}`, detail: `Token ${shortAddress(p.tokenAddress)}`, href: venue.tx(p.txHash) };
     case "LAUNCH_GATED":
-      return { ...base, tone: "warn", title: "Launch gated by PONS", detail: `${shortAddress(p.wallet)} is not allowed to launch yet; retrying.` };
+      return { ...base, tone: "warn", title: `Launch gated by ${launchpadLabel}`, detail: `${shortAddress(p.wallet)} is not allowed to launch yet; retrying.` };
     case "FEES":
-      return { ...base, tone: "earn", title: `Creator fees claimed: ${formatEth(p.wei)}`, detail: `${formatUsd(p.buildMicros)} funded the agent`, href: explorerTx(p.txHash) };
+      return { ...base, tone: "earn", title: `Creator fees claimed: ${formatNative(p.wei, native)}`, detail: `${formatUsd(p.buildMicros)} funded the agent`, href: venue.tx(p.txHash) };
     case "TRADE":
       return {
         ...base,
         tone: p.side === "BUY" ? "earn" : "burn",
-        title: `${p.side === "BUY" ? "Bought" : "Sold"} ${formatTokenUnits(p.tokenUnits)} for ${formatEth(p.quoteWei)}`,
+        title: `${p.side === "BUY" ? "Bought" : "Sold"} ${formatTokenUnits(p.tokenUnits, { decimals: tokenDecimals })} for ${formatNative(p.quoteWei, native)}`,
         detail: shortAddress(p.wallet),
-        href: explorerTx(p.txHash),
+        href: venue.tx(p.txHash),
       };
     case "GRADUATED":
-      return { ...base, tone: "earn", title: "Graduated to Uniswap v4", detail: "The curve closed; trading continues on the pool.", href: p.txHash ? explorerTx(p.txHash) : undefined };
+      return {
+        ...base,
+        tone: "earn",
+        title: venue.meta.chain === "solana" ? "Graduated to PumpSwap" : "Graduated to Uniswap v4",
+        detail: "The curve closed; trading continues on the pool.",
+        href: p.txHash ? venue.tx(p.txHash) : undefined,
+      };
     case "DEPLOY":
       return { ...base, tone: "build", title: `Deployed v${p.version}`, detail: p.url, href: p.url };
     case "MILESTONE":

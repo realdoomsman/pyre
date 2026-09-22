@@ -17,6 +17,8 @@ type AppRow = {
   name: string;
   ticker: string;
   status: string;
+  chain: "robinhood" | "solana";
+  launchpad: "pons_v2" | "pump_fun";
   walletAddress: string | null;
   budgetMicros: bigint;
   /** Wei columns are `Decimal(78, 0)`; the handler must write `Prisma.Decimal`, never bigint. */
@@ -43,8 +45,10 @@ const fx = vi.hoisted(() => {
   const state = {
     pyreToken: "0x1111111111111111111111111111111111111111" as string | undefined,
     ethPriceUsd: 2000,
+    solPriceUsd: 120,
     transferOk: true,
     ethBalance: 0n,
+    solBalance: 0n,
     tokenBalance: 0n,
   };
   const app: { current: AppRow | null } = { current: null };
@@ -74,6 +78,10 @@ const fx = vi.hoisted(() => {
     custodialEthBalance: vi.fn(async () => state.ethBalance),
     pyreBalance: vi.fn(async () => state.tokenBalance),
     custodialAccount: vi.fn(() => ({ address: "0x84F8E5a324466Deb7447048C014CF0245ce04afA" })),
+    transferSol: vi.fn(async (_from: unknown, _to: string, _lamports: bigint) => {
+      if (!state.transferOk) throw new Error("rpc down");
+      return { hash: "5wHu1qwD4E3vTd9nJqvUeYtWuDL1yiLFJVXDQzVdYc3PtLHRZAx9y1n2Cz3wVn3nS4eZfLPaJRBk6eZB4bHzAYS", block: 1 };
+    }),
     writeAudit: vi.fn(async () => undefined),
     publishEvent: vi.fn(async () => undefined),
     publishGlobal: vi.fn(async () => undefined),
@@ -129,6 +137,10 @@ vi.mock("@pyre/db", async (importOriginal) => ({
       }),
   },
 }));
+/**
+ * Venue adapters: the PONS one signs with the same `transferEth`/balance fakes the other flows use
+ * (so a top-up on Robinhood is provably the same transfer as before); the pump one signs SOL.
+ */
 vi.mock("@pyre/chain", () => ({
   transferEth: fx.transferEth,
   transferErc20: fx.transferErc20,
@@ -136,12 +148,30 @@ vi.mock("@pyre/chain", () => ({
   getErc20Balance: async () => 0n,
   explorerTxUrl: (h: string) => `https://explorer.test/tx/${h}`,
   treasury: () => ({ address: "0x0000000000000000000000000000000000000001", account: { address: "0x0000000000000000000000000000000000000001" } }),
+  solanaEnabled: () => true,
+  adapterFor: (launchpad: string) =>
+    launchpad === "pons_v2"
+      ? {
+          info: { chain: "robinhood", launchpad: "pons_v2", native: { symbol: "ETH", decimals: 18 } },
+          userWallet: () => ({ chain: "robinhood", address: "0x84F8E5a324466Deb7447048C014CF0245ce04afA", signer: fx.custodialAccount() }),
+          nativeBalance: fx.custodialEthBalance,
+          nativePriceUsd: fx.getEthPriceUsd,
+          transferNative: async (from: { signer: unknown }, to: string, wei: bigint) => ({ hash: await fx.transferEth(from.signer, to, wei), block: 1 }),
+        }
+      : {
+          info: { chain: "solana", launchpad: "pump_fun", native: { symbol: "SOL", decimals: 9 } },
+          userWallet: () => ({ chain: "solana", address: "So1anaUser111111111111111111111111111111111", signer: {} }),
+          nativeBalance: async () => fx.state.solBalance,
+          nativePriceUsd: async () => fx.state.solPriceUsd,
+          transferNative: fx.transferSol,
+        },
 }));
 vi.mock("../src/lib/custodial.js", () => ({
   custodialAccount: fx.custodialAccount,
   custodialEthBalance: fx.custodialEthBalance,
   custodialUsdgBalance: vi.fn(),
   GAS_RESERVE_WEI: 20_000_000_000_000n,
+  GAS_RESERVE_BY_CHAIN: { robinhood: 20_000_000_000_000n, solana: 2_000_000n },
 }));
 vi.mock("../src/lib/votes.js", () => ({
   pyreBalance: fx.pyreBalance,
@@ -232,10 +262,15 @@ const liveApp = (): AppRow => ({
   name: "Cool",
   ticker: "COOL",
   status: "LIVE",
+  chain: "robinhood",
+  launchpad: "pons_v2",
   walletAddress: APP_WALLET,
   budgetMicros: 0n,
   feesWei: dec(0),
 });
+
+const SOL_APP_WALLET = "AppWa11et111111111111111111111111111111111";
+const solApp = (): AppRow => ({ ...liveApp(), id: "app2", slug: "solcool", chain: "solana", launchpad: "pump_fun", walletAddress: SOL_APP_WALLET });
 
 const ETH = 10n ** 18n;
 
@@ -244,6 +279,7 @@ beforeEach(() => {
   fx.state.ethPriceUsd = 2000;
   fx.state.transferOk = true;
   fx.state.ethBalance = 0n;
+  fx.state.solBalance = 0n;
   fx.state.tokenBalance = 0n;
   fx.app.current = null;
   fx.pyreStakes.length = 0;
@@ -251,7 +287,7 @@ beforeEach(() => {
   fx.feeEvents.length = 0;
   fx.ledgerEntries.length = 0;
   fx.appUpdates.length = 0;
-  for (const f of [fx.transferEth, fx.transferErc20, fx.pyreStakeCreate, fx.bountyCreate, fx.feeEventCreate, fx.ledgerCreate, fx.appUpdate]) f.mockClear();
+  for (const f of [fx.transferEth, fx.transferErc20, fx.transferSol, fx.pyreStakeCreate, fx.bountyCreate, fx.feeEventCreate, fx.ledgerCreate, fx.appUpdate]) f.mockClear();
 });
 
 describe("$PYRE stake (ERC-20 -> treasury)", () => {
@@ -308,12 +344,12 @@ describe("$PYRE stake (ERC-20 -> treasury)", () => {
   });
 });
 
-describe("app top-up (ETH -> app wallet)", () => {
+describe("app top-up (native -> app wallet)", () => {
   it("transfers to the app wallet, credits the build budget at the ETH price, and revives a dormant app", async () => {
     fx.app.current = { ...liveApp(), status: "DORMANT" };
     fx.state.ethBalance = ETH / 2n; // 0.5 ETH
     const { r, c } = res();
-    await topupHandler(req({ params: { slug: "cool" }, body: { eth: 0.1 } }), r);
+    await topupHandler(req({ params: { slug: "cool" }, body: { amount: 0.1 } }), r);
 
     expect(fx.transferEth).toHaveBeenCalledTimes(1);
     expect(fx.transferEth.mock.calls[0]?.slice(1)).toEqual([APP_WALLET, ETH / 10n]);
@@ -327,11 +363,26 @@ describe("app top-up (ETH -> app wallet)", () => {
     expect(c.body).toMatchObject({ status: "LIVE", budgetMicros: "200000000", wei: (ETH / 10n).toString() });
   });
 
+  it("tops up a pump.fun app in SOL from the Solana wallet, pricing the budget credit in SOL", async () => {
+    fx.app.current = solApp();
+    fx.state.solBalance = 2_000_000_000n; // 2 SOL
+    const { r, c } = res();
+    await topupHandler(req({ params: { slug: "solcool" }, body: { amount: 0.5 } }), r);
+
+    expect(fx.transferEth).not.toHaveBeenCalled();
+    expect(fx.transferSol).toHaveBeenCalledTimes(1);
+    expect(fx.transferSol.mock.calls[0]?.slice(1)).toEqual([SOL_APP_WALLET, 500_000_000n]);
+    // 0.5 SOL at $120 -> $60 -> 60_000_000 micros; `wei` is lamports and `ethPriceUsd` the SOL price.
+    expect(fx.feeEvents[0]).toMatchObject({ source: "REVIVE_BUY", wei: dec(500_000_000n), ethPriceUsd: 120, buildMicros: 60_000_000n });
+    expect(fx.ledgerEntries[0]).toMatchObject({ account: "BUILD:app2", deltaMicros: 60_000_000n });
+    expect(c.body).toMatchObject({ budgetMicros: "60000000", wei: "500000000" });
+  });
+
   it("rejects with insufficient_balance (gas headroom) and writes nothing", async () => {
     fx.app.current = liveApp();
     fx.state.ethBalance = ETH / 10n; // exactly the amount, no gas headroom
     const { r } = res();
-    await expect(topupHandler(req({ params: { slug: "cool" }, body: { eth: 0.1 } }), r)).rejects.toMatchObject({ status: 400, message: "insufficient_balance" });
+    await expect(topupHandler(req({ params: { slug: "cool" }, body: { amount: 0.1 } }), r)).rejects.toMatchObject({ status: 400, message: "insufficient_balance" });
     expect(fx.transferEth).not.toHaveBeenCalled();
     expect(fx.feeEvents).toHaveLength(0);
     expect(fx.appUpdates).toHaveLength(0);
@@ -341,7 +392,7 @@ describe("app top-up (ETH -> app wallet)", () => {
     fx.app.current = null;
     fx.state.ethBalance = ETH;
     const { r } = res();
-    await expect(topupHandler(req({ params: { slug: "ghost" }, body: { eth: 0.1 } }), r)).rejects.toMatchObject({ status: 404, message: "app_not_found" });
+    await expect(topupHandler(req({ params: { slug: "ghost" }, body: { amount: 0.1 } }), r)).rejects.toMatchObject({ status: 404, message: "app_not_found" });
     expect(fx.transferEth).not.toHaveBeenCalled();
   });
 
@@ -349,7 +400,7 @@ describe("app top-up (ETH -> app wallet)", () => {
     fx.app.current = { ...liveApp(), status: "KILLED" };
     fx.state.ethBalance = ETH;
     const { r } = res();
-    await expect(topupHandler(req({ params: { slug: "cool" }, body: { eth: 0.1 } }), r)).rejects.toMatchObject({ status: 409, message: "app_not_live" });
+    await expect(topupHandler(req({ params: { slug: "cool" }, body: { amount: 0.1 } }), r)).rejects.toMatchObject({ status: 409, message: "app_not_live" });
     expect(fx.transferEth).not.toHaveBeenCalled();
   });
 });

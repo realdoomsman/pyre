@@ -13,7 +13,7 @@ import type { CandleDto } from "@pyre/shared";
 import { Chip, Skeleton, cx } from "../ui/index.js";
 
 export type ChartMode = "price" | "mcap";
-export type ChartUnit = "usd" | "eth";
+export type ChartUnit = "usd" | "native";
 
 export interface ChartMarker {
   /** Unix seconds. */
@@ -32,8 +32,8 @@ export interface ChartProps {
   mode?: ChartMode;
   unit?: ChartUnit;
   markers?: ReadonlyArray<ChartMarker>;
-  /** For USD → ETH. */
-  ethPriceUsd: number;
+  /** The app's native asset for the USD → native toggle: its symbol and USD price. */
+  native: { symbol: string; priceUsd: number };
   /** Circulating supply in whole tokens (display number) for the MCap toggle. */
   supply: number;
   height?: number;
@@ -62,14 +62,20 @@ const readTokens = () => {
 const withAlpha = (color: string, alpha: number): string =>
   /^#[0-9a-f]{6}$/i.test(color) ? `${color}${Math.round(alpha * 255).toString(16).padStart(2, "0")}` : color;
 
-const fmtAxis = (mode: ChartMode, unit: ChartUnit) => (v: number) => {
-  if (unit === "eth") return mode === "mcap" ? `${v.toLocaleString("en-US", { maximumFractionDigits: 2 })} Ξ` : `${v.toPrecision(4)} Ξ`;
+/** Axis glyph for the native unit: Ξ for ETH, ◎ for SOL, the symbol otherwise. */
+const NATIVE_GLYPH: Record<string, string> = { ETH: "Ξ", SOL: "◎" };
+
+const fmtAxis = (mode: ChartMode, unit: ChartUnit, symbol: string) => (v: number) => {
+  if (unit === "native") {
+    const glyph = NATIVE_GLYPH[symbol] ?? symbol;
+    return mode === "mcap" ? `${v.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${glyph}` : `${v.toPrecision(4)} ${glyph}`;
+  }
   if (mode === "mcap") return v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : v >= 1e3 ? `$${(v / 1e3).toFixed(1)}k` : `$${v.toFixed(0)}`;
   return v >= 1 ? `$${v.toFixed(2)}` : v >= 0.01 ? `$${v.toFixed(4)}` : `$${v.toPrecision(3)}`;
 };
 
 /**
- * Candles + volume. The toolbar toggles interval, Price/MCap and USD/ETH;
+ * Candles + volume. The toolbar toggles interval, Price/MCap and USD/native;
  * deploy markers sit above the candles. Reads colours from the
  * tokens so it follows the theme.
  */
@@ -81,7 +87,7 @@ export const Chart = ({
   mode: initialMode = "mcap",
   unit: initialUnit = "usd",
   markers = [],
-  ethPriceUsd,
+  native,
   supply,
   height = 360,
   className,
@@ -94,7 +100,7 @@ export const Chart = ({
   const [unit, setUnit] = useState<ChartUnit>(initialUnit);
 
   // Scale factor: USD price → chosen mode/unit.
-  const factor = (mode === "mcap" ? supply : 1) / (unit === "eth" && ethPriceUsd > 0 ? ethPriceUsd : 1);
+  const factor = (mode === "mcap" ? supply : 1) / (unit === "native" && native.priceUsd > 0 ? native.priceUsd : 1);
 
   const series = useMemo(() => {
     if (!candles) return null;
@@ -151,7 +157,7 @@ export const Chart = ({
     const vs = volumeSeries.current;
     if (!cs || !vs || !series) return;
     const t = readTokens();
-    const format = fmtAxis(mode, unit);
+    const format = fmtAxis(mode, unit, native.symbol);
     cs.applyOptions({ priceFormat: { type: "custom", formatter: format, minMove: 1e-12 } });
     cs.setData(series);
     vs.setData(series.map((c) => ({ time: c.time, value: c.volume, color: withAlpha(c.close >= c.open ? t.up : t.down, 0.35) })));
@@ -161,7 +167,7 @@ export const Chart = ({
       .map((m) => ({ time: m.t as UTCTimestamp, position: "aboveBar", shape: "circle", color: t.build, text: m.label }));
     cs.setMarkers(ms);
     chart.current?.timeScale().fitContent();
-  }, [series, markers, mode, unit]);
+  }, [series, markers, mode, unit, native.symbol]);
 
   const loading = candles === undefined;
   const empty = !loading && series !== null && series.length === 0;
@@ -187,8 +193,8 @@ export const Chart = ({
           <Chip size="sm" mono selected={unit === "usd"} onClick={() => setUnit("usd")}>
             usd
           </Chip>
-          <Chip size="sm" mono selected={unit === "eth"} onClick={() => setUnit("eth")} disabled={!(ethPriceUsd > 0)}>
-            eth
+          <Chip size="sm" mono selected={unit === "native"} onClick={() => setUnit("native")} disabled={!(native.priceUsd > 0)}>
+            {native.symbol.toLowerCase()}
           </Chip>
         </div>
       </div>

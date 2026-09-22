@@ -7,6 +7,7 @@ import {
   type BuildEvent,
   type BuildJob,
   type Candle,
+  type CoinBurn,
   type FeeEvent,
   type Notification,
   type PromptQueueItem,
@@ -21,14 +22,16 @@ import {
   AppSpec,
   BuildEventPayload,
   LaunchPhase,
-  explorerTokenUrl,
-  ponsUrl,
+  VENUES,
+  unitsToNumber,
   type AgentState,
   type AppSummaryDto,
   type BountyDto,
   type BuildEventDto,
   type BuildJobDto,
   type CandleDto,
+  type Chain,
+  type CoinBurnDto,
   type FeeEventDto,
   type HolderDto,
   type LaunchDraftDto,
@@ -46,13 +49,26 @@ import { DEAD_ADDRESS, ponsAddresses } from "@pyre/chain";
 import { env } from "../env.js";
 import { db } from "./metrics.js";
 import { TREASURY_WALLET } from "./treasury.js";
+import { adapterOf, links, metaOf, requiredStake, type VenueRow } from "./venue.js";
 import { PLATFORM_PROPOSAL_QUORUM, SUPPLY_BASE_UNITS } from "./votes.js";
 
 export const usd = (micros: bigint): number => Number(micros) / 1e6;
-/** Display tokens (18 decimals) for a base-unit amount. */
-export const tokens = (units: bigint): number => Number(units) / 1e18;
-/** Percent of the PONS launch supply, 0..100 with four decimals. */
-export const pctOfSupply = (units: bigint): number => Number((units * 1_000_000n) / SUPPLY_BASE_UNITS) / 10_000;
+/** Display tokens for a base-unit amount (18 decimals unless the coin says otherwise). */
+export const tokens = (units: bigint, decimals = 18): number => unitsToNumber(units, decimals);
+/** Percent of a launch supply (PONS by default), 0..100 with four decimals. */
+export const pctOfSupply = (units: bigint, supply: bigint = SUPPLY_BASE_UNITS): number => Number((units * 1_000_000n) / supply) / 10_000;
+
+/** Native/USD prices the read paths carry, from the runner's market snapshot. */
+export interface NativePrices {
+  ethPriceUsd: number;
+  solPriceUsd: number;
+}
+
+export const nativePriceOf = (prices: NativePrices, chain: Chain): number => (chain === "solana" ? prices.solPriceUsd : prices.ethPriceUsd);
+
+/** Display-precision USD value of native base units on `chain`. */
+export const nativeUsd = (units: bigint, chain: Chain, prices: NativePrices): number =>
+  unitsToNumber(units, chain === "solana" ? 9 : 18) * nativePriceOf(prices, chain);
 
 export const liveUrl = (slug: string): string =>
   env.APP_DOMAIN ? `https://${slug}.${env.APP_DOMAIN}` : `${env.API_ORIGIN}/a/${slug}`;
@@ -61,8 +77,6 @@ export const liveUrl = (slug: string): string =>
 const SERVABLE: Record<string, true> = { LIVE: true, DORMANT: true };
 
 const iso = (d: Date | null | undefined): string | null => d?.toISOString() ?? null;
-
-const address = (a: string | null): Address | null => a as Address | null;
 
 /* ─────────────────────────── Aggregates shared by list routes ─────────────────────────── */
 
@@ -89,21 +103,21 @@ export const appExtrasByApp = async (appIds: string[]): Promise<Record<string, A
 /* ─────────────────────────── Heat + agent state ─────────────────────────── */
 
 export interface HeatInputs {
-  fees24hWei: bigint;
+  /** 24h swept creator fees in USD (native × the chain's price). */
+  fees24hUsd: number;
   /** 24h trade volume in USD (the `App.volume24hUsd` the price worker refreshes). */
   volume24hUsd: number;
-  ethPriceUsd: number;
 }
 
 /**
  * Heat index in [0, 1): how much of the loop is turning right now. Two signals, each scaled to
  * a "warm" daily figure so nothing saturates early, combined 60/40 and squashed with 1 − e^(−x)
  * so a runaway coin still stays below 1:
- *   - creator fees swept in 24h (weight .6, warm at $50 of ETH: what is actually paying the agent)
+ *   - creator fees swept in 24h (weight .6, warm at $50: what is actually paying the agent)
  *   - trade volume in 24h       (weight .4, warm at $5,000: the fees still accruing on the curve)
  */
 export const heatIndex = (h: HeatInputs): number => {
-  const fees = (tokens(h.fees24hWei) * h.ethPriceUsd) / 50;
+  const fees = h.fees24hUsd / 50;
   const volume = h.volume24hUsd / 5_000;
   const x = 0.6 * fees + 0.4 * volume;
   const heat = 1 - Math.exp(-x);
@@ -134,7 +148,7 @@ export const userRef = (u: UserRefRow): UserRefDto => ({
   id: u.id,
   displayName: u.displayName,
   avatarUrl: u.avatarUrl,
-  wallet: address(u.wallet),
+  wallet: u.wallet as Address | null,
   xHandle: u.xHandle,
 });
 
@@ -194,6 +208,8 @@ export const APP_SUMMARY_SELECT = {
   status: true,
   template: true,
   spec: true,
+  chain: true,
+  launchpad: true,
   tokenAddress: true,
   curveAddress: true,
   poolId: true,
@@ -225,6 +241,8 @@ export type AppSummaryRow = Pick<
   | "status"
   | "template"
   | "spec"
+  | "chain"
+  | "launchpad"
   | "tokenAddress"
   | "curveAddress"
   | "poolId"
@@ -243,9 +261,11 @@ export type AppSummaryRow = Pick<
   | "graduatedAt"
 > & { launcher: UserRefRow; jobs: JobSummaryRow[] };
 
-export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: number): AppSummaryDto => {
+export const appSummary = (a: AppSummaryRow, extras: AppExtras, prices: NativePrices): AppSummaryDto => {
   const spec = AppSpec.safeParse(a.spec);
   const phase = LaunchPhase.safeParse(a.launchPhase);
+  const venue = metaOf(a);
+  const link = links(a);
   return {
     id: a.id,
     slug: a.slug,
@@ -255,8 +275,11 @@ export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: num
     oneLiner: spec.success ? spec.data.oneLiner : "",
     status: a.status,
     template: a.template,
-    tokenAddress: address(a.tokenAddress),
-    curveAddress: address(a.curveAddress),
+    chain: a.chain,
+    launchpad: a.launchpad,
+    native: venue.native,
+    tokenAddress: a.tokenAddress,
+    curveAddress: a.curveAddress,
     poolId: a.poolId,
     phase: phase.success ? phase.data : 0,
     progress: a.launchPhase >= 2 ? 1 : Math.min(1, Math.max(0, a.progress)),
@@ -267,7 +290,7 @@ export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: num
     holders: a.holdersCount,
     budgetMicros: a.budgetMicros.toString(),
     feesWei: big(a.feesWei).toString(),
-    heat: heatIndex({ ...extras, volume24hUsd: a.volume24hUsd, ethPriceUsd }),
+    heat: heatIndex({ fees24hUsd: nativeUsd(extras.fees24hWei, a.chain, prices), volume24hUsd: a.volume24hUsd }),
     agentState: agentState(a.status, a.jobs[0]),
     liveVersion: a.liveVersion,
     liveUrl: SERVABLE[a.status] && a.liveVersion > 0 ? liveUrl(a.slug) : null,
@@ -276,8 +299,8 @@ export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: num
     createdAt: a.createdAt.toISOString(),
     launchedAt: iso(a.launchedAt),
     graduatedAt: iso(a.graduatedAt),
-    ponsUrl: a.tokenAddress ? ponsUrl(a.tokenAddress) : null,
-    explorerUrl: a.tokenAddress ? explorerTokenUrl(a.tokenAddress, env.BLOCKSCOUT_URL) : null,
+    launchpadUrl: a.tokenAddress ? link.launchpad(a.tokenAddress) : null,
+    explorerUrl: a.tokenAddress ? link.token(a.tokenAddress) : null,
   };
 };
 
@@ -291,10 +314,11 @@ export const feeEventDto = (f: FeeEvent): FeeEventDto => ({
   usdMicros: f.usdMicros.toString(),
   buildMicros: f.buildMicros.toString(),
   pyreMicros: f.pyreMicros.toString(),
+  coinBurnMicros: f.coinBurnMicros.toString(),
   launcherMicros: f.launcherMicros.toString(),
   upstreamMicros: f.upstreamMicros.toString(),
   creditsMicros: f.creditsMicros.toString(),
-  txHash: f.txHash as FeeEventDto["txHash"],
+  txHash: f.txHash,
   createdAt: f.createdAt.toISOString(),
 });
 
@@ -316,16 +340,35 @@ export const pyreBurnDto = (b: PyreBurn): PyreBurnDto => {
   };
 };
 
+/** A settled (or in-flight) coin burn on a Solana app; `createdAt` is the settlement time once BURNED. */
+export const coinBurnDto = (b: CoinBurn, app: VenueRow): CoinBurnDto => {
+  const units = big(b.burnedUnits ?? b.tokensBurned);
+  return {
+    id: b.id,
+    appId: b.appId,
+    usdMicros: b.usdMicros.toString(),
+    nativeWei: big(b.nativeWei).toString(),
+    tokensBoughtUnits: big(b.tokensBought).toString(),
+    burnedUnits: units.toString(),
+    burnedPctOfSupply: pctOfSupply(units, metaOf(app).totalSupplyUnits),
+    swapTx: b.swapTx,
+    burnTx: b.burnTx,
+    attestTx: b.attestTx,
+    attestHash: b.attestHash,
+    createdAt: (b.completedAt ?? b.createdAt).toISOString(),
+  };
+};
+
 export const tradeDto = (t: Trade): TradeDto => ({
   id: t.id,
   appId: t.appId,
   side: t.side === "SELL" ? "SELL" : "BUY",
   venue: t.venue === "POOL" ? "POOL" : "CURVE",
-  wallet: t.wallet as Address,
+  wallet: t.wallet,
   tokenUnits: big(t.tokenUnits).toString(),
   quoteWei: big(t.quoteWei).toString(),
   priceUsd: t.priceUsd,
-  txHash: t.txHash as TradeDto["txHash"],
+  txHash: t.txHash,
   block: Number(t.block),
   ts: t.ts.toISOString(),
 });
@@ -335,6 +378,8 @@ export const candleDto = (c: Candle): CandleDto => ({ t: c.t, o: c.o, h: c.h, l:
 export interface HolderRowInput {
   wallet: string;
   amount: Decimalish;
+  /** Indexer-assigned protocol tag (Solana rows); absent/null for EVM rows, which are tagged by address here. */
+  tag?: string | null;
 }
 
 /** Lower-cased protocol addresses → tag, computed once (env overrides are read at boot). */
@@ -350,13 +395,31 @@ const systemTags = (): Record<string, HolderDto["tag"]> => {
 };
 let SYSTEM_TAGS: Record<string, HolderDto["tag"]> | undefined;
 
-export const holderDto = (h: HolderRowInput, ctx: { curveAddress: string | null; launcherWallet: string | null }): HolderDto => {
+/** Indexer tags (`VenueHolder.system`) → DTO tags. */
+const INDEXER_TAGS: Record<string, HolderDto["tag"]> = { liquidity: "liquidity", locked: "locker", dead: "dead", vault: "vault" };
+
+export interface HolderContext extends VenueRow {
+  curveAddress: string | null;
+  /** Launcher's custodial wallet on the app's chain. */
+  launcherWallet: string | null;
+}
+
+export const holderDto = (h: HolderRowInput, ctx: HolderContext): HolderDto => {
   SYSTEM_TAGS ??= systemTags();
   const w = h.wallet.toLowerCase();
+  const treasury = ctx.chain === "solana" ? adapterOf(ctx).treasury().address : TREASURY_WALLET;
   const tag: HolderDto["tag"] =
-    SYSTEM_TAGS[w] ?? (ctx.curveAddress && w === ctx.curveAddress.toLowerCase() ? "curve" : ctx.launcherWallet && w === ctx.launcherWallet.toLowerCase() ? "launcher" : null);
+    (h.tag ? INDEXER_TAGS[h.tag] : undefined) ??
+    (ctx.chain === "robinhood" ? SYSTEM_TAGS[w] : undefined) ??
+    (ctx.curveAddress && w === ctx.curveAddress.toLowerCase()
+      ? "curve"
+      : w === treasury.toLowerCase()
+        ? "treasury"
+        : ctx.launcherWallet && w === ctx.launcherWallet.toLowerCase()
+          ? "launcher"
+          : null);
   const amount = big(h.amount);
-  return { address: h.wallet as Address, units: amount.toString(), pct: pctOfSupply(amount), tag };
+  return { address: h.wallet, units: amount.toString(), pct: pctOfSupply(amount, metaOf(ctx).totalSupplyUnits), tag };
 };
 
 /* ─────────────────────────── Governance / community ─────────────────────────── */
@@ -466,16 +529,19 @@ export const launchDto = (a: App): LaunchDraftDto => ({
   spec: AppSpec.safeParse(a.spec).success ? (a.spec as LaunchDraftDto["spec"]) : null,
   specApprovedAt: iso(a.specApprovedAt),
   template: a.template,
-  walletAddress: address(a.walletAddress),
-  tokenAddress: address(a.tokenAddress),
-  curveAddress: address(a.curveAddress),
-  launchTx: a.launchTx as LaunchDraftDto["launchTx"],
+  chain: a.chain,
+  launchpad: a.launchpad,
+  native: VENUES[a.launchpad].native,
+  walletAddress: a.walletAddress,
+  tokenAddress: a.tokenAddress,
+  curveAddress: a.curveAddress,
+  launchTx: a.launchTx,
   stakeWei: big(a.stakeWei).toString(),
-  stakeTx: a.stakeTx as LaunchDraftDto["stakeTx"],
-  stakeRefundTx: a.stakeRefundTx as LaunchDraftDto["stakeRefundTx"],
+  stakeTx: a.stakeTx,
+  stakeRefundTx: a.stakeRefundTx,
   stakeRefundedAt: iso(a.stakeRefundedAt),
-  requiredStakeWei: env.LAUNCH_STAKE_WEI.toString(),
-  stakeTo: TREASURY_WALLET,
+  requiredStakeWei: requiredStake(a.chain).toString(),
+  stakeTo: a.chain === "robinhood" ? TREASURY_WALLET : adapterOf(a).treasury().address,
   budgetMicros: a.budgetMicros.toString(),
   feesWei: big(a.feesWei).toString(),
   liveVersion: a.liveVersion,

@@ -1,6 +1,6 @@
 import { getAddress } from "viem";
 import { z } from "zod";
-import { LAUNCH_STAKE_WEI, ROBINHOOD_CHAIN_ID } from "@pyre/shared";
+import { LAUNCH_STAKE_BY_CHAIN, LAUNCH_STAKE_WEI, ROBINHOOD_CHAIN_ID } from "@pyre/shared";
 
 const optional = z
   .string()
@@ -14,14 +14,16 @@ const address = z
 
 const optionalAddress = optional.pipe(address.optional());
 
-/** Wei as a decimal string; empty means "use the shared default". */
-const optionalWei = optional.pipe(
+/** Native base units as a decimal string; empty means "use the shared default". */
+const optionalUnits = optional.pipe(
   z
     .string()
     .regex(/^\d+$/)
     .transform((v) => BigInt(v))
     .optional(),
 );
+
+const optionalBool = optional.pipe(z.enum(["true", "false", "1", "0"]).transform((v) => v === "true" || v === "1").optional());
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
@@ -42,7 +44,13 @@ const schema = z.object({
   PLATFORM_MASTER_SEED_HEX: z.string().regex(/^(0x)?[0-9a-fA-F]{32,128}$/),
   PYRE_TOKEN: optionalAddress,
   USDG_ADDRESS: address.default("0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"),
-  LAUNCH_STAKE_WEI: optionalWei.transform((v) => v ?? LAUNCH_STAKE_WEI),
+  LAUNCH_STAKE_WEI: optionalUnits.transform((v) => v ?? LAUNCH_STAKE_WEI),
+  // Solana (pump.fun venue). `@pyre/chain` reads SOLANA_RPC_URL/SOLANA_CLUSTER itself; the venue is
+  // disabled (hidden from /v1/venues, launches refused) while SOLANA_RPC_URL is unset.
+  SOLANA_RPC_URL: optional.pipe(z.string().url().optional()),
+  SOLANA_CLUSTER: z.enum(["mainnet-beta", "devnet"]).default("mainnet-beta"),
+  PUMP_LAUNCH_ENABLED: optionalBool.transform((v) => v ?? true),
+  LAUNCH_STAKE_LAMPORTS: optionalUnits.transform((v) => v ?? LAUNCH_STAKE_BY_CHAIN.solana),
   BLOCKSCOUT_URL: z.string().url().default("https://robinhoodchain.blockscout.com"),
   GITHUB_WEBHOOK_SECRET: optional,
   ANTHROPIC_API_KEY: z.string().min(1),

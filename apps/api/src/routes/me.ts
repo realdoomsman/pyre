@@ -2,13 +2,16 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Address } from "viem";
 import { big, prisma } from "@pyre/db";
-import { TransactionUnconfirmedError, getErc20Balance, getEthPriceUsd, relayUsdgAuthorization, signUsdgAuthorization, transferEth, explorerTxUrl } from "@pyre/chain";
+import { TransactionUnconfirmedError, adapterFor, getErc20Balance, getEthPriceUsd, relayUsdgAuthorization, signUsdgAuthorization, solanaEnabled, transferEth, explorerTxUrl } from "@pyre/chain";
 import {
   LAUNCH_RATE_LIMIT_PER_DAY,
   TradeBody,
+  VENUES,
   WITHDRAW_DAILY_CAP_USD,
   WithdrawBody,
+  decimalToUnits,
   ethToWei,
+  usdMicrosFromNative,
   usdMicrosFromWei,
   weiFromUsdMicros,
   type BalancesDto,
@@ -20,16 +23,18 @@ import {
 import { reputationTier, requireAuth } from "../lib/auth.js";
 import { writeAudit } from "../lib/audit.js";
 import { cached } from "../lib/cache.js";
-import { custodialAccount, custodialEthBalance, custodialUsdgBalance, GAS_RESERVE_WEI } from "../lib/custodial.js";
-import { APP_SUMMARY_SELECT, appExtrasByApp, appSummary, launchDto, pctOfSupply, tokens, usd } from "../lib/dto.js";
+import { custodialAccount, custodialEthBalance, custodialSolBalance, custodialUsdgBalance, GAS_RESERVE_BY_CHAIN, GAS_RESERVE_WEI } from "../lib/custodial.js";
+import { APP_SUMMARY_SELECT, appExtrasByApp, appSummary, launchDto, pctOfSupply, tokens, usd, type NativePrices } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
 import { sendCached } from "../lib/http.js";
+import { ensureSolWallet } from "../lib/identity.js";
 import { launchesLast24h } from "../lib/launch.js";
 import { logger } from "../lib/logger.js";
 import { db } from "../lib/metrics.js";
-import { executeTrade, quoteTrade, recordTrade } from "../lib/trade.js";
+import { executeFor, quoteFor, recordTrade } from "../lib/trade.js";
 import { TREASURY_ACCOUNT } from "../lib/treasury.js";
 import { tradeDto } from "../lib/dto.js";
+import { clusterOf, links } from "../lib/venue.js";
 import { env } from "../env.js";
 
 export const me = Router();
@@ -43,25 +48,31 @@ const launcherClaimableMicros = async (userId: string): Promise<bigint> => {
   return agg._sum.deltaMicros ?? 0n;
 };
 
+/** Live SOL/USD from the Solana adapter's cached feed; 0 while the venue is disabled. */
+const solPriceUsd = (): Promise<number> => (solanaEnabled() ? adapterFor("pump_fun").nativePriceUsd() : Promise.resolve(0));
+
 /**
- * ETH + USDG of the custodial wallet, read fresh (a few seconds of cache absorbs a page's parallel
- * calls). Cached in wire shape: the Redis tier is JSON, and a BigInt does not survive it.
+ * ETH + USDG of the Robinhood Chain custodial wallet and SOL of the Solana one, read fresh (a few
+ * seconds of cache absorbs a page's parallel calls). Cached in wire shape: the Redis tier is
+ * JSON, and a BigInt does not survive it.
  */
-export const balancesOf = async (wallet: Address): Promise<BalancesDto> => {
-  const [ethWei, usdgUnits, ethPriceUsd] = await Promise.all([
+export const balancesOf = async (wallet: Address, solWallet: string | null): Promise<BalancesDto> => {
+  const [ethWei, usdgUnits, ethPriceUsd, solLamports, solPrice] = await Promise.all([
     cached(`bal:eth:${wallet}`, 3_000, async () => (await custodialEthBalance(wallet)).toString()),
     cached(`bal:usdg:${wallet}`, 3_000, async () => (await custodialUsdgBalance(wallet)).toString()),
     getEthPriceUsd(),
+    solWallet ? cached(`bal:sol:${solWallet}`, 3_000, async () => (await custodialSolBalance(solWallet)).toString()) : Promise.resolve("0"),
+    solPriceUsd(),
   ]);
-  return { ethWei, usdgUnits, ethPriceUsd };
+  return { ethWei, usdgUnits, ethPriceUsd, solLamports, solPriceUsd: solPrice };
 };
 
 /**
- * Coin positions across the viewer's wallets (custodial + proven external). Rows come from the
- * holder snapshot; the custodial wallet's balances are re-read from chain (one multicall) so a
+ * Coin positions across the viewer's wallets (custodial on each chain + proven external). Rows
+ * come from the holder snapshot; the custodial wallets' balances are re-read from chain so a
  * trade made seconds ago shows without waiting for the next holders refresh.
  */
-const positionsOf = async (wallets: Address[], ethPriceUsd: number): Promise<PositionDto[]> => {
+const positionsOf = async (wallets: string[], custodial: Record<string, true>, prices: NativePrices): Promise<PositionDto[]> => {
   if (wallets.length === 0) return [];
   const rows = await db.holderBalance.findMany({
     where: { wallet: { in: wallets }, amount: { gt: 0 }, app: { tokenAddress: { not: null } } },
@@ -71,8 +82,13 @@ const positionsOf = async (wallets: Address[], ethPriceUsd: number): Promise<Pos
   });
   const live = await Promise.all(
     rows.map((r) =>
-      r.wallet === wallets[0]
-        ? cached(`bal:tok:${r.app.tokenAddress}:${r.wallet}`, 10_000, async () => (await getErc20Balance(r.app.tokenAddress as Address, r.wallet as Address)).toString()).then(BigInt, () => big(r.amount))
+      custodial[r.wallet]
+        ? cached(`bal:tok:${r.app.tokenAddress}:${r.wallet}`, 10_000, async () =>
+            (r.app.chain === "robinhood"
+              ? await getErc20Balance(r.app.tokenAddress as Address, r.wallet as Address)
+              : await adapterFor(r.app.launchpad).tokenBalance(r.app.tokenAddress!, r.wallet)
+            ).toString(),
+          ).then(BigInt, () => big(r.amount))
         : Promise.resolve(big(r.amount)),
     ),
   );
@@ -86,12 +102,15 @@ const positionsOf = async (wallets: Address[], ethPriceUsd: number): Promise<Pos
   const extras = await appExtrasByApp(Object.keys(byApp));
   return Object.values(byApp)
     .filter((p) => p.units > 0n)
-    .map((p) => ({
-      app: appSummary(p.app, extras[p.app.id]!, ethPriceUsd),
-      units: p.units.toString(),
-      valueUsd: tokens(p.units) * p.app.priceUsd,
-      shareOfRemainingPct: pctOfSupply(p.units),
-    }));
+    .map((p) => {
+      const venue = VENUES[p.app.launchpad];
+      return {
+        app: appSummary(p.app, extras[p.app.id]!, prices),
+        units: p.units.toString(),
+        valueUsd: tokens(p.units, venue.tokenDecimals) * p.app.priceUsd,
+        shareOfRemainingPct: pctOfSupply(p.units, venue.totalSupplyUnits),
+      };
+    });
 };
 
 const WITHDRAW_CAP_MICROS = BigInt(WITHDRAW_DAILY_CAP_USD) * 1_000_000n;
@@ -103,21 +122,23 @@ me.get(
   "/",
   requireAuth,
   wrap(async (req, res) => {
-    const u = req.user!;
+    const u = await ensureSolWallet(req.user!);
     if (!u.wallet) throw new HttpError(400, "wallet_required");
     const wallet = u.wallet as Address;
     const tier = reputationTier(u.reputation);
-    const wallets: Address[] = u.authWallet && u.authWallet !== u.wallet ? [wallet, u.authWallet as Address] : [wallet];
+    const evmWallets: Address[] = u.authWallet && u.authWallet !== u.wallet ? [wallet, u.authWallet as Address] : [wallet];
+    const wallets: string[] = u.solWallet ? [...evmWallets, u.solWallet] : evmWallets;
+    const custodial: Record<string, true> = { [wallet]: true, ...(u.solWallet ? { [u.solWallet]: true } : {}) };
     const [balances, launched, claimableMicros, stakerMicros, launchesToday, unread, usedToday] = await Promise.all([
-      balancesOf(wallet),
+      balancesOf(wallet, u.solWallet),
       db.app.findMany({ where: { launcherId: u.id }, orderBy: { createdAt: "desc" }, take: PAGE_MAX }),
       launcherClaimableMicros(u.id),
-      db.pyreStake.aggregate({ where: { wallet: { in: wallets }, withdrawnAt: null }, _sum: { earnedMicros: true } }),
+      db.pyreStake.aggregate({ where: { wallet: { in: evmWallets }, withdrawnAt: null }, _sum: { earnedMicros: true } }),
       launchesLast24h(u.id),
       db.notification.count({ where: { userId: u.id, readAt: null } }),
       db.dailyWithdraw.findUnique({ where: { userId_day: { userId: u.id, day: utcDay() } } }),
     ]);
-    const positions = await positionsOf(wallets, balances.ethPriceUsd);
+    const positions = await positionsOf(wallets, custodial, { ethPriceUsd: balances.ethPriceUsd, solPriceUsd: balances.solPriceUsd });
     const used = usedToday?.usedMicros ?? 0n;
     const body: MeDto = {
       user: {
@@ -131,6 +152,7 @@ me.get(
         createdAt: u.createdAt.toISOString(),
       },
       wallet,
+      solWallet: u.solWallet,
       authWallet: (u.authWallet as Address | null) ?? null,
       balances,
       positions,
@@ -153,9 +175,9 @@ me.get(
   "/balances",
   requireAuth,
   wrap(async (req, res) => {
-    const u = req.user!;
+    const u = await ensureSolWallet(req.user!);
     if (!u.wallet) throw new HttpError(400, "wallet_required");
-    sendCached(res, await balancesOf(u.wallet as Address), { maxAge: 0, private: true });
+    sendCached(res, await balancesOf(u.wallet as Address, u.solWallet), { maxAge: 0, private: true });
   }),
 );
 
@@ -164,7 +186,8 @@ const MIN_CLAIM_MICROS = 1_000_000n;
 
 /**
  * Pays a launcher their unclaimed fee share (`LAUNCHER:<userId>` ledger balance) in ETH from the
- * treasury. Guards against a double-claim by writing the clearing ledger entry first. The marker is
+ * Robinhood Chain treasury, whatever chain their coins live on: the ledger is USD micros and one
+ * payout path keeps the reconcile simple. Guards against a double-claim by writing the clearing ledger entry first. The marker is
  * rolled back only when the payout provably did not move funds (never broadcast, or mined and
  * reverted); a broadcast whose receipt could not be read may still mine, so the marker stays with
  * an `unconfirmed` memo and the runner's PAYOUTS reconcile settles it from the receipt.
@@ -269,19 +292,61 @@ const reserveDailyWithdraw = async (userId: string, addUsdMicros: bigint): Promi
   };
 };
 
+const MIN_WITHDRAW_LAMPORTS = 1_000_000n; // 0.001 SOL
+
 /**
  * Server-signs a transfer out of the caller's custodial wallet to any address. ETH is a plain
  * value transfer (the wallet keeps `GAS_RESERVE_WEI`); USDG is an EIP-3009 authorization signed
- * by the custodial key and relayed by the treasury, so a USDG-only wallet never needs ETH for gas.
+ * by the custodial key and relayed by the treasury, so a USDG-only wallet never needs ETH for gas;
+ * SOL leaves the custodial Solana wallet (which keeps its rent-exempt reserve).
  */
 export const withdrawHandler = async (req: Request, res: Response): Promise<void> => {
-  const u = req.user!;
+  const u = await ensureSolWallet(req.user!);
   if (!u.wallet) throw new HttpError(400, "wallet_required");
   const wallet = u.wallet as Address;
   const body = parse(WithdrawBody, req.body);
-  if (body.to === wallet) throw new HttpError(400, "cannot_withdraw_to_self");
-  const account = custodialAccount(u);
+  if (body.to === wallet || body.to === u.solWallet) throw new HttpError(400, "cannot_withdraw_to_self");
 
+  if (body.asset === "SOL") {
+    if (!solanaEnabled() || !u.solWallet) throw new HttpError(409, "venue_disabled", { launchpad: "pump_fun" });
+    const sol = adapterFor("pump_fun");
+    if (!sol.isAddress(body.to)) throw new HttpError(400, "invalid_address");
+    const lamports = decimalToUnits(String(body.amount), 9);
+    if (lamports < MIN_WITHDRAW_LAMPORTS) throw new HttpError(400, "amount_too_small", { minWei: MIN_WITHDRAW_LAMPORTS.toString() });
+    const balance = await custodialSolBalance(u.solWallet);
+    const need = lamports + GAS_RESERVE_BY_CHAIN.solana;
+    if (balance < need) throw new HttpError(400, "insufficient_balance", { haveWei: balance.toString(), needWei: need.toString() });
+    const usdMicros = usdMicrosFromNative(lamports, await sol.nativePriceUsd(), 9);
+    const releaseCap = await reserveDailyWithdraw(u.id, usdMicros);
+    let txHash: string;
+    try {
+      txHash = (await sol.transferNative(sol.userWallet(u.walletIndex), body.to, lamports)).hash;
+    } catch (err) {
+      await releaseCap();
+      logger.error({ err, userId: u.id }, "SOL withdraw failed");
+      throw new HttpError(502, "withdraw_failed");
+    }
+    await writeAudit({
+      actorId: u.id,
+      actor: `user:${u.id}`,
+      action: "WALLET_WITHDRAW",
+      targetType: "User",
+      targetId: u.id,
+      meta: { asset: "SOL", to: body.to, lamports: lamports.toString(), usdMicros: usdMicros.toString(), txHash },
+    }).catch((err: unknown) => logger.error({ err, userId: u.id }, "withdraw audit write failed"));
+    const out: WithdrawResultDto = {
+      asset: "SOL",
+      to: body.to,
+      amount: lamports.toString(),
+      txHash,
+      explorerUrl: links({ chain: "solana", launchpad: "pump_fun" }).tx(txHash),
+      balances: await balancesOf(wallet, u.solWallet),
+    };
+    res.json(out);
+    return;
+  }
+
+  const account = custodialAccount(u);
   if (body.asset === "ETH") {
     const wei = ethToWei(body.amount);
     if (wei < MIN_WITHDRAW_WEI) throw new HttpError(400, "amount_too_small", { minWei: MIN_WITHDRAW_WEI.toString() });
@@ -310,9 +375,9 @@ export const withdrawHandler = async (req: Request, res: Response): Promise<void
       asset: "ETH",
       to: body.to,
       amount: wei.toString(),
-      txHash: txHash as WithdrawResultDto["txHash"],
+      txHash,
       explorerUrl: explorerTxUrl(txHash as `0x${string}`),
-      balances: await balancesOf(wallet),
+      balances: await balancesOf(wallet, u.solWallet),
     };
     res.json(out);
     return;
@@ -349,15 +414,15 @@ export const withdrawHandler = async (req: Request, res: Response): Promise<void
     asset: "USDG",
     to: body.to,
     amount: units.toString(),
-    txHash: txHash as WithdrawResultDto["txHash"],
+    txHash,
     explorerUrl: explorerTxUrl(txHash as `0x${string}`),
-    balances: await balancesOf(wallet),
+    balances: await balancesOf(wallet, u.solWallet),
   };
   res.json(out);
 };
 me.post("/withdraw", requireAuth, wrap(withdrawHandler));
 
-const TRADE_APP_SELECT = { id: true, slug: true, tokenAddress: true, curveAddress: true, launchPhase: true, status: true, priceUsd: true } as const;
+const TRADE_APP_SELECT = { id: true, slug: true, chain: true, launchpad: true, tokenAddress: true, curveAddress: true, launchPhase: true, status: true, priceUsd: true } as const;
 
 const tradeApp = async (slug: string) => {
   const app = await prisma.app.findUnique({ where: { slug }, select: TRADE_APP_SELECT });
@@ -365,7 +430,7 @@ const tradeApp = async (slug: string) => {
   return app;
 };
 
-/** `POST /v1/me/quote` — read-only quote for the caller's custodial wallet (snipe tax is recipient-keyed). */
+/** `POST /v1/me/quote` — read-only quote for the caller's custodial wallet on the coin's chain (PONS snipe tax is recipient-keyed). */
 me.post(
   "/quote",
   requireAuth,
@@ -373,42 +438,50 @@ me.post(
     const u = req.user!;
     if (!u.wallet) throw new HttpError(400, "wallet_required");
     const body = parse(TradeBody, req.body);
-    const { quote } = await quoteTrade(await tradeApp(body.slug), u.wallet as Address, body);
+    const quote = await quoteFor(await tradeApp(body.slug), u, body);
     sendCached(res, quote, { maxAge: 0, private: true });
   }),
 );
 
-/** `POST /v1/me/trade` — executes a custodial buy/sell; returns the fill, the quote it was checked against and fresh balances. */
+/** `POST /v1/me/trade` — executes a custodial buy/sell on the coin's venue; returns the fill, the quote it was checked against and fresh balances. */
 export const tradeHandler = async (req: Request, res: Response): Promise<void> => {
-  const u = req.user!;
+  const u = await ensureSolWallet(req.user!);
   if (!u.wallet) throw new HttpError(400, "wallet_required");
   const body = parse(TradeBody, req.body);
   const app = await tradeApp(body.slug);
-  const { quote, trade } = await executeTrade(app, u, body);
-  const row = await recordTrade(app, u.wallet as Address, body.side, quote.venue, trade);
+  const { quote, trade } = await executeFor(app, u, body);
+  const row = await recordTrade(app, body.side, quote.venue, trade);
   await writeAudit({
     actorId: u.id,
     actor: `user:${u.id}`,
     action: "CUSTODIAL_TRADE",
     targetType: "App",
     targetId: app.id,
-    meta: { side: body.side, venue: quote.venue, txHash: trade.txHash, tokenUnits: trade.tokenUnits.toString(), quoteWei: trade.quoteWei.toString() },
+    meta: { side: body.side, venue: quote.venue, chain: app.chain, txHash: trade.txHash, tokenUnits: trade.tokenUnits.toString(), quoteWei: trade.quoteWei.toString() },
   }).catch((err: unknown) => logger.error({ err, userId: u.id }, "trade audit write failed"));
-  const out: TradeResultDto = { trade: tradeDto(row), quote, balances: await balancesOf(u.wallet as Address) };
+  const out: TradeResultDto = { trade: tradeDto(row), quote, balances: await balancesOf(u.wallet as Address, u.solWallet) };
   res.json(out);
 };
 me.post("/trade", requireAuth, wrap(tradeHandler));
 
-/** Where the caller deposits: their custodial address plus the chain facts a wallet needs to send to it. */
+/** Where the caller deposits on each chain: the custodial addresses plus the facts a wallet needs to send to them. */
 me.get(
   "/deposit",
   requireAuth,
   wrap(async (req, res) => {
-    const u = req.user!;
+    const u = await ensureSolWallet(req.user!);
     if (!u.wallet) throw new HttpError(400, "wallet_required");
     sendCached(
       res,
-      { address: u.wallet, chainId: env.CHAIN_ID, usdg: env.USDG_ADDRESS, explorerUrl: `${env.BLOCKSCOUT_URL}/address/${u.wallet}` },
+      {
+        address: u.wallet,
+        chainId: env.CHAIN_ID,
+        usdg: env.USDG_ADDRESS,
+        explorerUrl: `${env.BLOCKSCOUT_URL}/address/${u.wallet}`,
+        solana: u.solWallet
+          ? { address: u.solWallet, cluster: clusterOf("solana"), explorerUrl: links({ chain: "solana", launchpad: "pump_fun" }).address(u.solWallet) }
+          : null,
+      },
       { maxAge: 0, private: true },
     );
   }),

@@ -1,6 +1,8 @@
 import type { AgentState, AppDetailDto, AppStatusDto } from "@pyre/shared";
-import { explorerToken } from "../../env.js";
+import { venueOf } from "@pyre/shared";
+import { VenueChip } from "../../components/VenueChip.js";
 import { formatCount, formatPct, formatPriceUsd, formatUsdCompact, timeAgo } from "../../lib/format.js";
+import { useVenueLinks } from "../../lib/venue.js";
 import { Address, Avatar, Button, Chip, GraduationRing, HeatGauge, NumberFlow, TickFlash, cx, type ChipTone } from "../../ui/index.js";
 
 const STATUS: Record<AppStatusDto, { label: string; tone: ChipTone }> = {
@@ -45,6 +47,8 @@ export interface CoinHeaderProps {
 export const CoinHeader = ({ app, onShare, onReport }: CoinHeaderProps) => {
   const status = STATUS[app.status];
   const graduated = app.phase >= 2;
+  const venue = venueOf(app);
+  const links = useVenueLinks(app);
   return (
     <header className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start gap-4">
@@ -65,27 +69,25 @@ export const CoinHeader = ({ app, onShare, onReport }: CoinHeaderProps) => {
             {agentChip(app.agentState)}
             {graduated ? (
               <Chip tone="earn" size="sm" mono>
-                Uniswap v4
+                {venue.chain === "solana" ? "PumpSwap" : "Uniswap v4"}
               </Chip>
             ) : (
               <Chip tone="accent" size="sm" mono>
                 {formatPct(app.progress, 0)} to graduation
               </Chip>
             )}
-            <Chip size="sm" mono>
-              Robinhood Chain · 4663
-            </Chip>
+            <VenueChip app={app} />
           </div>
           {app.oneLiner && <p className="small mt-2 max-w-2xl text-ink-2">{app.oneLiner}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-13 text-ink-2">
             {app.tokenAddress ? (
-              <Address address={app.tokenAddress} explorerUrl={explorerToken(app.tokenAddress)} label={undefined} />
+              <Address address={app.tokenAddress} explorerUrl={links.token(app.tokenAddress)} label={undefined} />
             ) : (
               <span className="num text-ink-3">not launched</span>
             )}
-            {app.ponsUrl && (
-              <a href={app.ponsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-ink-2 hover:text-ink">
-                View on PONS <IconExternal />
+            {app.launchpadUrl && (
+              <a href={app.launchpadUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-ink-2 hover:text-ink">
+                View on {venue.launchpadLabel} <IconExternal />
               </a>
             )}
             {app.socials.xAccount && (

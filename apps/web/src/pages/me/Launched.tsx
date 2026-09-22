@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import type { LaunchDraftDto, MeDto } from "@pyre/shared";
 import { explorerTxUrl } from "@pyre/shared";
 import { isHttpError } from "../../api/client.js";
-import { formatEth, formatUsd, timeAgo } from "../../lib/format.js";
+import { formatEth, formatNative, formatUsd, timeAgo } from "../../lib/format.js";
+import { useVenueLinks } from "../../lib/venue.js";
 import { Address, Avatar, Button, Chip, EmptyState, StatusLed, toast, type ChipTone, type LedTone } from "../../ui/index.js";
 import { useClaimLauncher } from "./hooks.js";
 
@@ -37,7 +38,7 @@ export const Launched = ({ me }: { me: MeDto }) => {
         <div>
           <div className="eyebrow">Claimable launcher share</div>
           <div className="num text-22 text-ink">{formatEth(claimableWei)}</div>
-          <div className="small text-ink-3">{formatUsd(BigInt(me.claimable.launcherMicros))} · 15% of every creator fee your coins earned, paid in ETH to your Pyre wallet.</div>
+          <div className="small text-ink-3">{formatUsd(BigInt(me.claimable.launcherMicros))} · 15% of every creator fee your coins earned, on either chain, paid in ETH to your Pyre wallet on Robinhood Chain.</div>
         </div>
         <Button
           variant="secondary"
@@ -90,7 +91,7 @@ export const Launched = ({ me }: { me: MeDto }) => {
                       </div>
                       <div>
                         <dt className="eyebrow">Fees accrued</dt>
-                        <dd className="num text-earn">{formatEth(l.feesWei)}</dd>
+                        <dd className="num text-earn">{formatNative(l.feesWei, l.native)}</dd>
                       </div>
                       <div>
                         <dt className="eyebrow">Live</dt>
@@ -101,10 +102,10 @@ export const Launched = ({ me }: { me: MeDto }) => {
                         <dd className="num text-ink">
                           {l.stakeRefundTx ? (
                             <span className="flex flex-col">
-                              refunded <Address address={l.stakeRefundTx} kind="tx" chars={4} explorerUrl={explorerTxUrl(l.stakeRefundTx)} copy={false} />
+                              refunded <RefundLink launch={l} tx={l.stakeRefundTx} />
                             </span>
                           ) : l.stakeTx ? (
-                            `${formatEth(l.stakeWei)} escrowed`
+                            `${formatNative(l.stakeWei, l.native)} escrowed`
                           ) : (
                             "—"
                           )}
@@ -146,4 +147,10 @@ export const Launched = ({ me }: { me: MeDto }) => {
       )}
     </div>
   );
+};
+
+/** The refund lands on the launch's own chain, so its explorer link follows the venue. */
+const RefundLink = ({ launch, tx }: { launch: LaunchDraftDto; tx: string }) => {
+  const links = useVenueLinks(launch);
+  return <Address address={tx} kind="tx" chars={4} explorerUrl={links.tx(tx)} copy={false} />;
 };

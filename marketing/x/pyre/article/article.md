@@ -130,6 +130,24 @@ The site shows zeros today: no apps, no fees, no burns. The demo rows used to bu
 
 What launches next, in order: treasury funding, an on-chain dry run of the full loop with a throwaway coin (launch, sweep, buy, burn, attest, with the hashes published), PYRE, then the first coins.
 
+## launching from other chains: solana and pump.fun
+
+Pyre started on one venue. The next update adds a second: a coin can launch on Solana through pump.fun instead of on pons v2, and the loop is the same loop. You write the sentence, the intake agent writes the spec, you stake, the coin launches from the app's own wallet, its creator fees pay the agent to build the app, and a quarter of every fee is bought back and burned with a receipt on chain. What changes is only what has to change because the chain is different.
+
+**The stake** is in the venue's native asset: 0.05 ETH on Robinhood Chain, 1 SOL on Solana. Refundable at the first build either way.
+
+**The wallet.** Every account gets a second custodial wallet, on Solana, derived on the server from the same seed as the first (`m/44'/501'`, the Solana convention) and never exposed to the browser. Deposit SOL to it, stake from it, trade from it, withdraw from it. Solana on Pyre is custodial only: there is no Solana wallet sign-in, and if you want to trade a Solana coin with your own key the coin page sends you to pump.fun to do it.
+
+**The fee.** pump.fun pays the coin's creator, which is the app wallet, a creator fee: 30 bps of every bonding-curve trade, and a share of every PumpSwap trade after graduation that pump.fun tiers by market cap. Those are pump.fun's rates, not ours. pump.fun sets them, has changed them before, can change them again, and its terms say creator fees carry no warranty and can be re-routed under its community-takeover process. Pyre claims whatever accrued every five minutes and splits it the same 60/25/15.
+
+**The burn.** Here is the one real difference. On Robinhood Chain the 25% buys PYRE. On Solana it cannot, because PYRE does not exist there, and Pyre will not bridge it. So a Solana coin's 25% buys that coin itself and burns it: the treasury's Solana wallet buys on the curve or on PumpSwap, calls the token program's burn so the mint's supply actually falls, and writes a memo transaction that reads `pyre:burn:v1:` followed by the same sha256 over the fee entries that the Robinhood attestation uses. Open the memo on Solscan, compare the hash with the coin page, check the supply. A Solana coin is bought back only with its own fee share, never with anyone else's, and never with a Robinhood coin's.
+
+**PYRE is not moving.** It is one coin, on Robinhood Chain, and nowhere else. It is not bridged, wrapped, mirrored or relaunched on Solana. Any PYRE you find on another chain is not ours, nothing on Pyre will ever buy or burn it, and a coin styled as PYRE on Solana is impersonation under the content policy.
+
+Launcher payouts stay where they are: the 15% is ledgered in dollars and paid in ETH on Robinhood Chain to the wallet on your account, whatever chain your coin is on. One payout path, one treasury that pays people.
+
+The venue ships dark. It exists only when the platform is configured with a Solana RPC, production is not yet, and it goes through a staging run against Solana devnet — a real pump.fun launch, buy, fee claim, coin burn and memo, with the signatures published — before it is switched on for anyone. When it is, the launch page shows two cards: Robinhood Chain · pons v2, and Solana · pump.fun. Everything else on this page still holds for both.
+
 ## how to launch
 
 ![The launch page on pyre.fun: name the coin, describe the app in one sentence, stake 0.05 ETH](figures/09-launch.png)
@@ -179,9 +197,9 @@ Coins can fail to earn fees. Most small coins do. A coin with no trades funds no
 
 The agent can produce mediocre software. The reviewer gate stops it shipping dangerous or off-spec code; it does not make the code good. Budgets are small by design.
 
-Pyre depends on third parties it does not control: pons v2 contracts, Robinhood Chain, Uniswap v4, E2B, Anthropic. A change or outage at any of them stops the loop until it is handled.
+Pyre depends on third parties it does not control: pons v2 contracts, Robinhood Chain, Uniswap v4, and once the second venue is on, pump.fun, PumpSwap and Solana; plus E2B and Anthropic. A change or outage at any of them stops the loop until it is handled. pump.fun's creator fee in particular is pump.fun's to set, change or re-route.
 
-Custodial wallets are custodial, derived from one platform seed. If you would rather hold your own key, sign in with an external wallet and stake from it.
+Custodial wallets are custodial, derived from one platform seed. If you would rather hold your own key, sign in with an external wallet and stake from it on Robinhood Chain; on Solana there is no such option, and you trade with your own key on pump.fun instead.
 
 Every number on pyre.fun is zero until a real coin earns it. Nothing there is seeded, sampled or projected.
 

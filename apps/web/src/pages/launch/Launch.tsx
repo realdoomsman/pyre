@@ -102,11 +102,11 @@ export const Launch = () => {
     document.title = "Launch a coin — Pyre";
   }, []);
 
-  // Fork: prefill the coin form from the parent.
+  // Fork: prefill the coin form from the parent; a fork launches on the parent's venue.
   useEffect(() => {
     if (!forkApp.data || id) return;
     const p = forkApp.data;
-    setDraft((d) => (d.prompt ? d : { ...d, prompt: p.spec ? `${p.spec.oneLiner}\n\n${p.spec.whatItDoes}` : p.oneLiner, imageUrl: d.imageUrl || p.imageUrl }));
+    setDraft((d) => (d.prompt ? d : { ...d, launchpad: p.launchpad, prompt: p.spec ? `${p.spec.oneLiner}\n\n${p.spec.whatItDoes}` : p.oneLiner, imageUrl: d.imageUrl || p.imageUrl }));
   }, [forkApp.data, id]);
 
   const data = launch.data;
@@ -121,6 +121,7 @@ export const Launch = () => {
   useEffect(() => {
     if (!data) return;
     setDraft((d) => ({
+      launchpad: data.launchpad,
       name: d.name || data.name,
       ticker: d.ticker || data.ticker,
       imageUrl: d.imageUrl || data.imageUrl,
@@ -160,14 +161,15 @@ export const Launch = () => {
             Launch a coin that <em>builds</em> something.
           </h1>
           <p className="body text-ink-2">
-            Name it, tell the agent what to build, stake 0.05 ETH. The coin launches on PONS v2; its creator fees fund the agent; 25% of every coin's fees buys and burns PYRE.
+            Name it, tell the agent what to build, stake 0.05 ETH on Robinhood Chain or 1 SOL on Solana. The coin launches on pons v2 or pump.fun; its creator fees fund the agent; 25% of every
+            coin's fees buys and burns PYRE on Robinhood Chain — or the coin itself on Solana.
           </p>
           <div>
             <Button size="lg" onClick={auth.signIn}>
               Sign in to launch
             </Button>
           </div>
-          <p className="small text-ink-3">Google gives you a custodial Pyre wallet on Robinhood Chain. Or sign in with your own wallet and pay the stake from it.</p>
+          <p className="small text-ink-3">Google gives you custodial Pyre wallets on Robinhood Chain and Solana. Or sign in with your own wallet and pay a Robinhood Chain stake from it.</p>
         </div>
         <div className="w-full max-w-sm lg:sticky lg:top-24">
           <CoinCard app={preview} />
@@ -189,7 +191,7 @@ export const Launch = () => {
           onSubmit={submitCoin}
           busy={create.isPending || fork.isPending}
           rejection={rejected ? (data?.killedReason ?? "The prompt was refused by the launch classifier.") : errorText(create.error ?? fork.error)}
-          forking={forkSlug && !id ? (forkApp.data?.ticker ?? forkSlug) : null}
+          forking={forkSlug && !id ? { ticker: forkApp.data?.ticker ?? forkSlug, launchpad: forkApp.data?.launchpad ?? draft.launchpad } : null}
         />
       ),
     };

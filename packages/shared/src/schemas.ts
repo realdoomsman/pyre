@@ -1,6 +1,7 @@
 import { getAddress, isAddress } from "viem/utils";
 import { z } from "zod";
 import { LAUNCH_PHASE } from "./constants.js";
+import { Launchpad } from "./venues.js";
 
 /* ─────────────────────────── Chain primitives ─────────────────────────── */
 
@@ -141,34 +142,35 @@ export const BuildEventPayload = z.discriminatedUnion("type", [
   z.object({ type: z.literal("PR_MERGED"), prNumber: z.number(), author: z.string(), url: z.string() }),
   z.object({ type: z.literal("BOUNTY_CLAIMED"), bountyId: z.string(), amountWei: z.string(), claimant: EvmAddress }),
   z.object({ type: z.literal("GROWTH_POST"), url: z.string(), text: z.string() }),
-  // chain events (runner → feed)
+  // chain events (runner → feed); addresses and hashes are venue-formatted strings (0x… / base58)
   z.object({
     type: z.literal("LAUNCH"),
-    tokenAddress: EvmAddress,
-    curveAddress: EvmAddress,
-    ponsUrl: z.string(),
+    tokenAddress: z.string(),
+    curveAddress: z.string(),
+    launchpadUrl: z.string(),
     explorerUrl: z.string(),
-    txHash: TxHash,
+    txHash: z.string(),
   }),
-  z.object({ type: z.literal("LAUNCH_GATED"), wallet: EvmAddress }),
+  z.object({ type: z.literal("LAUNCH_GATED"), wallet: z.string() }),
   z.object({
     type: z.literal("FEES"),
+    /** Native base units of the app's chain. */
     wei: z.string(),
     usdMicros: z.string(),
     buildMicros: z.string(),
-    txHash: TxHash,
+    txHash: z.string(),
     explorerUrl: z.string(),
   }),
   z.object({
     type: z.literal("TRADE"),
     side: z.enum(["BUY", "SELL"]),
-    wallet: EvmAddress,
+    wallet: z.string(),
     tokenUnits: z.string(),
     quoteWei: z.string(),
     priceUsd: z.number(),
-    txHash: TxHash,
+    txHash: z.string(),
   }),
-  z.object({ type: z.literal("GRADUATED"), poolId: z.string(), txHash: TxHash.nullable() }),
+  z.object({ type: z.literal("GRADUATED"), poolId: z.string(), txHash: z.string().nullable() }),
 ]);
 export type BuildEventPayload = z.infer<typeof BuildEventPayload>;
 
@@ -245,6 +247,8 @@ export const CreateLaunchBody = z.object({
   twitter: httpUrl(200).optional(),
   website: httpUrl(200).optional(),
   forkOfAppId: z.string().optional(),
+  /** Where the coin is created; the chain follows from it (`VENUES`). Forks launch on the parent's venue. */
+  launchpad: Launchpad.default("pons_v2"),
 });
 export type CreateLaunchBody = z.infer<typeof CreateLaunchBody>;
 
@@ -252,9 +256,9 @@ export const ApproveSpecBody = z.object({
   spec: AppSpec,
 });
 
-/** Custodial launch stake takes no amount (fixed LAUNCH_STAKE_WEI); a top-up specifies ETH. */
+/** Custodial launch stake takes no amount (fixed `LAUNCH_STAKE_BY_CHAIN`); a top-up specifies whole native units of the app's chain (ETH or SOL). */
 export const TopupBody = z.object({
-  eth: z.number().positive().max(1000),
+  amount: z.number().positive().max(1000),
 });
 
 /** Stake $PYRE: token count (whole tokens, converted to base units server-side). */
@@ -263,12 +267,24 @@ export const PyreStakeBody = z.object({
   amount: z.number().positive(),
 });
 
-/** Withdraw from the custodial wallet to any external address. */
-export const WithdrawBody = z.object({
-  asset: z.enum(["ETH", "USDG"]),
-  to: EvmAddress,
-  amount: z.number().positive().finite().max(1_000_000),
-});
+/** Base58 Solana public key (32 bytes encode to 32–44 characters). The adapter re-checks the decoded length. */
+export const SolanaAddress = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "expected a base58 Solana address");
+export type SolanaAddress = z.infer<typeof SolanaAddress>;
+
+/** Base58 Solana transaction signature (64 bytes encode to 87–88 characters). */
+export const SolanaSignature = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{86,90}$/, "expected a base58 Solana signature");
+
+const withdrawAmount = z.number().positive().finite().max(1_000_000);
+
+/**
+ * Withdraw from a custodial wallet to any external address. ETH/USDG leave the Robinhood Chain
+ * wallet, SOL the Solana wallet; the destination is validated by the asset's chain.
+ */
+export const WithdrawBody = z.discriminatedUnion("asset", [
+  z.object({ asset: z.enum(["ETH", "USDG"]), to: EvmAddress, amount: withdrawAmount }),
+  z.object({ asset: z.literal("SOL"), to: SolanaAddress, amount: withdrawAmount }),
+]);
+export type WithdrawBody = z.infer<typeof WithdrawBody>;
 
 export const PromptQueueBody = z.object({
   text: z.string().min(10).max(1000),

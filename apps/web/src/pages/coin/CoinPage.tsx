@@ -16,6 +16,7 @@ import { MobileTradeBar, TradePanel } from "./TradePanel.js";
 import { flatFeed, useAppStream, useCandles, useFeed, useHolders, useTrades } from "./queries.js";
 import { AppTab } from "./tabs/AppTab.js";
 import { BountiesTab } from "./tabs/BountiesTab.js";
+import { BurnsTab } from "./tabs/BurnsTab.js";
 import { HoldersTab } from "./tabs/HoldersTab.js";
 import { RoadmapTab } from "./tabs/RoadmapTab.js";
 import { ThreadTab } from "./tabs/ThreadTab.js";
@@ -27,6 +28,7 @@ const TABS = [
   { id: "app", label: "App" },
   { id: "holders", label: "Holders" },
   { id: "trades", label: "Trades" },
+  { id: "burns", label: "Burns" },
   { id: "thread", label: "Thread" },
   { id: "roadmap", label: "Roadmap" },
   { id: "bounties", label: "Bounties" },
@@ -83,10 +85,13 @@ const Loaded = ({ app }: { app: AppDetailDto }) => {
   // Below `lg` the rail folds under the content and the trade panel moves to the sticky bar.
   const mobile = useMediaQuery("(max-width: 1023px)");
   const stats = useStats();
-  const ethPriceUsd = stats.data?.ethPriceUsd ?? 0;
+  // Every chain amount on this page is in the app's native asset; price it with the matching feed.
+  const nativePriceUsd = (app.chain === "solana" ? stats.data?.solPriceUsd : stats.data?.ethPriceUsd) ?? 0;
+  // The coin-burn ledger only exists off Robinhood Chain; there the 25% leg burns PYRE (see /burns).
+  const tabs = useMemo(() => (app.coinBurns ? TABS : TABS.filter((t) => t.id !== "burns")), [app.coinBurns]);
 
   const tabParam = params.get("tab");
-  const tab: TabId = tabParam && TAB_IDS[tabParam] ? (tabParam as TabId) : "build";
+  const tab: TabId = tabParam && TAB_IDS[tabParam] && (tabParam !== "burns" || app.coinBurns) ? (tabParam as TabId) : "build";
   const setTab = (id: TabId) => {
     const next = new URLSearchParams(params);
     if (id === "build") next.delete("tab");
@@ -111,7 +116,7 @@ const Loaded = ({ app }: { app: AppDetailDto }) => {
     return out;
   }, [events]);
 
-  const trade = <TradePanel app={app} ethPriceUsd={ethPriceUsd} />;
+  const trade = <TradePanel app={app} nativePriceUsd={nativePriceUsd} />;
 
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
@@ -129,7 +134,7 @@ const Loaded = ({ app }: { app: AppDetailDto }) => {
             mode="mcap"
             unit="usd"
             markers={markers}
-            ethPriceUsd={ethPriceUsd}
+            native={{ symbol: app.native.symbol, priceUsd: nativePriceUsd }}
             supply={candles.data?.supply ?? 1_000_000_000}
             height={mobile ? 280 : 380}
           />
@@ -139,7 +144,7 @@ const Loaded = ({ app }: { app: AppDetailDto }) => {
           <LoopStatus app={app} />
 
           <section aria-label="Coin details">
-            <Tabs items={TABS} value={tab} onChange={setTab} name={NAME} size="sm" />
+            <Tabs items={tabs} value={tab} onChange={setTab} name={NAME} size="sm" />
             <div id={panelId(NAME, tab)} role="tabpanel" aria-labelledby={tabId(NAME, tab)} className="pt-4">
               {tab === "build" && (
                 <BuildLogTab app={app} events={events} stream={live.stream} hasMore={!!feed.hasNextPage} loadingMore={feed.isFetchingNextPage} onLoadMore={() => void feed.fetchNextPage()} />
@@ -151,12 +156,13 @@ const Loaded = ({ app }: { app: AppDetailDto }) => {
                   app={app}
                   rows={tradeRows}
                   live={live.liveTrades}
-                  ethPriceUsd={ethPriceUsd}
+                  nativePriceUsd={nativePriceUsd}
                   hasMore={!!trades.hasNextPage}
                   loadingMore={trades.isFetchingNextPage}
                   onLoadMore={() => void trades.fetchNextPage()}
                 />
               )}
+              {tab === "burns" && <BurnsTab app={app} />}
               {tab === "thread" && <ThreadTab app={app} events={events} hasMore={!!feed.hasNextPage} loadingMore={feed.isFetchingNextPage} onLoadMore={() => void feed.fetchNextPage()} />}
               {tab === "roadmap" && <RoadmapTab app={app} />}
               {tab === "bounties" && <BountiesTab app={app} />}
@@ -165,7 +171,7 @@ const Loaded = ({ app }: { app: AppDetailDto }) => {
 
           {mobile && (
             <>
-              <StatsAudit app={app} trades={allTrades} holders={holders.data?.holders ?? []} ethPriceUsd={ethPriceUsd} />
+              <StatsAudit app={app} trades={allTrades} holders={holders.data?.holders ?? []} nativePriceUsd={nativePriceUsd} />
               <FeeTable app={app} />
             </>
           )}
@@ -175,13 +181,13 @@ const Loaded = ({ app }: { app: AppDetailDto }) => {
           <aside className="sticky top-20 flex flex-col gap-4" aria-label="Trade and audit">
             {trade}
             <GraduationCard app={app} />
-            <StatsAudit app={app} trades={allTrades} holders={holders.data?.holders ?? []} ethPriceUsd={ethPriceUsd} />
+            <StatsAudit app={app} trades={allTrades} holders={holders.data?.holders ?? []} nativePriceUsd={nativePriceUsd} />
             <FeeTable app={app} />
           </aside>
         )}
       </div>
 
-      {mobile && <MobileTradeBar app={app} ethPriceUsd={ethPriceUsd} />}
+      {mobile && <MobileTradeBar app={app} nativePriceUsd={nativePriceUsd} />}
       <ShareSheet app={app} open={sheet === "share"} onClose={() => setSheet(null)} />
       <ReportSheet app={app} open={sheet === "report"} onClose={() => setSheet(null)} />
     </div>

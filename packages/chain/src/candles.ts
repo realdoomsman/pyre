@@ -1,8 +1,9 @@
-import { getAbiItem, getAddress, type Address, type Hash } from "viem";
+import { getAbiItem, getAddress, type Address } from "viem";
 import { publicClient, type PyrePublicClient } from "./chain.js";
 import { curveAbi, poolManagerAbi } from "./pons/abi.js";
 import { ponsAddresses } from "./pons/addresses.js";
 import type { LaunchRecord } from "./pons/read.js";
+import type { VenueTrade } from "./venue.js";
 
 export type CandleInterval = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
 
@@ -16,19 +17,12 @@ export interface Candle {
   v: number;
 }
 
-export interface Trade {
-  hash: Hash;
-  block: number;
-  /** Unix seconds. */
-  ts: number;
-  side: "buy" | "sell";
-  wallet: Address;
-  tokenUnits: bigint;
-  /** Quote paid (buy, gross of fees) or received (sell, net of fees). */
-  quoteWei: bigint;
-  /** Effective price: quoteWei / tokenUnits (both 1e18). */
-  priceEth: number;
-}
+/**
+ * One fill on any venue: `quoteNative` is the native paid (buy, gross of fees) or received (sell,
+ * net of fees) in base units; `priceNative` is native per whole token. `hash`/`wallet` are
+ * venue-formatted strings (0x… on Robinhood Chain, base58 on Solana).
+ */
+export type Trade = VenueTrade;
 
 export const INTERVAL_SECONDS: Record<CandleInterval, number> = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14_400, "1d": 86_400 };
 
@@ -36,8 +30,11 @@ export const INTERVAL_SECONDS: Record<CandleInterval, number> = { "1m": 60, "5m"
 export const LOG_CHUNK_BLOCKS = 10_000n;
 const LOG_CONCURRENCY = 4;
 
-/** Folds trades into ascending OHLCV candles priced in USD. Pure; the runner's market indexer builds every stored interval with it. */
-export function buildCandlesFromTrades(trades: Trade[], interval: CandleInterval, ethPriceUsd: number): Candle[] {
+/**
+ * Folds trades into ascending OHLCV candles priced in USD. Pure; the runner's market indexer builds
+ * every stored interval with it. `nativeDecimals` is the chain's native asset (18 ETH, 9 SOL).
+ */
+export function buildCandlesFromTrades(trades: VenueTrade[], interval: CandleInterval, nativePriceUsd: number, nativeDecimals: number): Candle[] {
   const size = INTERVAL_SECONDS[interval];
   const sorted = [...trades].sort((a, b) => a.ts - b.ts || a.block - b.block);
   const candles: Candle[] = [];
@@ -45,8 +42,8 @@ export function buildCandlesFromTrades(trades: Trade[], interval: CandleInterval
   for (const trade of sorted) {
     if (trade.tokenUnits === 0n) continue;
     const t = Math.floor(trade.ts / size) * size;
-    const price = trade.priceEth * ethPriceUsd;
-    const volume = (Number(trade.quoteWei) / 1e18) * ethPriceUsd;
+    const price = trade.priceNative * nativePriceUsd;
+    const volume = (Number(trade.quoteNative) / 10 ** nativeDecimals) * nativePriceUsd;
     if (!current || current.t !== t) {
       current = { t, o: price, h: price, l: price, c: price, v: volume };
       candles.push(current);
@@ -98,7 +95,8 @@ function chunkRanges(fromBlock: bigint, toBlock: bigint): Array<[bigint, bigint]
   return ranges;
 }
 
-async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+/** Runs `fn` over `items` with at most `limit` in flight, preserving order. */
+export async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let next = 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -146,8 +144,8 @@ export async function getTrades(launch: LaunchRecord, fromBlock: bigint, toBlock
         side: tokenDelta > 0n ? "buy" : "sell",
         wallet: meta.senders?.[log.transactionHash] ?? getAddress(log.args.sender),
         tokenUnits,
-        quoteWei,
-        priceEth: tokenUnits > 0n ? Number(quoteWei) / Number(tokenUnits) : 0,
+        quoteNative: quoteWei,
+        priceNative: tokenUnits > 0n ? Number(quoteWei) / Number(tokenUnits) : 0,
       };
     });
   }
@@ -161,9 +159,9 @@ export async function getTrades(launch: LaunchRecord, fromBlock: bigint, toBlock
     const { ts } = await blockMeta(log.blockNumber, false, client);
     if (log.eventName === "CurveBuy") {
       const { recipient, quoteIn, tokensOut } = log.args;
-      return { hash: log.transactionHash, block: Number(log.blockNumber), ts, side: "buy", wallet: getAddress(recipient), tokenUnits: tokensOut, quoteWei: quoteIn, priceEth: tokensOut > 0n ? Number(quoteIn) / Number(tokensOut) : 0 };
+      return { hash: log.transactionHash, block: Number(log.blockNumber), ts, side: "buy", wallet: getAddress(recipient), tokenUnits: tokensOut, quoteNative: quoteIn, priceNative: tokensOut > 0n ? Number(quoteIn) / Number(tokensOut) : 0 };
     }
     const { recipient, tokensIn, quoteOut } = log.args;
-    return { hash: log.transactionHash, block: Number(log.blockNumber), ts, side: "sell", wallet: getAddress(recipient), tokenUnits: tokensIn, quoteWei: quoteOut, priceEth: tokensIn > 0n ? Number(quoteOut) / Number(tokensIn) : 0 };
+    return { hash: log.transactionHash, block: Number(log.blockNumber), ts, side: "sell", wallet: getAddress(recipient), tokenUnits: tokensIn, quoteNative: quoteOut, priceNative: tokensIn > 0n ? Number(quoteOut) / Number(tokensIn) : 0 };
   });
 }

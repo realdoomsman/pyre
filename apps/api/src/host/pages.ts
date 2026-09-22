@@ -1,6 +1,6 @@
 import type { App } from "@pyre/db";
-import { explorerTokenUrl, ponsUrl } from "@pyre/shared";
 import { env } from "../env.js";
+import { links, metaOf } from "../lib/venue.js";
 
 const escapeHtml = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
@@ -27,15 +27,13 @@ const shell = (title: string, body: string, extraHead = ""): string =>
 const logo = (app: Pick<App, "imageUrl" | "name">): string =>
   app.imageUrl ? `<img class="logo" src="${escapeHtml(app.imageUrl)}" alt="${escapeHtml(app.name)}">` : "";
 
-export function renderDormantPage(app: Pick<App, "name" | "ticker" | "slug" | "tokenAddress" | "imageUrl">): string {
+export function renderDormantPage(app: Pick<App, "name" | "ticker" | "slug" | "chain" | "launchpad" | "tokenAddress" | "imageUrl">): string {
   const coinPage = `${env.WEB_ORIGIN}/c/${app.slug}`;
   const token = app.tokenAddress;
-  const buy = token
-    ? `<a class="btn" href="${escapeHtml(ponsUrl(token))}" rel="noopener">Buy $${escapeHtml(app.ticker)} on PONS</a>`
-    : "";
-  const explorer = token
-    ? `<a class="btn alt" href="${escapeHtml(explorerTokenUrl(token, env.BLOCKSCOUT_URL))}" rel="noopener">Blockscout</a>`
-    : "";
+  const link = links(app);
+  const launchpadName = app.chain === "robinhood" ? "PONS" : metaOf(app).launchpadLabel;
+  const buy = token ? `<a class="btn" href="${escapeHtml(link.launchpad(token))}" rel="noopener">Buy $${escapeHtml(app.ticker)} on ${escapeHtml(launchpadName)}</a>` : "";
+  const explorer = token ? `<a class="btn alt" href="${escapeHtml(link.token(token))}" rel="noopener">${app.chain === "robinhood" ? "Blockscout" : "Solscan"}</a>` : "";
   return shell(
     `${app.name} — out of budget`,
     `${logo(app)}<div class="ticker">$${escapeHtml(app.ticker)}</div><h1>${escapeHtml(app.name)} is out of budget</h1><p>This app is built and paid for by trading fees on its coin. The build budget hit zero, so the app is dormant. Buying revives it: new fees fund the next build.</p>${buy}<a class="btn alt" href="${escapeHtml(coinPage)}">Coin page</a>${explorer}<small>out of budget — buy to revive</small>`,

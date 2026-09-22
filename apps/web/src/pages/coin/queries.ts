@@ -6,6 +6,7 @@ import {
   type BuildEventDto,
   type CandleIntervalDto,
   type CandlesDto,
+  type CoinBurnsPageDto,
   type HolderDto,
   type QueueItemDto,
   type TradeBody,
@@ -31,6 +32,7 @@ export const keys = {
   holders: (slug: string) => ["coin", slug, "holders"] as const,
   roadmap: (slug: string) => ["coin", slug, "roadmap"] as const,
   bounties: (slug: string) => ["coin", slug, "bounties"] as const,
+  burns: (slug: string) => ["coin", slug, "burns"] as const,
 };
 
 export interface FeedPage {
@@ -75,6 +77,17 @@ export const useTrades = (slug: string) =>
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
     refetchInterval: 30_000,
+  });
+
+/** Coin buy-and-burns (Solana apps): the 25% fee leg that burns the coin itself, newest first. */
+export const useCoinBurns = (slug: string, enabled: boolean) =>
+  useInfiniteQuery({
+    queryKey: keys.burns(slug),
+    queryFn: ({ pageParam, signal }) => api.get<CoinBurnsPageDto>(`/v1/apps/${slug}/burns${qs({ cursor: pageParam, limit: 50 })}`, signal),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
+    enabled,
+    refetchInterval: 60_000,
   });
 
 export const useHolders = (slug: string) =>

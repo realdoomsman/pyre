@@ -93,6 +93,7 @@ describe("splitFees conserves value", () => {
       buildMicros: 300_000_000n, // 30% spendable build budget (half the 60% build cut)
       creditsMicros: 300_000_000n, // 30% routed to the model-credit funding wallet
       pyreMicros: 250_000_000n, // 25% $PYRE
+      coinBurnMicros: 0n, // the same leg burns the coin itself off Robinhood Chain
       launcherMicros: 150_000_000n, // 15% launcher
       upstreamMicros: 0n,
       stakersMicros: 0n,
@@ -113,9 +114,9 @@ describe("splitFees conserves value", () => {
   });
 
   it("assigns every micro of a dust fee, with royalty and staker cuts rounding to nothing", () => {
-    expect(splitFees(1n, true, true)).toEqual({ usdMicros: 1n, buildMicros: 0n, creditsMicros: 0n, pyreMicros: 0n, launcherMicros: 1n, upstreamMicros: 0n, stakersMicros: 0n });
-    expect(splitFees(2n, true, true)).toEqual({ usdMicros: 2n, buildMicros: 1n, creditsMicros: 0n, pyreMicros: 0n, launcherMicros: 1n, upstreamMicros: 0n, stakersMicros: 0n });
-    expect(splitFees(3n, true, true)).toEqual({ usdMicros: 3n, buildMicros: 1n, creditsMicros: 0n, pyreMicros: 0n, launcherMicros: 2n, upstreamMicros: 0n, stakersMicros: 0n });
+    expect(splitFees(1n, true, true)).toEqual({ usdMicros: 1n, buildMicros: 0n, creditsMicros: 0n, pyreMicros: 0n, coinBurnMicros: 0n, launcherMicros: 1n, upstreamMicros: 0n, stakersMicros: 0n });
+    expect(splitFees(2n, true, true)).toEqual({ usdMicros: 2n, buildMicros: 1n, creditsMicros: 0n, pyreMicros: 0n, coinBurnMicros: 0n, launcherMicros: 1n, upstreamMicros: 0n, stakersMicros: 0n });
+    expect(splitFees(3n, true, true)).toEqual({ usdMicros: 3n, buildMicros: 1n, creditsMicros: 0n, pyreMicros: 0n, coinBurnMicros: 0n, launcherMicros: 2n, upstreamMicros: 0n, stakersMicros: 0n });
   });
 });
 
@@ -178,6 +179,7 @@ describe("staker share of the launcher cut", () => {
       buildMicros: 270_000_000n,
       creditsMicros: 270_000_000n,
       pyreMicros: 250_000_000n,
+      coinBurnMicros: 0n,
       launcherMicros: 120_000_000n,
       upstreamMicros: 60_000_000n,
       stakersMicros: 30_000_000n,

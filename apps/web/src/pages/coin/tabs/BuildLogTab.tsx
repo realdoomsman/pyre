@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { AppDetailDto, BuildEventDto } from "@pyre/shared";
 import type { SseState } from "../../../api/sse.js";
 import { formatUsd } from "../../../lib/format.js";
+import { useVenueLinks } from "../../../lib/venue.js";
 import { Button, Chip, ConsoleFrame, Progress, type ConsoleFrameProps } from "../../../ui/index.js";
 import { consoleRow } from "../feed.js";
 
@@ -23,7 +24,8 @@ const consoleStatus = (app: AppDetailDto, stream: SseState): ConsoleFrameProps["
 
 /** The console, fed by history plus the live stream, with milestones and budget burn pinned above. */
 export const BuildLogTab = ({ app, events, stream, hasMore, loadingMore, onLoadMore }: Props) => {
-  const rows = useMemo(() => events.map(consoleRow), [events]);
+  const venue = useVenueLinks(app);
+  const rows = useMemo(() => events.map((e) => consoleRow(e, venue)), [events, venue]);
   const budget = Number(app.budgetMicros);
   const spent = Number(app.spentMicros);
   const used = budget + spent > 0 ? spent / (budget + spent) : 0;

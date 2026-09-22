@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import type { Address } from "viem";
 
 /**
  * One transaction at a time per sender. The treasury and every app wallet are signed from two
@@ -55,10 +54,11 @@ export const SEND_LOCK_WAIT_MS = 120_000;
 const RETRY_MIN_MS = 50;
 const RETRY_MAX_MS = 500;
 
-export const sendLockKey = (address: Address): string => `lock:send:${address.toLowerCase()}`;
+/** Hex (EVM) addresses are case-insensitive and normalised; base58 (Solana) keys are case-sensitive and kept as is. */
+export const sendLockKey = (address: string): string => `lock:send:${address.startsWith("0x") ? address.toLowerCase() : address}`;
 
 export class SendLockTimeoutError extends Error {
-  constructor(readonly address: Address) {
+  constructor(readonly address: string) {
     super(`could not take the send lock for ${address} within ${SEND_LOCK_WAIT_MS} ms`);
     this.name = "SendLockTimeoutError";
   }
@@ -77,7 +77,7 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
  * Runs `fn` while holding the sender's lock. Not re-entrant: a helper that already holds the lock
  * must not call another locked helper for the same address.
  */
-export async function withSendLock<T>(address: Address, fn: () => Promise<T>): Promise<T> {
+export async function withSendLock<T>(address: string, fn: () => Promise<T>): Promise<T> {
   const key = sendLockKey(address);
   const token = randomUUID();
   const deadline = Date.now() + SEND_LOCK_WAIT_MS;

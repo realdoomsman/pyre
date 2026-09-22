@@ -4,8 +4,9 @@ import type { AppSort, AppSummaryDto } from "@pyre/shared";
 import { flatPages, useApps, useStats } from "../../api/queries.js";
 import { AppCard } from "../../components/AppCard.js";
 import { AppPreview, useLatestScreenshot } from "../../components/AppPreview.js";
+import { VenueChip } from "../../components/VenueChip.js";
 import { appUrl } from "../../env.js";
-import { formatEth, formatUsd, formatUsdCompact, timeAgo } from "../../lib/format.js";
+import { formatNative, formatUsd, formatUsdCompact, timeAgo } from "../../lib/format.js";
 import { Avatar, Button, Chip, EmptyState, HeatGauge, ProofStrip, Skeleton, Tabs, cx } from "../../ui/index.js";
 
 type Category = "ALL" | AppSummaryDto["template"];
@@ -153,12 +154,13 @@ const Featured = ({ app }: { app: AppSummaryDto }) => {
           <p className="display text-28 leading-tight text-ink sm:text-36">
             <em>{app.oneLiner}</em>
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Avatar src={app.imageUrl} name={app.ticker} size={32} shape="square" />
             <span className="text-15 font-medium text-ink">{app.name}</span>
             <Chip mono size="sm">
               ${app.ticker}
             </Chip>
+            <VenueChip app={app} />
           </div>
         </div>
         <dl className="grid grid-cols-3 gap-4 text-13">
@@ -168,7 +170,7 @@ const Featured = ({ app }: { app: AppSummaryDto }) => {
           </div>
           <div>
             <dt className="eyebrow">Fees claimed</dt>
-            <dd className="num text-15 text-ink">{formatEth(app.feesWei)}</dd>
+            <dd className="num text-15 text-ink">{formatNative(app.feesWei, app.native)}</dd>
           </div>
           <div>
             <dt className="eyebrow">Heat</dt>

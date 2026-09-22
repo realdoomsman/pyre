@@ -24,13 +24,17 @@ interface LedgerRow {
 const fx = vi.hoisted(() => {
   const ledger: LedgerRow[] = [];
   const treasuryEntries: LedgerRow[] = [];
-  const state: { ethPriceUsd: number; transfer: "ok" | "failed" | "unconfirmed"; ethBalance: bigint; usdgBalance: bigint; dailyUsed: bigint } = {
+  const state: { ethPriceUsd: number; solPriceUsd: number; solanaEnabled: boolean; transfer: "ok" | "failed" | "unconfirmed"; ethBalance: bigint; usdgBalance: bigint; solBalance: bigint; dailyUsed: bigint } = {
     ethPriceUsd: 2000,
+    solPriceUsd: 120,
+    solanaEnabled: true,
     transfer: "ok",
     ethBalance: 0n,
     usdgBalance: 0n,
+    solBalance: 0n,
     dailyUsed: 0n,
   };
+  const SOL_SIG = "5wHu1qwD4E3vTd9nJqvUeYtWuDL1yiLFJVXDQzVdYc3PtLHRZAx9y1n2Cz3wVn3nS4eZfLPaJRBk6eZB4bHzAYS";
   const HASH = "0x" + "a1".repeat(32);
   class TransactionUnconfirmedError extends Error {
     constructor(readonly hash: string) {
@@ -57,7 +61,14 @@ const fx = vi.hoisted(() => {
     }),
     custodialEthBalance: vi.fn(async () => state.ethBalance),
     custodialUsdgBalance: vi.fn(async () => state.usdgBalance),
+    custodialSolBalance: vi.fn(async () => state.solBalance),
     custodialAccount: vi.fn(() => ({ address: "0x84F8E5a324466Deb7447048C014CF0245ce04afA" })),
+    SOL_SIG,
+    transferNative: vi.fn(async (_from: unknown, _to: string, _lamports: bigint) => {
+      if (state.transfer === "failed") throw new Error("rpc down");
+      return { hash: SOL_SIG, block: 1 };
+    }),
+    solanaEnabled: () => state.solanaEnabled,
     writeAudit: vi.fn(async () => undefined),
     aggregate: vi.fn(async ({ where }: { where: { account: string } }) => ({
       _sum: { deltaMicros: ledger.filter((e) => e.account === where.account).reduce((a, e) => a + e.deltaMicros, 0n) },
@@ -108,6 +119,14 @@ vi.mock("@pyre/chain", () => ({
   getErc20Balance: async () => 0n,
   explorerTxUrl: (h: string) => `https://explorer.test/tx/${h}`,
   treasury: () => ({ address: "0x0000000000000000000000000000000000000001", account: { address: "0x0000000000000000000000000000000000000001" } }),
+  solanaEnabled: fx.solanaEnabled,
+  adapterFor: () => ({
+    info: { chain: "solana", launchpad: "pump_fun", native: { symbol: "SOL", decimals: 9 } },
+    isAddress: (a: string) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a),
+    userWallet: () => ({ chain: "solana", address: "So1anaUser111111111111111111111111111111111", signer: {} }),
+    nativePriceUsd: async () => fx.state.solPriceUsd,
+    transferNative: fx.transferNative,
+  }),
 }));
 vi.mock("../src/lib/metrics.js", () => ({ db: { ledgerEntry: { aggregate: fx.aggregate } } }));
 // The shared cache tier is JSON: round-tripping every cached value is what a Redis hit does to it.
@@ -116,11 +135,14 @@ vi.mock("../src/lib/custodial.js", () => ({
   custodialAccount: fx.custodialAccount,
   custodialEthBalance: fx.custodialEthBalance,
   custodialUsdgBalance: fx.custodialUsdgBalance,
+  custodialSolBalance: fx.custodialSolBalance,
   GAS_RESERVE_WEI: 20_000_000_000_000n,
+  GAS_RESERVE_BY_CHAIN: { robinhood: 20_000_000_000_000n, solana: 2_000_000n },
 }));
 vi.mock("../src/lib/audit.js", () => ({ writeAudit: fx.writeAudit }));
 vi.mock("../src/lib/launch.js", () => ({ launchesLast24h: async () => 0 }));
-vi.mock("../src/lib/trade.js", () => ({ executeTrade: vi.fn(), quoteTrade: vi.fn(), recordTrade: vi.fn() }));
+vi.mock("../src/lib/identity.js", () => ({ ensureSolWallet: async (u: unknown) => u }));
+vi.mock("../src/lib/trade.js", () => ({ executeFor: vi.fn(), quoteFor: vi.fn(), recordTrade: vi.fn() }));
 vi.mock("../src/lib/dto.js", () => ({
   usd: (m: bigint) => Number(m) / 1e6,
   tokens: (t: bigint) => Number(t) / 1e18,
@@ -137,10 +159,12 @@ import { balancesOf, claimHandler, withdrawHandler } from "../src/routes/me.js";
 interface TestUser {
   id: string;
   wallet: string | null;
+  solWallet: string | null;
   walletIndex: number;
   reputation: number;
 }
-const USER: TestUser = { id: "u1", wallet: "0x84F8E5a324466Deb7447048C014CF0245ce04afA", walletIndex: 5, reputation: 0 };
+const SOL_WALLET = "So1anaUser111111111111111111111111111111111";
+const USER: TestUser = { id: "u1", wallet: "0x84F8E5a324466Deb7447048C014CF0245ce04afA", solWallet: SOL_WALLET, walletIndex: 5, reputation: 0 };
 const req = (body: Record<string, unknown> = {}, user: TestUser = USER): Request => ({ body, user }) as unknown as Request;
 const res = (): { r: Response; c: { status: number; body: unknown } } => {
   const c = { status: 200, body: undefined as unknown };
@@ -165,11 +189,14 @@ beforeEach(() => {
   fx.ledger.length = 0;
   fx.treasuryEntries.length = 0;
   fx.state.ethPriceUsd = 2000;
+  fx.state.solPriceUsd = 120;
+  fx.state.solanaEnabled = true;
   fx.state.transfer = "ok";
   fx.state.ethBalance = 0n;
   fx.state.usdgBalance = 0n;
+  fx.state.solBalance = 0n;
   fx.state.dailyUsed = 0n;
-  for (const f of [fx.transferEth, fx.signUsdgAuthorization, fx.relayUsdgAuthorization, fx.writeAudit, fx.ledgerCreate, fx.ledgerDelete, fx.ledgerUpdate, fx.aggregate, fx.dailyUpsert, fx.dailyUpdateMany, fx.dailyFindUnique]) f.mockClear();
+  for (const f of [fx.transferEth, fx.transferNative, fx.custodialSolBalance, fx.signUsdgAuthorization, fx.relayUsdgAuthorization, fx.writeAudit, fx.ledgerCreate, fx.ledgerDelete, fx.ledgerUpdate, fx.aggregate, fx.dailyUpsert, fx.dailyUpdateMany, fx.dailyFindUnique]) f.mockClear();
 });
 
 describe("claim (fee payout)", () => {
@@ -236,7 +263,15 @@ describe("balances", () => {
   it("survive the JSON cache tier as decimal strings (a BigInt would fail to serialize and 500 /v1/me)", async () => {
     fx.state.ethBalance = 123_000_000_000_000_000n;
     fx.state.usdgBalance = 4_500_000n;
-    expect(await balancesOf(USER.wallet as `0x${string}`)).toEqual({ ethWei: "123000000000000000", usdgUnits: "4500000", ethPriceUsd: 2000 });
+    fx.state.solBalance = 2_500_000_000n;
+    expect(await balancesOf(USER.wallet as `0x${string}`, SOL_WALLET)).toEqual({ ethWei: "123000000000000000", usdgUnits: "4500000", ethPriceUsd: 2000, solLamports: "2500000000", solPriceUsd: 120 });
+  });
+
+  it("report zero SOL without touching the Solana adapter while the venue is disabled", async () => {
+    fx.state.solanaEnabled = false;
+    fx.state.solBalance = 2_500_000_000n;
+    expect(await balancesOf(USER.wallet as `0x${string}`, null)).toMatchObject({ solLamports: "0", solPriceUsd: 0 });
+    expect(fx.custodialSolBalance).not.toHaveBeenCalled();
   });
 });
 
@@ -316,5 +351,45 @@ describe("withdraw (custodial payout)", () => {
     fx.state.ethBalance = 200_000_000_000_000_000n;
     const { r } = res();
     await expect(withdrawHandler(req({ asset: "ETH", to: USER.wallet, amount: 0.1 }), r)).rejects.toMatchObject({ status: 400, message: "cannot_withdraw_to_self" });
+  });
+});
+
+describe("withdraw SOL (custodial Solana wallet)", () => {
+  const DEST = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin";
+
+  it("server-signs a SOL transfer from the Solana wallet when the balance covers amount + rent reserve, priced against the daily cap in SOL", async () => {
+    fx.state.solBalance = 1_500_000_000n; // 1.5 SOL
+    const { r, c } = res();
+    await withdrawHandler(req({ asset: "SOL", to: DEST, amount: 1 }), r);
+    expect(fx.transferNative).toHaveBeenCalledTimes(1);
+    const [account, to, lamports] = fx.transferNative.mock.calls[0]!;
+    expect(account).toMatchObject({ chain: "solana", address: SOL_WALLET });
+    expect([to, lamports]).toEqual([DEST, 1_000_000_000n]);
+    expect(fx.transferEth).not.toHaveBeenCalled();
+    expect(c.body).toMatchObject({ asset: "SOL", to: DEST, amount: "1000000000", txHash: fx.SOL_SIG, explorerUrl: `https://solscan.io/tx/${fx.SOL_SIG}` });
+    // 1 SOL at $120 reserved against the daily cap.
+    expect(fx.state.dailyUsed).toBe(120_000_000n);
+  });
+
+  it("keeps the rent-exempt reserve: exactly the amount in the wallet is not enough", async () => {
+    fx.state.solBalance = 1_000_000_000n;
+    const { r } = res();
+    await expect(withdrawHandler(req({ asset: "SOL", to: DEST, amount: 1 }), r)).rejects.toMatchObject({ status: 400, message: "insufficient_balance" });
+    expect(fx.transferNative).not.toHaveBeenCalled();
+  });
+
+  it("rejects an EVM destination for SOL at the schema, and a SOL withdraw while the venue is disabled", async () => {
+    fx.state.solBalance = 10_000_000_000n;
+    const { r } = res();
+    await expect(withdrawHandler(req({ asset: "SOL", to: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168", amount: 1 }), r)).rejects.toMatchObject({ status: 400, message: "validation_failed" });
+    fx.state.solanaEnabled = false;
+    await expect(withdrawHandler(req({ asset: "SOL", to: DEST, amount: 1 }), r)).rejects.toMatchObject({ status: 409, message: "venue_disabled" });
+    expect(fx.transferNative).not.toHaveBeenCalled();
+  });
+
+  it("refuses a withdraw to the user's own Solana wallet", async () => {
+    fx.state.solBalance = 10_000_000_000n;
+    const { r } = res();
+    await expect(withdrawHandler(req({ asset: "SOL", to: SOL_WALLET, amount: 1 }), r)).rejects.toMatchObject({ status: 400, message: "cannot_withdraw_to_self" });
   });
 });

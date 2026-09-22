@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth.js";
-import { formatEth, formatUsd, shortAddress } from "../lib/format.js";
+import { ETH, SOL, formatNative, formatUsd, shortAddress } from "../lib/format.js";
 import { Avatar, Button, cx } from "../ui/index.js";
 import { IconChevronDown } from "../components/icons.js";
 
@@ -82,9 +82,17 @@ export const AccountMenu = () => {
           <div className="px-2.5 pb-2 pt-1.5">
             <div className="eyebrow">balances</div>
             <div className="num mt-1 flex items-baseline justify-between text-13 text-ink">
-              <span>{formatEth(balances.ethWei)}</span>
+              <span>{formatNative(balances.ethWei, ETH)}</span>
               <span className="text-ink-3">{formatUsd(BigInt(balances.usdgUnits))} USDG</span>
             </div>
+            {auth.user.solWallet && (
+              <div className="num mt-1 flex items-baseline justify-between text-13 text-ink">
+                <span>{formatNative(balances.solLamports, SOL)}</span>
+                <span className="text-ink-3" title={auth.user.solWallet}>
+                  {shortAddress(auth.user.solWallet, 4)}
+                </span>
+              </div>
+            )}
             <div className="num mt-1 text-12 text-ink-3" title={wallet}>
               {shortAddress(wallet, 6)}
             </div>

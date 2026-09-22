@@ -16,6 +16,7 @@ const fx = vi.hoisted(() => {
     return { burnedUnits: state.chainBurned };
   });
   const prisma = {
+    coinBurn: { findMany: vi.fn(async () => []), groupBy: vi.fn(async () => []) },
     pyreBurn: {
       aggregate: vi.fn(async () => ({ _sum: { burnedUnits: state.burnedUnits, tokensBurned: state.tokensBurned }, _count: state.count })),
       findMany: vi.fn(async () => state.stuck),
@@ -25,7 +26,7 @@ const fx = vi.hoisted(() => {
 });
 
 vi.mock("@pyre/db", () => ({ prisma: fx.prisma, big: (v: unknown) => BigInt(String(v ?? 0)) }));
-vi.mock("@pyre/chain", () => ({ getTokenInfo: fx.getTokenInfo }));
+vi.mock("@pyre/chain", () => ({ getTokenInfo: fx.getTokenInfo, solanaEnabled: () => false, adapterFor: () => { throw new Error("unused"); } }));
 vi.mock("../src/workers/chain/env.js", () => ({ chainWorkerEnv: () => ({ PYRE_TOKEN: fx.state.token }) }));
 
 // Dynamic import: the module binds `@pyre/db` and `@pyre/chain` at load time, so it must come after the mocks.

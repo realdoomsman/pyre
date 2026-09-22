@@ -1,8 +1,9 @@
 import type { Address } from "viem";
-import { big, prisma } from "@pyre/db";
+import { big, prisma, type User } from "@pyre/db";
 import { getErc20Balance } from "@pyre/chain";
-import { TOKEN_DECIMALS } from "@pyre/shared";
+import { VENUES } from "@pyre/shared";
 import { logger } from "../lib/logger.js";
+import { adapterOf } from "../lib/venue.js";
 import type { HostContext } from "./resolve.js";
 
 export interface HolderInfo {
@@ -13,17 +14,18 @@ export interface HolderInfo {
   minHold: number;
 }
 
-const UNIT = 10n ** BigInt(TOKEN_DECIMALS);
 const CHAIN_TTL_MS = 60_000;
 const chainCache = new Map<string, { amount: bigint; expires: number }>();
 
 /**
- * Holder tier of `wallet` for the app's coin: the indexed `HolderBalance` snapshot when present,
- * else a live `balanceOf` on the PONS launch token (cached 60s).
+ * Holder tier of the user for the app's coin, keyed by their custodial wallet on the coin's
+ * chain: the indexed `HolderBalance` snapshot when present, else a live balance read on the
+ * launch token (cached 60s).
  */
-export async function holderInfo(ctx: HostContext, wallet: string | null | undefined): Promise<HolderInfo> {
+export async function holderInfo(ctx: HostContext, user: Pick<User, "wallet" | "solWallet"> | null | undefined): Promise<HolderInfo> {
   const minHold = ctx.deployment?.manifest.holderTier?.minHoldTokens ?? 0;
   const token = ctx.app.tokenAddress;
+  const wallet = ctx.app.chain === "solana" ? user?.solWallet : user?.wallet;
   if (!wallet || !token) return { isHolder: false, balance: 0, minHold };
   let amount: bigint;
   const row = await prisma.holderBalance.findUnique({
@@ -37,7 +39,7 @@ export async function holderInfo(ctx: HostContext, wallet: string | null | undef
     if (hit && hit.expires > Date.now()) amount = hit.amount;
     else {
       try {
-        amount = await getErc20Balance(token as Address, wallet as Address);
+        amount = ctx.app.chain === "robinhood" ? await getErc20Balance(token as Address, wallet as Address) : await adapterOf(ctx.app).tokenBalance(token, wallet);
       } catch (err) {
         logger.warn({ err, wallet, token }, "host: on-chain balance lookup failed");
         amount = 0n;
@@ -49,6 +51,6 @@ export async function holderInfo(ctx: HostContext, wallet: string | null | undef
       }
     }
   }
-  const balance = Number(amount / UNIT);
+  const balance = Number(amount / 10n ** BigInt(VENUES[ctx.app.launchpad].tokenDecimals));
   return { isHolder: amount > 0n && balance >= minHold, balance, minHold };
 }

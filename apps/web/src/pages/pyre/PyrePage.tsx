@@ -41,6 +41,7 @@ export const PyrePage = () => {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
       {page.token ? <Header page={page} token={page.token} /> : <PreLaunch page={page} />}
+      <OneChain />
       <Accrual page={page} />
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <StakeForm page={page} />
@@ -136,7 +137,7 @@ const PreLaunch = ({ page }: { page: PyrePageDto }) => (
         <dt className="eyebrow">Venue</dt>
         <dd className="num text-ink">PONS v2 curve, then Uniswap v4</dd>
       </dl>
-      <p className="small text-ink-3">No pre-sale, no allocation, no whitelist. When it launches, the address appears here and on the feed.</p>
+      <p className="small text-ink-3">No pre-sale, no allocation, no whitelist. When it launches, the address appears here and on the feed. It launches on Robinhood Chain and nowhere else.</p>
     </div>
     <Card tone="inset">
       <CardHeader eyebrow="Earmarked so far" title={formatUsd(BigInt(page.ledger.pendingMicros))} description="Accrued to the PYRE_TOKEN ledger account, waiting for a token to buy." />
@@ -148,6 +149,21 @@ const PreLaunch = ({ page }: { page: PyrePageDto }) => (
       </dl>
     </Card>
   </header>
+);
+
+/** The one thing a reader must not get wrong: there is exactly one PYRE, on exactly one chain. */
+const OneChain = () => (
+  <section
+    aria-label="PYRE is single-chain"
+    className="rounded-card border border-[color-mix(in_oklab,var(--color-warn)_40%,transparent)] bg-[color-mix(in_oklab,var(--color-warn)_6%,transparent)] px-4 py-3 text-14"
+  >
+    <div className="eyebrow mb-1 text-warn">One coin, one chain</div>
+    <p className="text-ink">PYRE lives on Robinhood Chain only — any PYRE on another chain is not ours.</p>
+    <p className="small mt-1 text-ink-2">
+      Coins launched on Solana still route 25% of their fees to a buy-and-burn, but it buys and burns the coin itself, never a bridged or wrapped PYRE. There is no PYRE on Solana, no
+      bridge, and no plan for one.
+    </p>
+  </section>
 );
 
 const Accrual = ({ page }: { page: PyrePageDto }) => (

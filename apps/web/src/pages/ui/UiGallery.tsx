@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { formatCount, formatEth, formatPct, formatTokenUnits, formatUsd, formatUsdCompact, timeAgo } from "../../lib/format.js";
+import type { Launchpad } from "@pyre/shared";
+import { LAUNCH_STAKE_BY_CHAIN, VENUES } from "@pyre/shared";
+import { VenueChip } from "../../components/VenueChip.js";
+import { ETH, SOL, formatCount, formatEth, formatNative, formatPct, formatTokenUnits, formatUsd, formatUsdCompact, timeAgo } from "../../lib/format.js";
+import { VenuePicker } from "../launch/VenuePicker.js";
 import {
   Address,
   Avatar,
@@ -17,6 +21,7 @@ import {
   Ignition,
   Input,
   Kbd,
+  NativeFlow,
   NumberFlow,
   Progress,
   ProofStrip,
@@ -49,6 +54,8 @@ import {
 
 const TREASURY = "0x84F8E5a324466Deb7447048C014CF0245ce04afA";
 const TX = "0x9c2e1a7f4b8d3c6e5f0a1b2c3d4e5f60718293a4b5c6d7e8f9a0b1c2d3e4f5a6";
+const SOL_WALLET = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
+const SOL_SIG = "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW";
 
 const Section = ({ id, title, note, children }: { id: string; title: string; note?: string; children: ReactNode }) => (
   <section id={id} className="scroll-mt-20 border-t border-line py-10">
@@ -112,6 +119,10 @@ export const UiGallery = () => {
   const appsLive = 41 + (tick % 3);
   const agentHours = 1_206 + tick * 2;
   const mcapMicros = 184_320_000_000n + BigInt(tick % 5) * 1_950_000_000n - BigInt(tick % 3) * 2_100_000_000n;
+  const solLamports = 12_345_678_900n + BigInt(tick) * 250_000_000n;
+  // Venue picker mock.
+  const [venue, setVenue] = useState<Launchpad>("pons_v2");
+  const [venueOn, setVenueOn] = useState(true);
 
   // Heat gauge.
   const [heat, setHeat] = useState(0.62);
@@ -291,6 +302,54 @@ export const UiGallery = () => {
             <div className="eyebrow">Geist Mono 12 eyebrow · +0.04em · uppercase</div>
             <div className="num text-22">0x84F8…4afA · 1,000,000,000 · 4.2000 ETH · $184,320.00</div>
             <div className="figure figure-hero">$1,240,893.16</div>
+          </div>
+        </Section>
+
+        <Section id="venues" title="Venues" note="A coin lives on one chain + launchpad. Badges, native amounts and explorer links all follow the app's venue.">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <Label>Venue chip</Label>
+              <Row>
+                <VenueChip app={VENUES.pons_v2} />
+                <VenueChip app={VENUES.pump_fun} />
+                <VenueChip app={VENUES.pump_fun} tone="accent" />
+              </Row>
+              <Label>
+                <span className="mt-6 block">Native amounts · formatNative(units, app.native)</span>
+              </Label>
+              <div className="num space-y-1 text-13 text-ink">
+                <div>{formatNative(50_000_000_000_000_000n, ETH)} · {formatNative(1_000_000_000n, SOL)}</div>
+                <div>{formatNative(1_234_567_890_123_456_789n, ETH)} · {formatNative(123_456_789_012n, SOL)}</div>
+                <div>{formatNative(1_000n, ETH)} · {formatNative(10n, SOL)}</div>
+                <div className="text-ink-2">
+                  <NativeFlow units={solLamports} native={SOL} digits={4} /> · <NativeFlow units={ethBurnedWei} native={ETH} digits={3} />
+                </div>
+              </div>
+              <Label>
+                <span className="mt-6 block">Addresses · 0x and base58</span>
+              </Label>
+              <Row>
+                <Address address={TREASURY} chars={4} />
+                <Address address={SOL_WALLET} chars={4} explorerUrl={VENUES.pump_fun.explorerAddressUrl(SOL_WALLET, "devnet")} />
+                <Address address={SOL_SIG} kind="tx" chars={4} explorerUrl={VENUES.pump_fun.explorerTxUrl(SOL_SIG, "devnet")} />
+              </Row>
+            </div>
+            <div>
+              <Label>Venue picker (launch step 1)</Label>
+              <VenuePicker
+                value={venue}
+                onChange={setVenue}
+                venues={[
+                  { chain: "robinhood", launchpad: "pons_v2", enabled: true, stakeWei: LAUNCH_STAKE_BY_CHAIN.robinhood.toString(), chainLabel: "Robinhood Chain", launchpadLabel: "pons v2", native: VENUES.pons_v2.native, tokenDecimals: 18, cluster: null },
+                  { chain: "solana", launchpad: "pump_fun", enabled: venueOn, stakeWei: LAUNCH_STAKE_BY_CHAIN.solana.toString(), chainLabel: "Solana", launchpadLabel: "pump.fun", native: VENUES.pump_fun.native, tokenDecimals: 6, cluster: "devnet" },
+                ]}
+              />
+              <Row className="mt-3">
+                <Chip selected={venueOn} onClick={() => setVenueOn((v) => !v)} size="sm">
+                  pump.fun {venueOn ? "enabled" : "disabled"}
+                </Chip>
+              </Row>
+            </div>
           </div>
         </Section>
 

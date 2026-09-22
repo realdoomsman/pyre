@@ -139,7 +139,7 @@ export async function fnRoute(ctx: HostContext, req: Request, res: Response, nam
 
   const user = await currentUser(req, ctx.app.id);
   if (spec.auth && !user) throw new HttpError(401, "sign in required");
-  const holder = user || spec.holderOnly ? await holderInfo(ctx, user?.wallet) : null;
+  const holder = user || spec.holderOnly ? await holderInfo(ctx, user) : null;
   if (spec.holderOnly && !holder?.isHolder) throw new HttpError(403, "holders only");
 
   const input = await readJson(req, MAX_INPUT_BYTES);
