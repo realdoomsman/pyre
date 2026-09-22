@@ -4,7 +4,7 @@ import { env } from "../env.js";
 import { HttpError } from "../lib/errors.js";
 import { enforceSameOrigin } from "../lib/origin.js";
 import { clientIp, consumeRate, type RateBucket } from "../lib/ratelimit.js";
-import { serveStatic } from "./files.js";
+import { loadFile, serveStatic } from "./files.js";
 import { applySecurityHeaders } from "./headers.js";
 import { renderBuildingPage, renderDormantPage, renderKilledPage, renderNotFoundPage } from "./pages.js";
 import { matchAppRequest, resolveApp, type HostContext, type RouteMatch } from "./resolve.js";
@@ -143,6 +143,15 @@ async function handlePyre(ctx: HostContext, req: Request, res: Response, pathnam
   } else if (head === "track" && segments.length === 1) {
     requireMethod(req, res, "POST");
     return trackRoute(ctx, req, res);
+  } else if (head === "screenshots" && segments.length === 2 && second !== undefined && /^[a-z0-9-]{1,40}\.png$/.test(second)) {
+    // Verify-stage captures persisted with the deployment (`_pyre/screenshots/<label>.png`), public.
+    requireMethod(req, res, "GET");
+    const file = await loadFile(ctx, `_pyre/screenshots/${second}`);
+    if (!file) throw new HttpError(404, "no such screenshot");
+    res.setHeader("Content-Type", file.contentType);
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
+    res.send(req.method === "HEAD" ? "" : file.body);
+    return;
   } else if (head === "coins" && segments.length <= 3 && (third === undefined || third === "candles")) {
     requireMethod(req, res, "GET");
     return coinsRoute(ctx, req, res, second, third);

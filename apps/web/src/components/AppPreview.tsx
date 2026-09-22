@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { BuildEventDto } from "@pyre/shared";
 import { api } from "../api/client.js";
@@ -31,22 +32,28 @@ export const useLatestScreenshot = (slug: string | undefined) =>
  * posted one — the coin image as a blurred backdrop behind a small avatar.
  * Never an iframe: third-party apps are not reliably framable.
  */
-export const AppPreview = ({ app, screenshot, className }: { app: { name: string; ticker: string; imageUrl: string }; screenshot: Screenshot | null | undefined; className?: string }) => (
-  <span className={cx("relative block aspect-[16/10] overflow-hidden bg-mono-bg", className)}>
-    {screenshot ? (
-      <img src={screenshot.url} alt={`${app.name}: ${screenshot.label}`} loading="lazy" decoding="async" className="h-full w-full object-cover object-top" />
-    ) : (
-      <span className="grid h-full w-full place-items-center">
-        {app.imageUrl ? (
-          <img src={app.imageUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-125 object-cover opacity-40 blur-2xl" />
-        ) : (
-          <span className="absolute inset-0 bg-[radial-gradient(80%_70%_at_50%_100%,rgba(122,102,245,0.35),rgba(62,139,255,0.12)_45%,transparent_80%)]" aria-hidden />
-        )}
-        <span className="relative flex flex-col items-center gap-2">
-          <Avatar src={app.imageUrl} name={app.ticker} size={40} shape="square" />
-          <span className="eyebrow">no screenshot yet</span>
+export const AppPreview = ({ app, screenshot, className }: { app: { name: string; ticker: string; imageUrl: string; screenshotUrl?: string | null }; screenshot: Screenshot | null | undefined; className?: string }) => {
+  // The live deployment's own capture wins; a feed-derived one covers apps mid-build; a 404 falls back.
+  const src = app.screenshotUrl ?? screenshot?.url ?? null;
+  const [broken, setBroken] = useState<string | null>(null);
+  const shown = src && broken !== src ? src : null;
+  return (
+    <span className={cx("relative block aspect-[16/10] overflow-hidden bg-mono-bg", className)}>
+      {shown ? (
+        <img src={shown} alt={`${app.name}: ${screenshot?.label ?? "home"}`} loading="lazy" decoding="async" onError={() => setBroken(shown)} className="h-full w-full object-cover object-top" />
+      ) : (
+        <span className="grid h-full w-full place-items-center">
+          {app.imageUrl ? (
+            <img src={app.imageUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-125 object-cover opacity-40 blur-2xl" />
+          ) : (
+            <span className="absolute inset-0 bg-[radial-gradient(80%_70%_at_50%_100%,rgba(122,102,245,0.35),rgba(62,139,255,0.12)_45%,transparent_80%)]" aria-hidden />
+          )}
+          <span className="relative flex flex-col items-center gap-2">
+            <Avatar src={app.imageUrl} name={app.ticker} size={40} shape="square" />
+            <span className="eyebrow">no screenshot yet</span>
+          </span>
         </span>
-      </span>
-    )}
-  </span>
-);
+      )}
+    </span>
+  );
+};

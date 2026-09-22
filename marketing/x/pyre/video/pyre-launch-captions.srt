@@ -51,6 +51,6 @@ No budget, no agent. Any new fee relights it.
 Every test, every audit and an independent security review, in the public repo.
 
 14
-00:01:07,935 --> 00:01:10,499
-Pyre. Launching soon on Robinhood Chain.
+00:01:07,935 --> 00:01:09,745
+Pyre. Live on Robinhood Chain.
 

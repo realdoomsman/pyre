@@ -74,6 +74,8 @@ export const AppSummaryDto = z.object({
   agentState: AgentState,
   liveVersion: z.number().int(),
   liveUrl: z.string().nullable(),
+  /** Latest verify-stage capture of the live deployment, served by the app host; null before the first deploy. */
+  screenshotUrl: z.string().nullable(),
   launcher: UserRefDto,
   createdAt: IsoDate,
   launchedAt: IsoDate.nullable(),

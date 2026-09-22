@@ -11,10 +11,10 @@ launch a coin: a name, a ticker, one sentence on the app it should build.
 the coin launches on PONS v2. its trading fees pay an agent to build the app.
 
 4
-00:00:14,625 --> 00:00:19,403
-the app earns. 85% of that revenue buys the coin back and burns it.
+00:00:14,625 --> 00:00:19,922
+the app is free to use. 25% of every fee buys PYRE and burns it.
 
 5
-00:00:20,725 --> 00:00:22,614
-supply falls because the app earned.
+00:00:21,122 --> 00:00:23,091
+supply falls because the coin traded.
 

@@ -271,6 +271,7 @@ export const appSummary = (a: AppSummaryRow, extras: AppExtras, ethPriceUsd: num
     agentState: agentState(a.status, a.jobs[0]),
     liveVersion: a.liveVersion,
     liveUrl: SERVABLE[a.status] && a.liveVersion > 0 ? liveUrl(a.slug) : null,
+    screenshotUrl: SERVABLE[a.status] && a.liveVersion > 0 ? `${liveUrl(a.slug)}/_pyre/screenshots/home.png` : null,
     launcher: userRef(a.launcher),
     createdAt: a.createdAt.toISOString(),
     launchedAt: iso(a.launchedAt),

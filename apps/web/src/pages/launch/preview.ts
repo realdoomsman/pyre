@@ -42,6 +42,7 @@ export const previewApp = (draft: CoinDraft, launch: LaunchDraftDto | undefined,
     agentState: "idle",
     liveVersion: 0,
     liveUrl: null,
+    screenshotUrl: null,
     template: launch?.spec?.template ?? launch?.template ?? "WEB_TOOL",
     launcher: {
       id: me?.user.id ?? "you",

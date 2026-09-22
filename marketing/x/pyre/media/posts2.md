@@ -1,215 +1,89 @@
-# Pyre — media wave: 3 videos + 8 image posts
+# Pyre — media wave: 4 screenshot posts (live-platform set, 2026-09-22)
 
-Display name `Pyre`, handle @PyreFun. Same rules as `../posts/posts.md`: lowercase-declarative, no emoji, no price talk, buybacks are burns, never a contract address or a date, `PYRE` without the `$` (X auto-links the cashtag to an unrelated asset). Counts use X's weighting (URLs 23, most non-Latin symbols 2); `node src/count.mjs` recomputes them and checks every media file exists.
+Display name `Pyre`, handle @PyreFun. Same rules as `../posts/posts.md`: lowercase-declarative, no emoji, no price talk, buybacks are burns never distributions, "coin" not "token", `PYRE` without the `$`. Counts use X's weighting (URLs and bare domains 23, most non-Latin symbols 2); `node src/count.mjs` recomputes them and checks every media file exists (a `FRESH:` row has no file yet and is reported as missing until it is captured).
 
-Everything here was captured from https://pyre.fun **after the purge** (0 apps, 0 fees, 0 burns) on the dark-only build, except where a frame says otherwise in-frame: the coin page (no coin exists, so it is the local mock API, stamped `mock data · no coin has launched yet`), the launch form input (stamped `example input · nothing is launched`), the Blockscout layout in the burn film (stamped `illustration · no burn tx exists yet`) and the component gallery (`/_ui` is dev-only, stamped `component gallery · dev build · sample values`).
+**Every file in this directory is stale.** `loop.mp4`, `burn.mp4`, `design.mp4` (and their square cuts and captions) and all ten `img/*.png` were captured on 2026-09-21 against the pre-launch, pre-cutover site: empty feeds, "nothing has launched yet", "revenue closes it", a mock coin page, a drawn blockscout frame, USDG balances, a supply kiln. None of them may be posted. Every media row below is `FRESH:` a capture of the live site as it is today; take it the morning it posts so the numbers in the shot match or exceed the copy.
 
 Posting notes:
-- Mornings get media (11:00 local); the existing text+card posts stay at 15:00 (Sep 22 → Oct 11, one per day). Never two media posts in one day.
-- Videos: upload the 16:9 file as the post's media; the `-square` file is for a quote-repost or when X's feed crop looks wrong. Attach the `.srt` as captions on the two voice-over films (X → media → subtitles). The design film has no voice and needs no captions.
-- Images: attach as given; two posts carry a second image (the diagram card). Paste the alt text per file.
+- Mornings get media (11:00 local); the cards in `../posts/posts.md` stay at 15:00. Never two media posts in one day, never more than two posts a day.
+- Capture at 1600×900, dark build, no browser chrome, signed out unless the row says otherwise. Paste the alt text per file after checking it against what was actually captured.
 - Links in the first reply, as before.
-- **Throwaway prod user for the signed-in shots** (posts 05 and 08, plus the launch segment of the loop film): external wallet `0x676C8fD7dF4aE4A98f87eFd8de246d32b1585495`, custodial wallet `0x6d6772C9c2b5A5212f8540660868eed64d81be42`, user id `cmubm6e70000bog31i0suf7bd`. Delete that user row after posting. The deposit tray in post 05 shows that custodial address and its QR: it is a real derived address, so if the row is deleted **before** the post goes out, funds sent there would sit unowned — post first, delete after, or accept that the address is printed.
+- The PYRE contract address appears in post 04 and nowhere else.
 
-| # | when | media | file(s) |
-|---|---|---|---|
-| 01 | now (Sep 21, after the day-1 post) | video · the loop in 20 s | `loop.mp4` · `loop-square.mp4` · `loop-captions.srt` |
-| 02 | Sep 22 · 11:00 | image · home, empty | `img/01-home-empty.png` |
-| 03 | Sep 23 · 11:00 | image · /status | `img/06-status-live.png` |
-| 04 | Sep 24 · 11:00 | image · ⌘K palette | `img/07-palette.png` |
-| 05 | Sep 26 · 11:00 | image · /me deposit tray + wallet card | `img/05-me-deposit.png` · `img/09-wallet-flows.png` |
-| 06 | Sep 27 · 11:00 | video · how a burn is verified | `burn.mp4` · `burn-square.mp4` · `burn-captions.srt` |
-| 07 | Sep 28 · 11:00 | image · /burns, empty | `img/03-burns-empty.png` |
-| 08 | Sep 29 · 11:00 | image · launch step 1 + $50 card | `img/02-launch-step1.png` · `img/10-budget-50.png` |
-| 09 | Oct 3 · 11:00 | image · mobile home in a phone | `img/08-mobile-home.png` |
-| 10 | Oct 8 · 11:00 | video · the design system | `design.mp4` · `design-square.mp4` |
-| 11 | Oct 10 · 11:00 | image · /pyre, pre-launch | `img/04-pyre-prelaunch.png` |
+| # | day | when | media | pairs with (15:00) |
+|---|---|---|---|---|
+| 01 | 1 | Sep 23 · 11:00 | FRESH: pyre.fun home, live | 01 · loop |
+| 02 | 2 | Sep 24 · 11:00 | FRESH: pyre.fun/pyre, live | 02 · pyre-burn |
+| 03 | 4 | Sep 26 · 11:00 | FRESH: basket.pyre.fun | 04 · build-gate |
+| 04 | 7 | Sep 29 · 11:00 | FRESH: pyre.fun/burns + one burn tx on blockscout | 07 · attestation |
 
-Pairings with the 15:00 schedule: 01 leads into 03·pyre-burn; 05 sits before 06·agent-scope; 06 lands the morning of 04·attestation; 07 the morning of 17·verify-burn; 08 the morning of 16·launch-trays; 10 the morning of 15·design; 11 the morning of 18·live-next.
+## 01 · home-live
 
-**Stale (2026-09-22).** Apps are free since the cutover and only PYRE is bought and burned. The films, captions and cards below were rendered against the earlier loop; the copy in this file is current, the media listed in the report's re-render list are not. Do not post a film or card until it is re-rendered from the updated sources.
-
-## 01 · loop-video
-
-- when: post now
-- media: `loop.mp4` (1920×1080, 23.6 s, VO) · alt square `loop-square.mp4` · captions `loop-captions.srt`
-- alt text: screen recording with voice-over: the empty pyre.fun home, the launch form being typed into with an example coin, then a mock coin page walking the four-cell loop panel; ends on the pyre lockup and "supply falls because the coin traded"
+- day: 1 · Sep 23 · 11:00
+- media: FRESH: `img/11-home-live.png`, pyre.fun home signed out, the stat strip and the feed with the live coins and the apps that shipped
+- alt text: pyre.fun home on a dark canvas: the stat strip with eth burned, apps live and agent-hours today, then the feed of live coins with their build state
 - link: none; first reply: https://pyre.fun
-- count: 274 / 280
+- count: 237 / 280
 
 ```
-the loop, in twenty seconds.
+pyre.fun, one day in: 67 launches, 6 coins live, 3 apps deployed, 3 building right now, 14 PYRE burns.
 
-launch a coin with one sentence. its trading fees pay an agent to build the app. the app is free to use, and 25% of every fee buys PYRE and burns it.
-
-the coin page in this clip is mock data. no coin has launched yet. the rest is the live site.
+nothing seeded, nothing placeholder. the feed shows what shipped and what is still building, in the order it happened.
 ```
 
-## 02 · home-empty
+## 02 · pyre-page
 
-- when: Sep 22 · 11:00
-- media: `img/01-home-empty.png`
-- alt text: pyre.fun home on a dark canvas: eth burned 0.000, apps live 0, a dashed empty-feed panel reading "nothing has launched yet. be first." with a launch button, and "one loop. fees close it." below
-- link: none; first reply: https://pyre.fun
-- count: 244 / 280
-
-```
-live, zero coins. this is what an empty launchpad should look like.
-
-no seeded apps, no placeholder charts, no fake volume. the feed says "nothing has launched yet" because nothing has.
-
-the first coin to launch is the first thing on this page.
-```
-
-## 03 · status-live
-
-- when: Sep 23 · 11:00
-- media: `img/06-status-live.png`
-- alt text: pyre.fun/status: pyre api operational; postgres 4 ms, redis 4 ms, robinhood chain rpc block 69,053,939 at 95 ms, queues 0 active 0 failed; network totals all zero
-- link: none; first reply: https://pyre.fun/status
-- count: 266 / 280
-
-```
-pyre.fun/status, read this morning: api operational, postgres and redis answering in 4 ms, robinhood chain rpc at block 69,053,939, queues 0 active and 0 failed.
-
-apps live 0 · fees $0.00 · eth burned 0.0000.
-
-every number on the page is a probe, not a claim.
-```
-
-## 04 · palette
-
-- when: Sep 24 · 11:00
-- media: `img/07-palette.png`
-- alt text: the command palette open over a dimmed home page: a search field "search coins, tickers, addresses…", a go-to list of launch a coin, app store, burn ledger, PYRE, your account, and a footer "paste a 0x address to jump to its coin"
-- link: none
-- count: 275 / 280
-
-```
-⌘K opens a palette on every page: launch, app store, burn ledger, PYRE, your account.
-
-paste a 0x address and it jumps to that coin's page. type a name or a ticker and it searches.
-
-small thing. but a launchpad you can drive from the keyboard is one that expects to be used.
-```
-
-## 05 · me-deposit
-
-- when: Sep 26 · 11:00
-- media: `img/05-me-deposit.png` + `img/09-wallet-flows.png`
-- alt text (1): the account page dimmed behind an open deposit tray: a qr code, the custodial address on robinhood chain, "send ETH or USDG on robinhood chain only", and three bridge options: relay, arbitrum canonical bridge, across; balances behind read $0.00, 0.0000 ETH, 0.00 USDG
-- alt text (2): diagram card "two ways in. same rules, different signer": four steps for google sign-in with a derived custodial wallet, four steps for signing in with your own wallet via an eip-191 challenge, and a footer saying apps are free and never charge either wallet
-- link: none; first reply: https://pyre.fun/me
-- count: 263 / 280
-
-```
-your account on pyre, signed in with a wallet nobody has funded: $0.00, 0.0000 ETH, 0.00 USDG.
-
-deposit opens a robinhood chain address with a qr and three bridges.
-
-google sign-in gets a wallet pyre derives and signs for. your own wallet signs everything itself.
-```
-
-## 06 · burn-video
-
-- when: Sep 27 · 11:00
-- media: `burn.mp4` (1920×1080, 29.6 s, VO) · alt square `burn-square.mp4` · captions `burn-captions.srt`
-- alt text: motion graphic with voice-over: 37 calldata bytes typing out, 50 59 52 45 then 01 then a 32-byte hash; three example fee entry ids sorted, joined and hashed to match; a blockscout-style layout of a burn tx and an attestation tx marked as an illustration; the live empty burn ledger; "no burn has happened yet"
-- link: none; first reply: https://pyre.fun/burns
-- count: 273 / 280
-
-```
-how a burn is verified.
-
-every PYRE burn ends with an attestation tx: calldata 0x5059524501, then sha256 of the fee entry ids that paid for it. on blockscout, burn() lowers totalSupply and nothing moves to a wallet.
-
-no burn has happened yet; the explorer frames are drawn.
-```
-
-## 07 · burns-empty
-
-- when: Sep 28 · 11:00
-- media: `img/03-burns-empty.png`
-- alt text: pyre.fun/burns: eth burned 0.000, burns 0, last burn dash; a dashed empty panel "no burns yet: the first PYRE burn fires once $5 of fee share has pooled"; a note that burns call burn() and lower totalSupply
-- link: none; first reply: https://pyre.fun/burns
-- count: 280 / 280
-
-```
-the burn ledger, live: 0.000 ETH burned, 0 burns.
-
-the first row appears when $5 of fee share has pooled across every coin on pyre. it will carry a swap tx, a burn tx and an attestation tx you can open on blockscout.
-
-an empty ledger is not a bug. it is the honest starting state.
-```
-
-## 08 · launch-step1
-
-- when: Sep 29 · 11:00
-- media: `img/02-launch-step1.png` + `img/10-budget-50.png`
-- alt text (1): the launch page signed in, step 01 coin of three: name and ticker fields, an image picker, a "what should the agent build?" textarea, a "draft the agent brief" button, and a live preview card on the right showing $TICKER, market cap $0.00, fees to agent $0.00
-- alt text (2): diagram card "nothing builds until the coin has earned $50 of budget": where budget comes from, then a rail with $0 launch, $10 iteration minimum, $50 first build, $5 of pooled fee share for the first PYRE burn, and the five deploy gates
-- link: none; first reply: https://pyre.fun/launch
-- count: 272 / 280
-
-```
-launch, step one: a name, a ticker, an image, one sentence on what the agent should build.
-
-the card on the right is what the feed shows the moment the coin exists. zero everything, read from the chain.
-
-the example text in the form is a placeholder. nothing was launched.
-```
-
-## 09 · mobile-home
-
-- when: Oct 3 · 11:00
-- media: `img/08-mobile-home.png`
-- alt text: a phone outline on obsidian showing pyre.fun at 390 wide: apps live 0, the empty feed "nothing has launched yet. be first.", a launch button, a bottom tab bar home apps burns me; caption "pyre.fun on a phone · 390 wide · live · nothing has launched yet"
-- link: none
-- count: 231 / 280
-
-```
-pyre.fun at 390 wide. one column, the same empty feed, a launch button that stays under your thumb.
-
-nothing has launched yet, so that is what the phone says too. no app-store screenshots of things that do not exist.
-```
-
-## 10 · design-video
-
-- when: Oct 8 · 11:00
-- media: `design.mp4` (1920×1080, 28.6 s, text overlays, no VO) · alt square `design-square.mp4`
-- alt text: silent film with text overlays over the component gallery: the title "build. earn. burn.", the colour tokens and the six-step heat ramp, the type scale in instrument serif and geist, four supply kilns hollowing a layer when "burn 10%" is clicked, rolling number counters and a heat gauge; ends on the pyre lockup
-- link: none; first reply: https://github.com/realdoomsman/pyre/blob/main/marketing/brand/pyre/BRAND.md
+- day: 2 · Sep 24 · 11:00
+- media: FRESH: `img/12-pyre-live.png`, pyre.fun/pyre with the contract address, venue (pons v2 curve, graduated to uniswap v4), and the burn ledger totals
+- alt text: pyre.fun/pyre: the PYRE page with its contract address on robinhood chain 4663, venue pons v2 graduated to uniswap v4, and a ledger showing PYRE bought and burned so far
+- link: none; first reply: https://robinhoodchain.blockscout.com/address/0xc8488bE2e4f430420A364E64f4D8af428b74D903
 - count: 278 / 280
 
 ```
-the design system, in under 30 seconds.
+PYRE is live on robinhood chain (4663).
 
-heat, not flame: one accent, a ramp from violet to cobalt to white, instrument serif for the voice, geist for the ui, geist mono for every number. the supply kiln hollows a layer per burn.
+0xc8488bE2e4f430420A364E64f4D8af428b74D903
 
-the gallery in this clip runs on sample values.
+launched on pons v2 from the founder's own wallet, treasury as creator-fee recipient. graduated to the uniswap v4 pool the same day.
+
+this is the only address. anyone posting another is not us.
 ```
 
-## 11 · pyre-prelaunch
+## 03 · basket
 
-- when: Oct 10 · 11:00
-- media: `img/04-pyre-prelaunch.png`
-- alt text: pyre.fun/pyre: the PYRE page with a "not launched yet" band, contract "not launched yet", chain robinhood chain 4663, venue PONS v2 curve then uniswap v4; a card "earmarked so far $0.00"; a ledger accrued $0, burned $0, pending $0
-- link: none; first reply: https://pyre.fun/pyre
-- count: 256 / 280
+- day: 4 · Sep 26 · 11:00
+- media: FRESH: `img/13-basket.png`, basket.pyre.fun as deployed: a weighted basket of real pyre coins with its equity curve and per-leg trade links
+- alt text: basket.pyre.fun: a weighted basket of pyre coins with exact-cent sizing per leg, an hourly equity curve, and one trade link per coin, in pyre's dark design system
+- link: none; first reply: https://basket.pyre.fun
+- count: 271 / 280
 
 ```
-pyre.fun/pyre today: not launched yet.
+basket: launched 05:39 utc. first fee claimed 05:40. first build started 05:46. v1 live at 06:44.
 
-25% of every claimed creator fee accrues to a ledger that buys and burns PYRE once it exists. no pre-sale, no allocation, no whitelist.
-
-PYRE launching soon. no address exists. anyone posting one is not us.
+65 minutes from one sentence to basket.pyre.fun: weighted baskets of real pyre coins, exact-cent sizing, an hourly equity curve, a trade link per leg. 120+ holders.
 ```
 
-## how these were made
+## 04 · burns-ledger
+
+- day: 7 · Sep 29 · 11:00
+- media: FRESH: `img/14-burns-live.png`, pyre.fun/burns with the ledger rows, and `img/15-burn-tx.png`, one burn tx on robinhoodchain.blockscout.com showing the totalSupply drop. Fallback if only one image: `../posts/visuals/17-verify-burn.png` is still accurate and may be the second image.
+- alt text (1): pyre.fun/burns: eth burned and burn count at the top, then the ledger with one row per burn, each linking a swap tx, a burn tx and an attestation tx
+- alt text (2): blockscout page of one PYRE burn transaction: a call to burn(), totalSupply reduced by the burned amount, no transfer to any wallet
+- link: none; first reply: https://pyre.fun/burns
+- count: 270 / 280
+
+```
+the burn ledger, live: 14 burns, 0.141 ETH in, 1,372,423 PYRE out of supply.
+
+burns run every 10 minutes once $5 of the 25% fee share has pooled. since graduation they buy through the uniswap v4 pool. every row links its swap, its burn and its attestation on blockscout.
+```
+
+## how the stale media was made (for re-rendering later)
 
 - `node src/capture.mjs` records the live pages as 30 fps frame sequences (coin page and `/_ui` from the local vite + mock API on :5181 and :8787; `build/session.json` signs the launch segment in).
 - `node src/audio.mjs <film>` synthesises the voice (edge-tts), lays out the timeline, writes the `.srt`, and builds the music bed and sfx from `../video/src/music.mjs` and `../video/src/sfx.mjs`.
 - `node src/render.mjs <film> [--sq]` renders `src/stage.html` frame by frame; `node src/audio.mjs <film> --mux` muxes.
-- `node src/shots.mjs` takes the eight screenshots (and frames the mobile one); `src/cards.html` is the two diagram cards.
+- `node src/shots.mjs` takes the screenshots (and frames the mobile one); `src/cards.html` is the two diagram cards.
 - `node src/qa.mjs` prints ffprobe facts and writes a frame every 5 s plus contact sheets to `build/qa/`.
 - `node src/count.mjs` recounts this file.
+- Before any film is re-rendered: `src/films.mjs` and `src/stage.html` still narrate "no coin has launched yet", "no burn has happened yet", a mock coin page and a supply kiln. Rewrite the scripts against the live coin page, a real burn row and the live basket app first.

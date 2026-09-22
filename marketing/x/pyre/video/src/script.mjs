@@ -96,7 +96,7 @@ export const BEATS = [
   {
     id: "close",
     shots: [{ id: "close", base: 4.4, lead: 0.6 }],
-    sentences: [{ shot: "close", text: "Pyre. Launching soon on Robinhood Chain.", say: "Pyre. Launching soon on Robinhood Chain." }],
+    sentences: [{ shot: "close", text: "Pyre. Live on Robinhood Chain.", say: "Pyre. Live on Robinhood Chain." }],
   },
 ];
 
