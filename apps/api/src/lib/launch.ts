@@ -24,7 +24,7 @@ export const launchesLast24h = (userId: string): Promise<number> =>
  */
 export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: App | null): Promise<App> => {
   if (!user.wallet) throw new HttpError(400, "wallet_required");
-  const launchpad = forkOf ? forkOf.launchpad : body.launchpad;
+  const launchpad = forkOf ? forkOf.launchpad : (body.launchpad ?? "pons_v2");
   assertVenueEnabled(launchpad);
   const venue = VENUES[launchpad];
   const tier = reputationTier(user.reputation);
