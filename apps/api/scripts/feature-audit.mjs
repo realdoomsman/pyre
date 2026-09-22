@@ -282,7 +282,8 @@ const createUser = async (label, { admin = false, authWallet = null } = {}) => {
       const balance = await getEthBalance(user.wallet);
       if (balance > 0n) {
         const client = publicClient();
-        const fee = (await client.getGasPrice()) * 21_000n * 2n;
+        // transferEth prices EIP-1559 fees above the spot gas price; leave generous headroom (still ~1e-5 ETH).
+        const fee = (await client.getGasPrice()) * 21_000n * 10n;
         if (balance > fee) {
           const hash = await transferEth(deriveWallet(user.walletIndex).account, treasury().address, balance - fee);
           console.log(`  refunded ${balance - fee} wei from fixture ${label} to the treasury (${hash})`);
