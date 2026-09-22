@@ -167,7 +167,8 @@ const SEGMENTS = {
       const targetScroll = Math.max(0, Math.round(feed.top - 110));
       const cards = [];
       for (let i = 0; i < 3; i++) cards.push((await page.evaluate(centerJs('[aria-label="Ranked feed"] article, [aria-label="Ranked feed"] a[aria-label]', i))) ?? { x: 430 + i * 355, y: 640, top: 600, h: 180 });
-      const scroll = (u) => Math.round(lerp(0, targetScroll, easeInOut(Math.min(1, u / 0.5))));
+      // start with the feed already near the top (the build-log panel above it is a wall of text) and settle with a short tilt
+      const scroll = (u) => Math.round(lerp(Math.max(0, targetScroll - 140), targetScroll, easeInOut(Math.min(1, u / 0.5))));
       return {
         scroll,
         mouse: (u) => {
@@ -205,7 +206,7 @@ const SEGMENTS = {
       const view = (await page.evaluate(rectJs(`Array.from(document.querySelectorAll('main a[href*="pump.fun"]')).find(a=>/view on/i.test(a.textContent))`))) ?? { x: 550, top: 188, h: 20 };
       const buy = (await page.evaluate(rectJs(`Array.from(document.querySelectorAll('[aria-label="Trade"] button')).find(b=>/^(Buy \\$|Sign in to trade)/.test(b.textContent.trim()))`))) ?? { x: 1478, top: 690, h: 48 };
       const panel = (await page.evaluate(centerJs('[aria-label="Trade"]'))) ?? { x: 1478, top: 369, h: 440 };
-      const scroll = (u) => Math.round(lerp(0, 70, easeInOut(Math.min(1, Math.max(0, (u - 0.45) / 0.45)))));
+      const scroll = () => 0;
       const stops = [chip, chip, view, view, { x: panel.x, top: panel.top + 120, h: 0 }, buy];
       return {
         scroll,
@@ -228,7 +229,7 @@ const SEGMENTS = {
       const table = (await page.evaluate(centerJs('[aria-label="Coin details"] table'))) ?? { top: tabs.top + 250 };
       const links = [];
       for (let i = 0; i < 3; i++) links.push((await page.evaluate(centerJs('[aria-label="Coin details"] table tbody a', i))) ?? { x: 900 + i * 150, top: table.top + 40, h: 20 });
-      const s = Math.max(0, Math.round(tabs.top - 230));
+      const s = Math.max(0, Math.round(tabs.top - 300));
       const scroll = () => s;
       return {
         scroll,
@@ -275,9 +276,9 @@ const SEGMENTS = {
 /** Rewrite /v1/venues on the way in so the Solana stake reads as production (see SOL_STAKE_LAMPORTS). */
 async function interceptVenues(page) {
   await page.send("Fetch.enable", { patterns: [{ urlPattern: "*/v1/venues*", requestStage: "Response" }] });
-  page.on("Fetch.requestPaused", async ({ requestId, responseStatusCode }) => {
+  page.on("Fetch.requestPaused", async ({ requestId, request, responseStatusCode }) => {
     try {
-      if (!responseStatusCode || responseStatusCode >= 300) return await page.send("Fetch.continueRequest", { requestId });
+      if (request.method !== "GET" || !responseStatusCode || responseStatusCode >= 300) return await page.send("Fetch.continueRequest", { requestId });
       const { body, base64Encoded } = await page.send("Fetch.getResponseBody", { requestId });
       const dto = JSON.parse(base64Encoded ? Buffer.from(body, "base64").toString("utf8") : body);
       for (const v of dto.venues ?? []) if (v.chain === "solana") v.stakeWei = SOL_STAKE_LAMPORTS;

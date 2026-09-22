@@ -78,14 +78,14 @@ body { overflow: hidden; }
 .pip img { position: absolute; width: 1920px; height: 1080px; }
 
 /* ── open ── */
-#s-open .h1 { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -58%); width: 1600px; text-align: center; font-size: 150px; }
-.sq #s-open .h1 { width: 1000px; font-size: 112px; }
-#s-open .h1 .l2 { color: var(--ink2); }
+#s-open .h1, #s-v-open .h1 { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -58%); width: 1600px; text-align: center; font-size: 150px; }
+.sq #s-open .h1, .sq #s-v-open .h1 { width: 1000px; font-size: 112px; }
+#s-open .h1 .l2, #s-v-open .h1 .l2 { color: var(--ink2); }
 #s-open .h1 .l2 i { color: var(--burn); }
-#s-open .mark { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; transform: translate(-50%, -285px); opacity: 0; }
-.sq #s-open .mark { transform: translate(-50%, -240px); }
-#s-open .sub { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 250px); opacity: 0; }
-.sq #s-open .sub { transform: translate(-50%, 200px); }
+#s-open .mark, #s-v-open .mark { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; transform: translate(-50%, -285px); opacity: 0; }
+.sq #s-open .mark, .sq #s-v-open .mark { transform: translate(-50%, -240px); }
+#s-open .sub, #s-v-open .sub { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 250px); opacity: 0; }
+.sq #s-open .sub, .sq #s-v-open .sub { transform: translate(-50%, 200px); }
 
 /* ── launch ── */
 #s-launch .col { width: 1080px; }
@@ -216,10 +216,76 @@ body { overflow: hidden; }
 .sq #s-proof .lines div .m { width: 170px; }
 
 /* ── close ── */
-#s-close .lockup { position: absolute; left: 50%; top: 50%; width: 620px; transform: translate(-50%, -62%); }
-.sq #s-close .lockup { width: 520px; }
-#s-close .lockup img { width: 100%; display: block; }
-#s-close .line { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 150px); font-size: 24px; color: var(--ink2); white-space: nowrap; text-align: center; }
-#s-close .line b { color: var(--ink); font-weight: 500; }
-#s-close .line .sep { color: var(--ink3); margin: 0 14px; }
-#s-close .soon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 215px); font-size: 14px; color: var(--ink2); opacity: 0; white-space: nowrap; }
+#s-close .lockup, #s-v-close .lockup { position: absolute; left: 50%; top: 50%; width: 620px; transform: translate(-50%, -62%); }
+.sq #s-close .lockup, .sq #s-v-close .lockup { width: 520px; }
+#s-close .lockup img, #s-v-close .lockup img { width: 100%; display: block; }
+#s-close .line, #s-v-close .line { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 150px); font-size: 24px; color: var(--ink2); white-space: nowrap; text-align: center; }
+#s-close .line b, #s-v-close .line b { color: var(--ink); font-weight: 500; }
+#s-close .line .sep, #s-v-close .line .sep { color: var(--ink3); margin: 0 14px; }
+#s-close .soon, #s-v-close .soon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 215px); font-size: 14px; color: var(--ink2); opacity: 0; white-space: nowrap; }
+
+/* ════════ pyre-venues ════════ */
+
+/* fees: the loop line, then two venues side by side with the same three bars */
+#s-v-fees .col { width: 1400px; }
+.sq #s-v-fees .col { width: 960px; }
+#s-v-fees .loopline { margin-top: 26px; display: flex; align-items: center; gap: 14px; }
+#s-v-fees .loopline .chip { opacity: 0; height: 40px; font-size: 16px; }
+#s-v-fees .loopline .arr { color: var(--ink3); font-size: 22px; opacity: 0; }
+.sq #s-v-fees .loopline { flex-wrap: wrap; gap: 10px; }
+.sq #s-v-fees .loopline .chip { font-size: 14px; height: 36px; }
+#s-v-fees .venues { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 34px; }
+.sq #s-v-fees .venues { grid-template-columns: 1fr; gap: 16px; margin-top: 24px; }
+#s-v-fees .venue { padding: 22px 26px 26px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); opacity: 0; }
+.sq #s-v-fees .venue { padding: 16px 22px 18px; }
+#s-v-fees .venue .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+#s-v-fees .venue .hd b { font-size: 24px; font-weight: 500; color: var(--ink); }
+#s-v-fees .venue .hd .mono { font-size: 13px; color: var(--ink3); }
+#s-v-fees .vrow { display: grid; grid-template-columns: 250px 1fr 64px; align-items: center; gap: 18px; margin-top: 18px; opacity: 0; }
+.sq #s-v-fees .vrow { grid-template-columns: 230px 1fr 56px; margin-top: 12px; }
+#s-v-fees .vrow .k { font-size: 18px; color: var(--ink); }
+#s-v-fees .vrow .k small { display: block; font-family: "Geist Mono", monospace; font-size: 12px; color: var(--ink3); margin-top: 2px; }
+#s-v-fees .vrow .v { font-family: "Geist Mono", monospace; font-size: 28px; text-align: right; color: var(--ink); opacity: 0; }
+.sq #s-v-fees .vrow .v { font-size: 24px; }
+.sq #s-v-fees .h2 { font-size: 54px; }
+.sq #s-v-fees .foot { margin-top: 20px; }
+
+/* burns capture: the attestation memo card */
+#s-v-burns-cap .memo { position: absolute; right: 48px; bottom: 96px; width: 640px; padding: 18px 22px; opacity: 0; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+.sq #s-v-burns-cap .memo { right: 36px; left: 36px; width: auto; bottom: 36px; }
+#s-v-burns-cap .memo .k { font-family: "Geist Mono", monospace; font-size: 12px; letter-spacing: .04em; color: var(--ink3); }
+#s-v-burns-cap .memo .bytes { margin-top: 8px; font-family: "Geist Mono", monospace; font-size: 21px; line-height: 1.5; word-break: break-all; color: var(--ink); }
+.sq #s-v-burns-cap .memo .bytes { font-size: 18px; }
+#s-v-burns-cap .memo .bytes .p { color: var(--accent); }
+#s-v-burns-cap .memo .bytes .h { color: var(--ink2); }
+#s-v-burns-cap .memo .note { margin-top: 8px; font-family: "Geist Mono", monospace; font-size: 12px; color: var(--ink3); line-height: 1.6; }
+
+/* PYRE: one coin, one chain */
+#s-v-pyre .col { width: 1240px; }
+.sq #s-v-pyre .col { width: 940px; }
+#s-v-pyre .h2.big { font-size: 118px; margin-top: 8px; }
+.sq #s-v-pyre .h2.big { font-size: 84px; }
+#s-v-pyre .facts { margin-top: 30px; border-top: 1px solid var(--line); }
+#s-v-pyre .facts div { display: flex; gap: 18px; align-items: baseline; min-height: 50px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 19px; color: var(--ink2); opacity: 0; }
+#s-v-pyre .facts div b { color: var(--ink); font-weight: 500; }
+#s-v-pyre .facts div .m { font-family: "Geist Mono", monospace; font-size: 13px; color: var(--ink3); width: 120px; flex: none; text-transform: uppercase; letter-spacing: .05em; }
+.sq #s-v-pyre .facts div { font-size: 16px; }
+.sq #s-v-pyre .facts div .m { width: 90px; }
+#s-v-pyre .verdict { margin-top: 26px; font-size: 54px; opacity: 0; }
+.sq #s-v-pyre .verdict { font-size: 42px; }
+#s-v-pyre .inset { position: relative; margin-top: 28px; height: 122px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); background: var(--canvas); opacity: 0; }
+.sq #s-v-pyre .inset { height: 104px; }
+#s-v-pyre .inset img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+#s-v-pyre .inset .tag { position: absolute; right: 14px; bottom: 10px; font-size: 11px; color: var(--ink3); background: rgba(10,10,12,.7); padding: 4px 8px; border-radius: 6px; }
+
+/* square: captions sit at the bottom on the venues captures (no pip there); burns keeps the memo card at the bottom instead */
+.sq #s-v-home-cap .caption, .sq #s-v-picker-cap .caption, .sq #s-v-coin-cap .caption, .sq #s-v-me-cap .caption { top: auto; bottom: 36px; }
+.sq #s-v-fees .loopline { margin-top: 14px; }
+.sq #s-v-fees .venues { margin-top: 16px; gap: 12px; }
+.sq #s-v-fees .venue { padding: 12px 18px 14px; }
+.sq #s-v-fees .venue .hd { padding-bottom: 8px; }
+.sq #s-v-fees .venue .hd b { font-size: 20px; }
+.sq #s-v-fees .vrow { margin-top: 8px; }
+.sq #s-v-fees .vrow .k { font-size: 16px; }
+.sq #s-v-fees .vrow .k small { display: none; }
+.sq #s-v-fees .foot { margin-top: 14px; }

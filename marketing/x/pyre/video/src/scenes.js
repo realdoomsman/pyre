@@ -76,13 +76,16 @@
   /* ── capture scenes ── */
   const capMeta = {};
   const capSrc = (name, i) => `../build/cap/${name}/f${String(i).padStart(4, "0")}.png`;
+  let fallbackFrames = 1; // browser preview (?t=) has no meta: assume plenty of frames
   const frameOf = (name, t, offset = 0) => {
-    const n = capMeta[name]?.frames ?? 1;
+    const n = capMeta[name]?.frames ?? fallbackFrames;
     return Math.min(n - 1, Math.max(0, Math.floor(t * FPS) + offset));
   };
-  /** cover-fit a 1920×1080 capture into the stage: zoom drifts z0→z1, the focal point (fx,fy) is kept near stage centre */
-  const placeCap = (img, t, D, [fx, fy], [z0, z1], sqzoom = 0.86) => {
+  /** cover-fit a 1920×1080 capture into the stage: zoom drifts z0→z1 over the shot, the focal point eases f0→f1 through its middle 60 % (both kept near stage centre) */
+  const placeCap = (img, t, D, f0, [z0, z1], sqzoom = 0.86, f1 = f0) => {
     const p = seg(t, 0, D, lin);
+    const q = seg(t, D * 0.3, D * 0.6, inout);
+    const fx = lerp(f0[0], f1[0], q), fy = lerp(f0[1], f1[1], q);
     const scale = Math.max(H / 1080, Math.max(W / 1920, H / 1080) * lerp(z0, z1, p) * (sq ? sqzoom : 1));
     const iw = 1920 * scale, ih = 1080 * scale;
     const maxX = (iw - W) / 2, maxY = (ih - H) / 2;
@@ -353,16 +356,30 @@
     },
   };
 
-  for (const id of ["launch-cap", "fees-cap", "share-cap", "burn-cap"]) {
+  /* ── capture scenes (both films); EXTRA = per-scene overlays on top of the capture ── */
+  const MEMO_PREFIX = "pyre:burn:v1:";
+  const MEMO_HASH = "32ca5d6a522a2bcfdddf3ad7847f0d36e2af251af9a6c4ab3c76629bb9e5d15e"; // the real devnet attestation memo of the $DLENS burn (tx 4z6y…JGMG)
+  const EXTRA = {
+    "v-burns-cap"(el, t) {
+      const memo = $(".memo", el);
+      fadeUp(memo, seg(t, 3.2, 0.7, expo), 24);
+      typed($(".bytes .p", memo), MEMO_PREFIX, seg(t, 3.7, 0.4, lin));
+      typed($(".bytes .h", memo), MEMO_HASH, seg(t, 4.1, 1.6, lin));
+      caret($(".bytes .caret", memo), t, t >= 3.7 && t < 6.2);
+    },
+  };
+  for (const id of ["launch-cap", "fees-cap", "share-cap", "burn-cap", "v-home-cap", "v-picker-cap", "v-coin-cap", "v-burns-cap", "v-me-cap"]) {
     const el = $(`#s-${id}`);
     S[id] = {
       el, kind: "mask",
       update(t, D) {
-        const name = el.dataset.cap, focal = ((sq && el.dataset.sqfocal) || el.dataset.focal).split(",").map(Number), zoom = el.dataset.zoom.split(",").map(Number), offset = +(el.dataset.offset ?? 0);
+        const d = el.dataset;
+        const name = d.cap, focal = ((sq && d.sqfocal) || d.focal).split(",").map(Number), zoom = d.zoom.split(",").map(Number), offset = +(d.offset ?? 0);
+        const focal2 = (sq ? d.sqfocal2 : d.focal2)?.split(",").map(Number);
         const img = $(".cap", el);
         const src = capSrc(name, frameOf(name, t, offset));
         if (img.getAttribute("src") !== src) img.setAttribute("src", src);
-        placeCap(img, t, D, focal, zoom, +(el.dataset.sqzoom ?? 0.86));
+        placeCap(img, t, D, focal, zoom, +(d.sqzoom ?? 0.86), focal2);
         const cap = $(".caption", el);
         fadeUp(cap, seg(t, 0.5, 0.6, expo), 14);
         const pip = $(".pip", el);
@@ -379,9 +396,99 @@
           pimg.style.transform = `translate(${pw / 2 - fx * 1920 * z}px, ${ph / 2 - fy * 1080 * z}px) scale(${z})`;
           pimg.style.transformOrigin = "0 0";
         }
+        EXTRA[id]?.(el, t);
       },
     };
   }
+
+  /* ════════ pyre-venues ════════ */
+
+  S["v-open"] = {
+    el: $("#s-v-open"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      heat(el, lerp(0, 0.36, seg(t, 0.2, 1.6, quint)), seg(t, 0.2, 1.2, quart) * 0.9);
+      const mark = $(".mark", el);
+      const mp = seg(t, 0.4, 1.0, expo);
+      mark.style.opacity = mp;
+      mark.style.transform = `translate(-50%, ${sq ? -240 : -285}px) scale(${lerp(0.9, 1, mp)})`;
+      revealWords($(".l1", el), t, 0.6, 0.8, 0.09);
+      revealWords($(".l2", el), t, 2.0, 0.8, 0.09);
+      const sp = seg(t, 3.0, 0.7);
+      $(".sub", el).style.opacity = sp;
+      $(".sub", el).style.transform = `translate(-50%, ${(sq ? 200 : 250) + (1 - sp) * 12}px)`;
+    },
+  };
+
+  S["v-fees-mg"] = {
+    el: $("#s-v-fees"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.6), 10);
+      revealWords($(".h2", el), t, 0.35, 0.7, 0.07);
+      // the loop line lands with the first sentence: agent → fees → burn
+      const steps = [[".loopline .s1", 1.0], [".loopline .s2", 1.9], [".loopline .s3", 2.9]];
+      for (const [sel, at] of steps) fadeUp($(sel, el), seg(t, at, 0.5, expo), 12);
+      $$(".loopline .arr", el).forEach((a, i) => show(a, seg(t, steps[i + 1][1] - 0.25, 0.4)));
+      // both venues rise together, then the three bars fill in step
+      $$(".venue", el).forEach((v, vi) => {
+        fadeUp(v, seg(t, 4.2 + vi * 0.15, 0.7, expo), 26);
+        const rows = [$(".r1", v), $(".r2", v), $(".r3", v)];
+        const starts = [4.9, 5.9, 6.8];
+        const widths = [0.6, 0.25, 0.15];
+        rows.forEach((r, i) => {
+          const a = starts[i] + vi * 0.1;
+          fadeUp(r, seg(t, a, 0.5, expo), 12);
+          $(".bar > i", r).style.width = `${widths[i] * 100 * seg(t, a + 0.15, 0.9, quart)}%`;
+          $(".v", r).style.opacity = seg(t, a + 0.5, 0.4);
+        });
+        // the burn row flares when the thump lands (scene-local 4.6 s is the thump; the row itself lights at 5.9)
+        const flare = seg(t, 5.9, 0.15, quart) * (1 - seg(t, 6.1, 1.4, quart));
+        $(".r2 .k", v).style.color = flare > 0.05 ? "var(--burn)" : "var(--ink)";
+      });
+      fadeUp($(".foot", el), seg(t, 8.2, 0.6), 8);
+      const thump = seg(t, 4.6, 0.12, quart) * (1 - seg(t, 4.72, 1.6, quart));
+      heat(el, lerp(0.16, 0.42, thump), lerp(0.35, 1, thump));
+    },
+  };
+
+  S["v-pyre-mg"] = {
+    el: $("#s-v-pyre"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.5), 10);
+      revealWords($(".h2", el), t, 0.35, 0.8, 0.09);
+      $$(".facts > div", el).forEach((d, i) => fadeUp(d, seg(t, 1.5 + i * 0.35, 0.5, expo), 8));
+      const v = $(".verdict", el);
+      fadeUp(v, seg(t, 4.3, 0.7, expo), 18);
+      revealWords(v, t, 4.3, 0.7, 0.06);
+      const inset = $(".inset", el);
+      const ip = seg(t, 2.8, 0.8, expo);
+      inset.style.opacity = ip;
+      inset.style.transform = `translateY(${(1 - ip) * 24}px)`;
+      const img = $("img", inset);
+      const src = capSrc("v-pyrecard", frameOf("v-pyrecard", t));
+      if (img.getAttribute("src") !== src) img.setAttribute("src", src);
+      // the "one coin, one chain" note sits mid-page in the capture; window onto it
+      const iw = inset.clientWidth, ih = inset.clientHeight, z = iw / 1090; // the note is ~1080 px wide in the capture
+      img.style.transform = `translate(${iw / 2 - 0.5 * 1920 * z}px, ${ih / 2 - 0.5 * 1080 * z}px) scale(${z})`;
+      img.style.transformOrigin = "0 0";
+      heat(el, lerp(0.14, 0.34, seg(t, 4.3, 1.4, quint)), lerp(0.35, 0.9, seg(t, 4.3, 1.2)));
+    },
+  };
+
+  S["v-close"] = {
+    el: $("#s-v-close"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      riseIn($(".lockup", el), t, 0.3, 0.9);
+      fadeUp($(".line", el), seg(t, 1.0, 0.6), 10);
+      $(".line", el).style.transform = `translate(-50%, ${150 + (1 - seg(t, 1.0, 0.6)) * 10}px)`;
+      fadeUp($(".soon", el), seg(t, 1.8, 0.6), 6);
+      $(".soon", el).style.transform = `translate(-50%, 215px)`;
+      heat(el, lerp(0.1, 0.3, seg(t, 0.3, 2.0, quint)), lerp(0.4, 0.95, seg(t, 0.3, 1.5)));
+    },
+  };
 
   for (const s of Object.values(S)) s.init?.();
 
@@ -439,8 +546,7 @@
     await document.fonts.load('400 20px "Geist Mono"');
     const t0 = url.searchParams.get("t");
     if (t0 !== null) {
-      // browser preview: guess frame counts from the capture meta if provided, else assume plenty
-      for (const n of ["launch", "home", "loop", "kiln", "fees", "burns"]) capMeta[n] ??= { frames: 100 };
+      fallbackFrames = 100;
       await seek(+t0);
     }
     return true;
