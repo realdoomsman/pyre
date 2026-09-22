@@ -2,7 +2,7 @@
 /**
  * Launch $PYRE on PONS v2 from the treasury. Run once, after the treasury holds ETH:
  *
- *   railway ssh --service runner -- node apps/runner/scripts/launch-pyre.mjs
+ *   railway ssh --service runner -- node apps/runner/scripts/launch-pyre.mjs --i-am-launching-pyre
  *
  * Prints the token + curve addresses and the exact env changes to apply. Refuses to run if
  * PYRE_TOKEN is already set, if the treasury cannot cover fee + gas, or if PONS gates launches.
@@ -12,6 +12,10 @@ import { getEthBalance, launchPonsToken, predictLaunchCost, ponsUrl, treasury } 
 
 if (process.env.PYRE_TOKEN) {
   console.error(`PYRE_TOKEN is already set (${process.env.PYRE_TOKEN}); refusing to launch a second coin.`);
+  process.exit(2);
+}
+if (!process.argv.includes("--i-am-launching-pyre")) {
+  console.error("this launches a real coin from the treasury. Re-run with --i-am-launching-pyre to confirm.");
   process.exit(2);
 }
 const t = treasury();
