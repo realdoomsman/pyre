@@ -4,13 +4,13 @@
 //   build/sfx.wav       whooshes / thump
 // → build/mix.wav (loudnorm −16 LUFS, −1.5 dBTP), then
 // → pyre-launch.mp4 (from build/video-1920x1080.mp4) and pyre-launch-square.mp4.
+// Paths shift per film, see film.mjs.
 import { execFileSync } from "node:child_process";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
+import { ROOT, BUILD, OUT } from "./film.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const BUILD = join(ROOT, "build");
 const ff = (args) => execFileSync("ffmpeg", ["-y", "-v", "error", ...args], { stdio: "inherit" });
 
 export function mix() {
@@ -32,8 +32,8 @@ export function mix() {
 
 export function mux() {
   const outs = [
-    ["video-1920x1080.mp4", "pyre-launch.mp4"],
-    ["video-1080x1080.mp4", "pyre-launch-square.mp4"],
+    ["video-1920x1080.mp4", `${OUT}.mp4`],
+    ["video-1080x1080.mp4", `${OUT}-square.mp4`],
   ];
   for (const [src, dst] of outs) {
     const v = join(BUILD, src);

@@ -3,15 +3,15 @@
 //   node src/qa.mjs
 import { execFileSync } from "node:child_process";
 import { mkdirSync, statSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ROOT, OUT } from "./film.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const QA = join(ROOT, "build", "qa");
 
 export function qa() {
   mkdirSync(QA, { recursive: true });
-  for (const name of ["pyre-launch.mp4", "pyre-launch-square.mp4"]) {
+  for (const name of [`${OUT}.mp4`, `${OUT}-square.mp4`]) {
     const file = join(ROOT, name);
     if (!existsSync(file)) { console.log(`[qa] missing ${name}`); continue; }
     const probe = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration,size:stream=codec_type,codec_name,width,height,r_frame_rate,pix_fmt,sample_rate,channels", "-of", "json", file]).toString();

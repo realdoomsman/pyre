@@ -1,0 +1,48 @@
+1
+00:00:00,600 --> 00:00:03,927
+pyre. coins that build apps. now from two venues.
+
+2
+00:00:04,727 --> 00:00:09,167
+one launchpad was the start: every coin so far launched on pons.
+
+3
+00:00:09,967 --> 00:00:12,276
+now you can launch from solana through pump.fun.
+
+4
+00:00:12,496 --> 00:00:16,684
+stake 1 SOL, refundable. same agent, same spec.
+
+5
+00:00:17,484 --> 00:00:23,250
+same coin page: a solana chip, a link to pump.fun, a trade panel in SOL.
+
+6
+00:00:24,484 --> 00:00:28,845
+same loop: the agent builds the app, fees fund it, fees burn the coin.
+
+7
+00:00:29,065 --> 00:00:35,082
+60 build, 25 burn, 15 launcher. on solana the burn buys the coin itself.
+
+8
+00:00:35,882 --> 00:00:42,309
+every burn is 3 transactions: swap, burn, and a memo attestation anyone can open.
+
+9
+00:00:43,382 --> 00:00:47,711
+one account, 2 custodial wallets. deposit SOL, trade from here.
+
+10
+00:00:48,511 --> 00:00:53,044
+PYRE is not moving: one coin, robinhood chain, nowhere else.
+
+11
+00:00:53,264 --> 00:00:55,439
+any PYRE on another chain is not us.
+
+12
+00:00:56,489 --> 00:00:59,241
+pyre. live on robinhood chain and solana.
+

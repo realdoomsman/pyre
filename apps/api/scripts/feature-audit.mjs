@@ -1546,7 +1546,8 @@ async function platformChecks() {
       .ok(typeof j.balances?.ethPriceUsd === "number", "balances.ethPriceUsd")
       .eq(j.balances?.ethWei, "0", "the fixture wallet holds no ETH")
       .ok(Array.isArray(j.positions), "positions array")
-      .ok(Array.isArray(j.launched) && j.launched.length === 2 && j.launched.every((l) => typeof l.slug === "string" && BIGINT_RE.test(l.stakeWei) && l.stakeTo === state.treasury), "launched lists both drafts as LaunchDraftDto")
+      // The daily-cap probe adds filler drafts for the same launcher, so the list is ≥ 2, never exactly 2.
+      .ok(Array.isArray(j.launched) && j.launched.length >= 2 && j.launched.every((l) => typeof l.slug === "string" && BIGINT_RE.test(l.stakeWei) && l.stakeTo === state.treasury), "launched lists the drafts as LaunchDraftDto")
       .bigint(j.claimable?.launcherMicros, "claimable.launcherMicros")
       .bigint(j.claimable?.launcherWei, "claimable.launcherWei")
       .bigint(j.claimable?.stakerMicros, "claimable.stakerMicros")

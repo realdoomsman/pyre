@@ -5,15 +5,11 @@
 //
 // `say` is what edge-tts speaks; `text` is what the captions show.
 
+import { layoutFilm, flattenShots, flattenSentences } from "./timeline.mjs";
+export { FPS, LEAD, TAIL, GAP } from "./timeline.mjs";
+
 export const VOICE = "en-US-AndrewMultilingualNeural";
 export const RATE = "+10%";
-export const FPS = 30;
-
-/** Seconds of silence before the first sentence of a shot, and after the last. */
-export const LEAD = 0.35;
-export const TAIL = 0.45;
-/** Gap between consecutive sentences inside one shot. */
-export const GAP = 0.22;
 
 export const BEATS = [
   {
@@ -100,47 +96,29 @@ export const BEATS = [
   },
 ];
 
-/** Flat list of shots in order with their beat id. */
-export const SHOTS = BEATS.flatMap((b) => b.shots.map((s) => ({ ...s, beat: b.id })));
-export const SENTENCES = BEATS.flatMap((b, bi) => b.sentences.map((s, si) => ({ ...s, beat: b.id, key: `${String(bi).padStart(2, "0")}-${si}` })));
+export const SHOTS = flattenShots(BEATS);
+export const SENTENCES = flattenSentences(BEATS);
 
-/**
- * Given measured sentence durations (seconds, by key), lay the film out.
- * Returns { fps, duration, shots:[{id,beat,start,dur}], sentences:[{key,shot,text,start,end}], events }.
- */
-export function layout(durations) {
-  const shots = SHOTS.map((s) => ({ id: s.id, beat: s.beat, base: s.base, lead: s.lead ?? LEAD, dur: s.base }));
-  const byShot = new Map(shots.map((s) => [s.id, s]));
-  // stretch shots to fit their sentences
-  for (const s of shots) {
-    const mine = SENTENCES.filter((x) => x.shot === s.id);
-    if (!mine.length) continue;
-    const spoken = mine.reduce((a, x) => a + durations[x.key], 0) + GAP * (mine.length - 1);
-    s.dur = Math.max(s.base, s.lead + spoken + TAIL);
-  }
-  let t = 0;
-  for (const s of shots) {
-    s.start = +t.toFixed(3);
-    s.dur = +s.dur.toFixed(3);
-    t += s.dur;
-  }
-  const sentences = [];
-  for (const s of shots) {
-    let at = s.start + s.lead;
-    for (const x of SENTENCES.filter((x) => x.shot === s.id)) {
-      const d = durations[x.key];
-      sentences.push({ key: x.key, shot: s.id, beat: x.beat, text: x.text, say: x.say, start: +at.toFixed(3), end: +(at + d).toFixed(3) });
-      at += d + GAP;
-    }
-  }
-  const duration = +t.toFixed(3);
-  const burnShot = byShot.get("burn-mg");
-  const events = {
-    // wipe transitions sit on every shot boundary except the first frame
-    wipes: shots.slice(1).map((s) => s.start),
-    // the low thump lands when the stack goes hollow (scene-local 2.6 s, see scenes.js)
-    burn: +(burnShot.start + 2.6).toFixed(3),
-    end: duration,
-  };
-  return { fps: FPS, duration, shots: shots.map(({ id, beat, start, dur }) => ({ id, beat, start, dur })), sentences, events };
-}
+/** Measured sentence durations (seconds, by key) → timeline. The thump lands when the stack goes hollow (scene-local 2.6 s, see scenes.js). */
+export const layout = (durations) => layoutFilm(BEATS, durations, { shot: "burn-mg", at: 2.6 });
+
+/** Capture segments (capture.mjs) this film's scenes read from build/cap/. */
+export const CAPTURES = ["launch", "home", "loop", "kiln", "fees", "burns"];
+
+/** What is on screen per shot, for script.md. */
+export const PICTURE = {
+  open: "obsidian; “coins that *build* apps.” rises through a mask; heat lifts from the bottom edge; “every fee *burns* PYRE.”",
+  "launch-mg": "prompt box types the one sentence → spec card (what / who it is for / mvp / holder tier) → stake pill → launch line with the PONS v2 factory address",
+  "launch-cap": "real capture: pyre.fun/launch hero, pointer onto the live preview card (parallax)",
+  "fees-mg": "1% fee bar → 70% creator share → splits fill 60 / 25 / 15",
+  "fees-cap": "real capture: coin page, “the loop” panel, pointer walks the four cells · demo data",
+  "agent-mg": "console streams the build log; gate checklist lights: build · playwright · screenshots · lighthouse · reviewer → deploy",
+  "app-mg": "browser frame <slug>.pyre.fun; free app, holder-tier card unlocks from balanceOf; “no checkout · no gas · no charge”",
+  "share-mg": "share bar fills 25 / 75; 25% buys PYRE and burns, 0 app coins bought back",
+  "share-cap": "real capture: pyre.fun home feed, pointer sweeps the ranked cards · demo data",
+  "burn-mg": "supply stack hollows from the top; buy → burn() → totalSupply falls; attestation calldata types out",
+  "burn-cap": "real capture: pyre.fun/burns ledger, chart tilting into the table · demo data",
+  "dormant-mg": "the mark cools to ash at $0 budget; a fee arrives and the heat rises again",
+  proof: "unit tests · production audit · 1 high + 5 medium review findings fixed (counts filled from the post-cutover run)",
+  close: "lockup; pyre.fun · Robinhood Chain · @PyreFun; $PYRE live · buybacks are burns, never distributions",
+};

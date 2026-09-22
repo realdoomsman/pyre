@@ -4,19 +4,20 @@
 //   node src/render.mjs --sq           → build/video-1080x1080.mp4
 //   node src/render.mjs --preview=0,5,10   → build/preview/<size>-t<sec>.png (no video)
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { launch } from "./cdp.mjs";
+import { ROOT, BUILD, CAP, FILM } from "./film.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const BUILD = join(ROOT, "build");
 const SCENES = pathToFileURL(join(ROOT, "src", "scenes.html")).href;
 
+/** meta.json of every capture segment in the shared pool (frame counts for the scene clock). */
 const capMeta = () => {
   const out = {};
-  for (const n of ["launch", "home", "loop", "kiln", "fees", "burns"]) {
-    const p = join(BUILD, "cap", n, "meta.json");
+  if (!existsSync(CAP)) return out;
+  for (const n of readdirSync(CAP)) {
+    const p = join(CAP, n, "meta.json");
     if (existsSync(p)) out[n] = JSON.parse(readFileSync(p, "utf8"));
   }
   return out;
@@ -25,7 +26,7 @@ const capMeta = () => {
 async function openStage({ sq }) {
   const width = sq ? 1080 : 1920, height = 1080;
   const page = await launch({ width, height });
-  await page.goto(`${SCENES}?sq=${sq ? 1 : 0}`);
+  await page.goto(`${SCENES}?film=${FILM}&sq=${sq ? 1 : 0}`);
   await page.evaluate("window.__ready");
   await page.evaluate(`window.__setCapMeta(${JSON.stringify(capMeta())}); 1`);
   return { page, width, height };

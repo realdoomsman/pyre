@@ -1,8 +1,11 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>pyre-launch scenes</title>
+<title>pyre scenes</title>
 <link rel="stylesheet" href="scenes.css">
-<script src="../build/timeline.js"></script>
+<script>
+  // ?film=<name> picks the timeline (build/timeline.js for the launch film, build/<film>/timeline.js otherwise; see film.mjs)
+  (() => { const f = new URLSearchParams(location.search).get("film"); document.write(`<script src="../build/${f && f !== "launch" ? f + "/" : ""}timeline.js"><\/script>`); })();
+</script>
 <body>
 <div id="stage">
 
@@ -195,6 +198,103 @@
     <div class="lockup rise"><img src="brand/lockup.svg" alt="Pyre"></div>
     <div class="line"><b>pyre.fun</b><span class="sep">·</span>Robinhood Chain<span class="sep">·</span><b>@PyreFun</b></div>
     <div class="soon mono">$PYRE live · coins are not investments · buybacks are burns, never distributions</div>
+  </section>
+
+  <!-- ════════ pyre-venues (script-venues.mjs) ════════ -->
+
+  <!-- open -->
+  <section class="scene" id="s-v-open">
+    <div class="heat"></div>
+    <img class="mark" src="brand/mark.svg" alt="">
+    <div class="h1 serif">
+      <div class="l1">coins that <i>build</i> apps.</div>
+      <div class="l2">now from <i>two</i> venues.</div>
+    </div>
+    <div class="sub label">pyre.fun · robinhood chain · solana</div>
+  </section>
+
+  <!-- capture: pyre.fun home, every card on pons -->
+  <section class="scene cap-scene" id="s-v-home-cap" data-cap="v-home" data-focal="0.35,0.5" data-sqfocal="0.36,0.5" data-zoom="1.52,1.46" data-sqzoom="0.86">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="caption"><span class="chip">pyre.fun · live</span><span class="chip dimmer">every coin so far: Robinhood Chain · pons v2</span></div>
+  </section>
+
+  <!-- capture: /launch signed in, venue picker -->
+  <section class="scene cap-scene" id="s-v-picker-cap" data-cap="v-picker" data-focal="0.5,0.46" data-sqfocal="0.5,0.46" data-zoom="1.3,1.24" data-sqzoom="0.9">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="caption"><span class="chip">pyre.fun/launch · staging</span><span class="chip accent">venue: Solana · pump.fun</span><span class="chip dimmer">stake 1 SOL · refundable</span></div>
+  </section>
+
+  <!-- capture: devnet coin page -->
+  <section class="scene cap-scene" id="s-v-coin-cap" data-cap="v-coin" data-focal="0.55,0.47" data-sqfocal="0.6,0.45" data-zoom="1.28,1.22" data-sqzoom="0.9">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="caption"><span class="chip">coin page · $DLENS</span><span class="chip accent">Solana · pump.fun · devnet</span><span class="chip dimmer">real launch on staging · same page as every pons coin</span></div>
+  </section>
+
+  <!-- fees: the same split on both venues -->
+  <section class="scene" id="s-v-fees">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="label">the loop · either venue</div>
+      <h2 class="h2 serif">same loop. <i>same split.</i></h2>
+      <div class="loopline"><span class="chip s1">the agent builds the app</span><span class="arr">→</span><span class="chip s2">fees fund it</span><span class="arr">→</span><span class="chip burn s3">fees burn the coin</span></div>
+      <div class="venues">
+        <div class="venue" data-venue="rh">
+          <div class="hd"><b>Robinhood Chain</b><span class="mono">pons v2 · fees in ETH</span></div>
+          <div class="vrow r1"><span class="k">build budget<small>pays the agent</small></span><span class="bar thin"><i style="background:var(--build)"></i></span><span class="v">60</span></div>
+          <div class="vrow r2"><span class="k">PYRE burn<small>bought on the curve, burned</small></span><span class="bar thin"><i style="background:var(--burn)"></i></span><span class="v">25</span></div>
+          <div class="vrow r3"><span class="k">launcher<small>who wrote the sentence</small></span><span class="bar thin"><i style="background:var(--ink2)"></i></span><span class="v">15</span></div>
+        </div>
+        <div class="venue" data-venue="sol">
+          <div class="hd"><b>Solana</b><span class="mono">pump.fun · fees in SOL</span></div>
+          <div class="vrow r1"><span class="k">build budget<small>pays the agent</small></span><span class="bar thin"><i style="background:var(--build)"></i></span><span class="v">60</span></div>
+          <div class="vrow r2"><span class="k">coin burn<small>the coin itself, bought and burned</small></span><span class="bar thin"><i style="background:var(--burn)"></i></span><span class="v">25</span></div>
+          <div class="vrow r3"><span class="k">launcher<small>who wrote the sentence</small></span><span class="bar thin"><i style="background:var(--ink2)"></i></span><span class="v">15</span></div>
+        </div>
+      </div>
+      <div class="foot mono">creator fees claimed from the venue · converted at the price of the moment · booked to the split above · nothing is paid to holders</div>
+    </div>
+  </section>
+
+  <!-- capture: Burns tab, the real burn, memo attestation card -->
+  <section class="scene cap-scene" id="s-v-burns-cap" data-cap="v-burns" data-focal="0.42,0.45" data-sqfocal="0.34,0.42" data-zoom="1.34,1.28" data-sqzoom="0.9">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="memo card">
+      <div class="k">attestation memo · solana devnet tx 4z6y…JGMG</div>
+      <div class="bytes"><span class="p"></span><span class="h"></span><span class="caret"></span></div>
+      <div class="note">sha256 of the fee claims that paid for it · the same 32 bytes a Robinhood Chain attestation carries in calldata</div>
+    </div>
+    <div class="caption"><span class="chip">coin page · burns</span><span class="chip burn">1 burn · 35.36M $DLENS · 3.54% of supply</span><span class="chip dimmer">swap · burn · attest</span></div>
+  </section>
+
+  <!-- capture: /me, two wallets, deposit SOL -->
+  <section class="scene cap-scene" id="s-v-me-cap" data-cap="v-me" data-focal="0.5,0.4" data-sqfocal="0.5,0.4" data-zoom="1.3,1.24" data-sqzoom="0.9">
+    <div class="capwrap"><img class="cap" alt=""><div class="capfade"></div></div>
+    <div class="caption"><span class="chip">pyre.fun/me · staging</span><span class="chip dimmer">custodial · Robinhood Chain</span><span class="chip dimmer">custodial · Solana</span></div>
+  </section>
+
+  <!-- PYRE: one coin, one chain -->
+  <section class="scene" id="s-v-pyre">
+    <div class="heat"></div>
+    <div class="col">
+      <div class="label">PYRE · the platform coin</div>
+      <h2 class="h2 serif big">one coin. <i>one chain.</i></h2>
+      <div class="facts">
+        <div><span class="m">coin</span><span>PYRE · bought and burned by 25% of every pons coin's fees · never distributed</span></div>
+        <div><span class="m">chain</span><span>Robinhood Chain · 4663 · pons v2 curve, then Uniswap v4</span></div>
+        <div><span class="m">solana</span><span>coins launched there burn <b>themselves</b> · no PYRE is bought, bridged or wrapped there</span></div>
+      </div>
+      <div class="verdict serif">any PYRE on another chain <i>is not us.</i></div>
+      <div class="inset"><img alt=""><div class="tag label">as written on pyre.fun/pyre</div></div>
+    </div>
+  </section>
+
+  <!-- close -->
+  <section class="scene" id="s-v-close">
+    <div class="heat"></div>
+    <div class="lockup rise"><img src="brand/lockup.svg" alt="Pyre"></div>
+    <div class="line"><b>pyre.fun</b><span class="sep">·</span>live on Robinhood Chain and Solana<span class="sep">·</span><b>@PyreFun</b></div>
+    <div class="soon mono">PYRE on Robinhood Chain only · coins are not investments · buybacks are burns, never distributions</div>
   </section>
 
   <div id="wipe"></div>
