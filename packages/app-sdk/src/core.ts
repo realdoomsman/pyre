@@ -245,16 +245,24 @@ export interface PyreCoin {
   name: string;
   ticker: string;
   imageUrl: string;
+  oneLiner: string;
   tokenAddress: string | null;
   priceUsd: number;
-  marketCapUsd: number;
+  mcapUsd: number;
   change24hPct: number;
   volume24hUsd: number;
-  holdersCount: number;
+  holders: number;
   /** 0 = bonding curve, 2 = Uniswap v4 pool. */
-  launchPhase: number;
+  phase: number;
   /** Curve progress 0..1. */
   progress: number;
+  /** 0..1 activity index (fees + volume). */
+  heat: number;
+  status: string;
+  launchedAt: string | null;
+  /** Trade links: the coin page on Pyre and the pons launchpad. */
+  ponsUrl: string | null;
+  explorerUrl: string | null;
   [extra: string]: unknown;
 }
 

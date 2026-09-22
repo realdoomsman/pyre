@@ -88,7 +88,7 @@ await ship.fn<T>("hello", input)   // POST /_pyre/fn/hello → your handler's re
 await ship.kv.set("k", value)      // per-user storage (any JSON)
 await ship.kv.get<T>("k")          // T | null
 await ship.kv.app<T>("k")          // app-wide namespace, written by functions/*.js
-await ship.coins.list({ sort: "trending", limit: 50 })   // every live coin on Pyre: { items: PyreCoin[] } — real prices, mcap, 24h change, volume, holders
+await ship.coins.list({ sort: "trending", limit: 50 })   // every live coin on Pyre: { items: PyreCoin[] } — {slug, name, ticker, imageUrl, priceUsd, mcapUsd, change24hPct, volume24hUsd, holders, phase, progress, heat, ponsUrl}
 await ship.coins.get("slug")                            // one coin (PyreCoin)
 await ship.coins.candles("slug", { interval: "1h", limit: 168 }) // OHLCV history in USD
 // Same-origin GET /_pyre/coins, /_pyre/coins/:slug, /_pyre/coins/:slug/candles — no keys, no CORS. Locally (no host) these are unavailable: show a labelled example dataset.
