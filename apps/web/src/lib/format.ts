@@ -109,9 +109,11 @@ export const formatNative = (units: Amount, native: NativeUnit, opts: { unit?: b
   const u = toBig(units);
   const abs = u < 0n ? -u : u;
   const one = 10n ** BigInt(native.decimals);
-  const digits = opts.digits ?? (abs >= 100n * one ? 2 : abs >= one ? 3 : 4);
+  // Caller-fixed digits still get enough precision to show a sub-unit amount (0.1 SOL with digits 0 → "0.1").
+  const requested = opts.digits ?? (abs >= 100n * one ? 2 : abs >= one ? 3 : 4);
+  const digits = abs !== 0n && abs < one && requested < 1 ? 4 : requested;
   let s: string;
-  if (abs !== 0n && abs < one / 10n ** BigInt(digits)) {
+  if (abs !== 0n && digits > 0 && abs < one / 10n ** BigInt(digits)) {
     s = `${u < 0n ? "-" : ""}<0.${"0".repeat(digits - 1)}1`;
   } else {
     s = fixed(u, native.decimals, digits);
