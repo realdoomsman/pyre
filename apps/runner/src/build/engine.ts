@@ -10,6 +10,8 @@ import { ensureAppRepo } from "../lib/github.js";
 import { checkMilestones } from "../lib/milestones.js";
 import { publishEvent, publishGlobal } from "../lib/publishEvent.js";
 import { queues } from "../lib/queues.js";
+import { settleAbandonedJob } from "../workers/reconcile/jobs.js";
+import { enqueueBuildJob } from "../workers/scheduler.js";
 import { APP_DIR, createSandbox, readText } from "../sandbox/sandbox.js";
 import { bootstrapSandbox } from "../sandbox/setup.js";
 import { runAgent } from "./agent.js";
@@ -194,11 +196,33 @@ const runStages = async (ctx: Ctx, sbx: Sandbox): Promise<void> => {
   );
 };
 
+/** A fresh attempt with the orphaned job's own terms; the settled job already reopened its tasks. */
+const requeueBuild = async (job: BuildJob & { app: App }, log: Logger): Promise<void> => {
+  if (job.app.status !== "LIVE") return;
+  const id = await enqueueBuildJob({
+    app: job.app,
+    stage: job.stage,
+    budgetMicros: job.budgetMicros,
+    taskIds: job.taskIds,
+    instruction: job.instruction ?? undefined,
+    prNumber: job.prNumber ?? undefined,
+  });
+  log.warn({ orphanedJobId: job.id, jobId: id, appId: job.appId, stage: job.stage }, "orphaned build settled and re-queued");
+};
+
 /** Execute one BuildJob end to end. Idempotent for non-QUEUED jobs. */
 export const runBuildJob = async (jobId: string, log: Logger): Promise<void> => {
   const job = await prisma.buildJob.findUnique({ where: { id: jobId }, include: { app: true } });
   if (!job) {
     log.warn({ jobId }, "build job row missing");
+    return;
+  }
+  if (job.status === "RUNNING" && !inFlightBuilds.has(job.id)) {
+    // BullMQ re-delivered a stalled job: the runner that owned it died mid-build (deploy, OOM,
+    // crash) before its shutdown hook could settle it. Settle now — real spend debited, sandbox
+    // killed, tasks reopened — and queue a fresh attempt instead of leaving it to the 3h reaper.
+    const settled = await settleAbandonedJob(job.id, "runner died mid-build; settled on stalled re-delivery and re-queued", log);
+    if (settled) await requeueBuild(job, log);
     return;
   }
   if (job.status !== "QUEUED") {
