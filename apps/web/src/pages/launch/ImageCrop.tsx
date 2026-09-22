@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Button } from "../../ui/index.js";
 
 const STAGE = 240;
@@ -11,12 +11,17 @@ interface Props {
   onCancel: () => void;
 }
 
+/** Lets the enclosing form apply a crop the user never confirmed (submit with the cropper still open). */
+export interface ImageCropHandle {
+  crop: () => Promise<File>;
+}
+
 /**
  * Square crop: the image covers the stage at its minimum scale, the user zooms and drags,
  * and the visible square is rasterised to 512×512 for upload. Coin images are square
  * everywhere they appear (cards, PONS, explorers), so the crop is the honest preview.
  */
-export const ImageCrop = ({ file, busy, onCrop, onCancel }: Props) => {
+export const ImageCrop = forwardRef<ImageCropHandle, Props>(({ file, busy, onCrop, onCancel }, ref) => {
   const [img, setImg] = useState<{ el: HTMLImageElement; url: string } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -32,6 +37,9 @@ export const ImageCrop = ({ file, busy, onCrop, onCancel }: Props) => {
       setImg(null);
     };
   }, [file]);
+
+  const render = useRef<() => Promise<File>>(() => Promise.reject(new Error("image not loaded")));
+  useImperativeHandle(ref, () => ({ crop: () => render.current() }), []);
 
   if (!img) return <div className="animate-breathe rounded-card bg-fill-2" style={{ width: STAGE, height: STAGE }} aria-hidden />;
   const { el: image, url } = img;
@@ -58,21 +66,24 @@ export const ImageCrop = ({ file, busy, onCrop, onCancel }: Props) => {
     drag.current = null;
   };
 
+  const rasterise = () =>
+    new Promise<File>((resolve, reject) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = OUTPUT;
+      canvas.height = OUTPUT;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("canvas unavailable"));
+      const k = OUTPUT / STAGE;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(image, pos.x * k, pos.y * k, w * k, h * k);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(new File([blob], file.name.replace(/\.[^.]+$/, "") + ".png", { type: "image/png" }));
+        else reject(new Error("could not encode the crop"));
+      }, "image/png");
+    });
+  render.current = rasterise;
   const crop = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = OUTPUT;
-    canvas.height = OUTPUT;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const k = OUTPUT / STAGE;
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(image, pos.x * k, pos.y * k, w * k, h * k);
-    canvas.toBlob(
-      (blob) => {
-        if (blob) onCrop(new File([blob], file.name.replace(/\.[^.]+$/, "") + ".png", { type: "image/png" }));
-      },
-      "image/png",
-    );
+    rasterise().then(onCrop, () => undefined);
   };
 
   return (
@@ -104,4 +115,4 @@ export const ImageCrop = ({ file, busy, onCrop, onCancel }: Props) => {
       </div>
     </div>
   );
-};
+});

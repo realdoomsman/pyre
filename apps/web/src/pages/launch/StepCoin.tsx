@@ -3,7 +3,7 @@ import { CreateLaunchBody, slugify } from "@pyre/shared";
 import type { CreateLaunchBody as Body } from "@pyre/shared";
 import { isHttpError, uploadCoinImage } from "../../api/client.js";
 import { Avatar, Button, Field, Input, Textarea, toast } from "../../ui/index.js";
-import { ImageCrop } from "./ImageCrop.js";
+import { ImageCrop, type ImageCropHandle } from "./ImageCrop.js";
 import type { CoinDraft } from "./preview.js";
 
 interface Props {
@@ -23,6 +23,7 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof CoinDraft, string>>>({});
   const fileInput = useRef<HTMLInputElement>(null);
+  const cropper = useRef<ImageCropHandle>(null);
 
   const patch = (p: Partial<CoinDraft>) => onChange({ ...draft, ...p });
 
@@ -39,26 +40,45 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
     setPending(file);
   };
 
-  const upload = async (file: File) => {
+  /** Uploads a cropped file; resolves the hosted URL or null after a toast. */
+  const upload = async (file: File): Promise<string | null> => {
     setUploading(true);
     try {
       const url = await uploadCoinImage(file);
       patch({ imageUrl: url });
       setPending(null);
       setErrors((e) => ({ ...e, imageUrl: undefined }));
+      return url;
     } catch (err) {
       toast.error(isHttpError(err) ? err.message : "Upload failed. Try again.");
+      return null;
     } finally {
       setUploading(false);
     }
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (uploading) return;
+    // A crop the user picked but never confirmed (Enter in a field, or straight to the submit
+    // button) is applied here instead of failing validation with the cropper still open.
+    let imageUrl = draft.imageUrl;
+    if (pending && cropper.current) {
+      let cropped: File;
+      try {
+        cropped = await cropper.current.crop();
+      } catch {
+        toast.error("Could not read that image. Choose another.");
+        return;
+      }
+      const url = await upload(cropped);
+      if (!url) return;
+      imageUrl = url;
+    }
     const candidate = {
       name: draft.name.trim(),
       ticker: draft.ticker.trim().toUpperCase(),
-      imageUrl: draft.imageUrl,
+      imageUrl,
       prompt: draft.prompt.trim(),
       twitter: draft.twitter.trim() || undefined,
       website: draft.website.trim() || undefined,
@@ -80,7 +100,7 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
   const slug = slugify(draft.name);
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-6" noValidate>
       {rejection && (
         <div role="alert" className="rounded-card border border-[color-mix(in_oklab,var(--color-danger)_40%,transparent)] bg-[color-mix(in_oklab,var(--color-danger)_8%,transparent)] px-4 py-3 text-14">
           <div className="eyebrow mb-1 text-danger">Launch refused</div>
@@ -114,7 +134,7 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
 
       <Field label="Image" required error={errors.imageUrl} hint="Square, written to the chain at launch. PNG, JPG or GIF up to 8 MB.">
         {pending ? (
-          <ImageCrop file={pending} busy={uploading} onCrop={upload} onCancel={() => setPending(null)} />
+          <ImageCrop ref={cropper} file={pending} busy={uploading} onCrop={(f) => void upload(f)} onCancel={() => setPending(null)} />
         ) : (
           <div className="flex items-center gap-4">
             <Avatar src={draft.imageUrl || null} name={draft.ticker || draft.name || "?"} size={72} shape="square" />
