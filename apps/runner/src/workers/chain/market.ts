@@ -101,8 +101,10 @@ async function indexApp(ctx: ChainWorkerContext, app: MarketApp, launch: LaunchR
   // range may straddle (or wholly precede) the graduation block, and curve fills there are lost
   // forever once the cursor moves past them. Only at the tip can the pool alone emit fills.
   const backfilling = to < latest;
+  // Both venues only once the launch has graduated (and the stored phase or cursor still lags);
+  // a curve-phase launch is one venue, scanned once — twice would double every event.
   const venues: LaunchRecord[] =
-    storedPhase === LAUNCH_PHASE.CURVE || (launch.phase === LAUNCH_PHASE.POOL && backfilling) ? [{ ...launch, phase: LAUNCH_PHASE.CURVE }, launch] : [launch];
+    launch.phase === LAUNCH_PHASE.POOL && (storedPhase === LAUNCH_PHASE.CURVE || backfilling) ? [{ ...launch, phase: LAUNCH_PHASE.CURVE }, launch] : [launch];
   const fills = (
     await Promise.all(venues.map(async (v) => (await getTrades(v, from, to)).map((t) => ({ ...t, venue: v.phase === LAUNCH_PHASE.POOL ? "POOL" : "CURVE" }))))
   )
