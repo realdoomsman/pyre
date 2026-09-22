@@ -51,7 +51,7 @@ Railway issues and renews the certificates, including the wildcard. Reserved sub
 
 ## Treasury
 
-The treasury is user index 0 of `PLATFORM_MASTER_SEED_HEX`: **`0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54`**. The seed is backed up in `.secrets/pyre-keys.env` (git-ignored) — losing it loses every custodial user wallet and every app wallet. Print the address from a built runner with:
+The treasury is user index 0 of `PLATFORM_MASTER_SEED_HEX`: **`0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6`**. The seed is backed up in `.secrets/pyre-keys.env` (git-ignored) — losing it loses every custodial user wallet and every app wallet. Print the address from a built runner with:
 
 ```
 node -e "import('@pyre/chain').then(c => console.log(c.treasury().address))"
@@ -63,7 +63,7 @@ node -e "import('@pyre/chain').then(c => console.log(c.treasury().address))"
 
 Keep the treasury in ETH on Robinhood Chain. It pays for: pre-funding each app wallet with the PONS launch fee (0.0005 ETH) + gas at launch, gas top-ups for fee sweeps, buyback swaps (revenue is received in USDG; buys are paid in ETH at the current price), burn and attestation gas, stake refunds, bounty payouts, credit top-ups (ETH → USDC on Ethereum via Relay), and gas for relayed USDG authorizations. Every spending path refuses to take the balance below `TREASURY_FLOOR_WEI` (0.01 ETH) and retries next cycle, so an empty treasury degrades to "nothing moves" rather than to a broken state. ~0.05 ETH covers dozens of launches and sweeps at current gas; alert under 0.02 ETH.
 
-Bridge ETH from Arbitrum One or Ethereum with the Robinhood Chain bridge, or send from any exchange that supports the chain directly, to the address above. Confirm on Blockscout: `https://robinhoodchain.blockscout.com/address/0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54`.
+Bridge ETH from Arbitrum One or Ethereum with the Robinhood Chain bridge, or send from any exchange that supports the chain directly, to the address above. Confirm on Blockscout: `https://robinhoodchain.blockscout.com/address/0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6`.
 
 USDG revenue accumulates in the treasury; it is the ops reserve and is never automatically converted.
 

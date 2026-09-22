@@ -124,7 +124,7 @@ The perimeter security check covers CSRF on app endpoints, CSP and cookie flags,
 
 Everything above is deployed: the web app, the API, the runner with all thirteen queues, the E2B build template, custodial wallets, USDG charges, the burn ledger and the reconcile pass, all against Robinhood Chain mainnet.
 
-Two things are not yet true. The treasury at `0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54` is unfunded, which is why the six on-chain audit checks are blocked and why no real coin has been through the loop yet. And PYRE has not launched. Until it does, the 25% and 10% PYRE slices accrue on the ledger and the PYRE page shows its pre-launch state. It is launching soon; there is no contract address until it exists, and anyone offering one is not us.
+Two things are not yet true. The treasury at `0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6` is unfunded, which is why the six on-chain audit checks are blocked and why no real coin has been through the loop yet. And PYRE has not launched. Until it does, the 25% and 10% PYRE slices accrue on the ledger and the PYRE page shows its pre-launch state. It is launching soon; there is no contract address until it exists, and anyone offering one is not us.
 
 The site shows zeros today: no apps, no revenue, no burns. The demo rows used to build and verify the platform have been removed, and no figure appears on pyre.fun until a real coin earns it.
 
@@ -149,7 +149,7 @@ What launches next, in order: treasury funding, an on-chain dry run of the full 
 | pons v2 factory | [`0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e`](https://robinhoodchain.blockscout.com/address/0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e) |
 | pons FeeEscrow | [`0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e`](https://robinhoodchain.blockscout.com/address/0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e) |
 | USDG | [`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`](https://robinhoodchain.blockscout.com/token/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) |
-| Pyre treasury | [`0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54`](https://robinhoodchain.blockscout.com/address/0x0D01debaF26A513c55D8aa7B5Ac6299040a37f54) (currently unfunded) |
+| Pyre treasury | [`0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6`](https://robinhoodchain.blockscout.com/address/0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6) (currently unfunded) |
 | burn ledger | [pyre.fun/burns](https://pyre.fun/burns), `GET https://api.pyre.fun/v1/burns` |
 | platform totals | `GET https://api.pyre.fun/v1/stats` |
 | attestation encoding | `packages/chain/src/burn.ts` in the repo; `ATTESTATION_PREFIX = 0x5059524501` |
