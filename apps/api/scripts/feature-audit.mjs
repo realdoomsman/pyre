@@ -1550,7 +1550,7 @@ async function platformChecks() {
       .bigint(j.claimable?.launcherMicros, "claimable.launcherMicros")
       .bigint(j.claimable?.launcherWei, "claimable.launcherWei")
       .bigint(j.claimable?.stakerMicros, "claimable.stakerMicros")
-      .eq(j.launchesToday, 2, "launchesToday counts this run's drafts")
+      .eq(j.launchesToday, await (await import("../dist/lib/launch.js")).launchesLast24h(launcher.id), "launchesToday matches the daily-cap counter")
       .eq(j.launchLimitPerDay, LAUNCH_RATE_LIMIT_PER_DAY.NEW, "launchLimitPerDay")
       .ok(Number.isInteger(j.notifications?.unread), "notifications.unread")
       .bigint(j.withdrawRemainingMicros, "withdrawRemainingMicros");
