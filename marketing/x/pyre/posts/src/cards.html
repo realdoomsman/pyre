@@ -169,6 +169,11 @@
   .g.tick{background:transparent;border-style:dashed;display:flex;flex-direction:column;justify-content:center}
   .g.tick .big{font:400 54px/1 'Instrument Serif',serif;letter-spacing:-.02em}
 
+  .spark{margin-top:30px}
+  .spark .sl{font:500 13px/1 'Geist Mono',monospace;letter-spacing:.08em;color:var(--ink3);text-transform:uppercase}
+  .spark .sb{position:relative;height:110px;margin-top:14px;border-bottom:1px solid var(--line2)}
+  .spark .sb i{position:absolute;bottom:0;width:6px;margin-left:-3px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#9D8CFF,#3B2F7A)}
+  .spark .sx{display:flex;justify-content:space-between;margin-top:10px;font:400 14px/1 'Geist Mono',monospace;color:var(--ink3)}
   /* 13 finding */
   .finding{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
   .sev{display:inline-block;font:500 13px/1 'Geist Mono',monospace;letter-spacing:.1em;padding:8px 12px;border-radius:6px;border:1px solid var(--burn);color:var(--burn)}
@@ -283,6 +288,21 @@ const byteCells = () => {
 };
 
 const CARDS = [
+{ slug:"first-day", kick:"the first 24 hours", body:`
+  <h1 class="sm">a launchpad that <em>spends</em> its fees.</h1>
+  <div class="grid7" style="grid-template-columns:repeat(4,1fr)">
+    <div class="g tick"><div class="lab">creator fees claimed</div><div class="big">1.1016 ETH</div><div class="d" style="margin-top:6px">556 claims, every one split 60 / 25 / 15 by the same rule.</div></div>
+    <div class="g tick"><div class="lab">PYRE bought and burned</div><div class="big">2,236,726</div><div class="d" style="margin-top:6px">37 burns, 0.224% of supply, one roughly every 39 minutes.</div></div>
+    <div class="g tick"><div class="lab">agent builds finished</div><div class="big">18</div><div class="d" style="margin-top:6px">145 agent-minutes, $37.90 of model spend, 18 deployments.</div></div>
+    <div class="g tick"><div class="lab">apps live and free</div><div class="big">5</div><div class="d" style="margin-top:6px">basket, pyrecat, paperhood, jackpot, pyredog.</div></div>
+  </div>
+  <div class="work" style="margin-top:30px">
+    <div>supply</div><div><b>only goes one way.</b> mint and freeze authority are gone; burn() lowers totalSupply and every burn carries an attestation you can recompute.</div>
+    <div>venues</div><div>robinhood chain · pons v2 and solana · pump.fun. <b>PYRE itself stays on robinhood chain.</b></div>
+  </div>
+  <div class="spark"><span class="sl">every burn, hour by hour</span><div class="sb"><i style="left:0.00%;height:48%"></i><i style="left:0.71%;height:100%"></i><i style="left:1.38%;height:29%"></i><i style="left:2.08%;height:29%"></i><i style="left:2.79%;height:29%"></i><i style="left:3.46%;height:26%"></i><i style="left:4.17%;height:14%"></i><i style="left:4.87%;height:23%"></i><i style="left:5.54%;height:48%"></i><i style="left:6.25%;height:23%"></i><i style="left:6.96%;height:29%"></i><i style="left:7.62%;height:31%"></i><i style="left:8.33%;height:26%"></i><i style="left:9.04%;height:14%"></i><i style="left:9.71%;height:14%"></i><i style="left:10.42%;height:34%"></i><i style="left:11.12%;height:20%"></i><i style="left:11.79%;height:22%"></i><i style="left:12.50%;height:15%"></i><i style="left:13.21%;height:14%"></i><i style="left:13.88%;height:14%"></i><i style="left:14.58%;height:14%"></i><i style="left:15.29%;height:28%"></i><i style="left:15.96%;height:26%"></i><i style="left:16.67%;height:21%"></i><i style="left:18.04%;height:14%"></i><i style="left:18.75%;height:14%"></i><i style="left:19.46%;height:14%"></i><i style="left:20.83%;height:14%"></i><i style="left:24.29%;height:14%"></i><i style="left:27.79%;height:14%"></i><i style="left:31.25%;height:14%"></i><i style="left:39.58%;height:14%"></i><i style="left:61.12%;height:14%"></i><i style="left:77.08%;height:14%"></i><i style="left:90.96%;height:14%"></i><i style="left:99.29%;height:14%"></i></div><div class="sx"><span>05:45 utc</span><span>+24h</span></div></div>`,
+  ftr:"first day" },
+
 { slug:"loop", kick:"the loop", body:`
   <h1>one sentence in. an app out. PYRE <em>burns</em>.</h1>
   <div class="loop">
