@@ -11,6 +11,7 @@ import { APPS_TAG, cached } from "../lib/cache.js";
 import { custodialAccount, custodialEthBalance, GAS_RESERVE_WEI } from "../lib/custodial.js";
 import { pctOfSupply, pyreBurnDto, stakeDto } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
+import { assertPayoutsAllowed } from "../lib/freeze.js";
 import { sendCached } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
 import { db } from "../lib/metrics.js";
@@ -130,6 +131,7 @@ pyre.get(
 
 /** Moves $PYRE from the caller's custodial wallet into the treasury stake vault. */
 export const pyreStakeHandler = async (req: Request, res: Response): Promise<void> => {
+  assertPayoutsAllowed();
   const user = req.user!;
   if (!env.PYRE_TOKEN) throw new HttpError(503, "pyre_not_launched");
   if (!user.wallet) throw new HttpError(400, "wallet_required");
@@ -219,6 +221,7 @@ const MIN_STAKER_CLAIM_MICROS = 1_000_000n;
  * claim cannot double-pay, and restores them if the payout fails — same guarantee as the launcher claim.
  */
 export const claimStakerRewardsHandler = async (req: Request, res: Response): Promise<void> => {
+  assertPayoutsAllowed();
   const u = req.user!;
   if (!u.wallet) throw new HttpError(400, "wallet_required");
 

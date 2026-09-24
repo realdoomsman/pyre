@@ -43,6 +43,7 @@ import {
   type NativePrices,
 } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
+import { assertPayoutsAllowed } from "../lib/freeze.js";
 import { GLOBAL_FEED_CHANNEL, publishEvent, publishGlobal } from "../lib/events.js";
 import { pageQuery, sendCached, sizeQuery } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
@@ -509,6 +510,7 @@ apps.get(
  * 100% to build budget, revives dormant apps. `amount` is whole ETH or SOL.
  */
 export const topupHandler = async (req: Request, res: Response): Promise<void> => {
+  assertPayoutsAllowed();
   const app = await prisma.app.findUnique({ where: { slug: req.params.slug! } });
   if (!app) throw new HttpError(404, "app_not_found");
   if (!app.walletAddress) throw new HttpError(409, "app_has_no_wallet");

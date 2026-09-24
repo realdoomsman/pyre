@@ -9,6 +9,7 @@ import { requireAuth } from "../lib/auth.js";
 import { writeAudit } from "../lib/audit.js";
 import { USER_REF_SELECT, bountyDto } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
+import { assertPayoutsAllowed } from "../lib/freeze.js";
 import { publishEvent } from "../lib/events.js";
 import { logger } from "../lib/logger.js";
 import { TREASURY_ACCOUNT, TREASURY_WALLET } from "../lib/treasury.js";
@@ -38,6 +39,7 @@ bounties.get(
 
 /** Escrows ETH from the caller's custodial wallet into the treasury against a merged-PR payout. */
 export const createBountyHandler = async (req: Request, res: Response): Promise<void> => {
+  assertPayoutsAllowed();
   const user = req.user!;
   const app = await prisma.app.findUnique({ where: { slug: req.params.slug! } });
   if (!app) throw new HttpError(404, "app_not_found");

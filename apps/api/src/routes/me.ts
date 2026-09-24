@@ -26,6 +26,7 @@ import { cached } from "../lib/cache.js";
 import { custodialAccount, custodialEthBalance, custodialSolBalance, custodialUsdgBalance, GAS_RESERVE_BY_CHAIN, GAS_RESERVE_WEI } from "../lib/custodial.js";
 import { APP_SUMMARY_SELECT, appExtrasByApp, appSummary, launchDto, pctOfSupply, tokens, usd, type NativePrices } from "../lib/dto.js";
 import { HttpError, parse, wrap } from "../lib/errors.js";
+import { assertPayoutsAllowed } from "../lib/freeze.js";
 import { sendCached } from "../lib/http.js";
 import { ensureSolWallet } from "../lib/identity.js";
 import { launchesLast24h } from "../lib/launch.js";
@@ -193,6 +194,7 @@ const MIN_CLAIM_MICROS = 1_000_000n;
  * an `unconfirmed` memo and the runner's PAYOUTS reconcile settles it from the receipt.
  */
 export const claimHandler = async (req: Request, res: Response): Promise<void> => {
+  assertPayoutsAllowed();
   const u = req.user!;
   if (!u.wallet) throw new HttpError(400, "wallet_required");
   const claimable = await launcherClaimableMicros(u.id);
@@ -301,6 +303,7 @@ const MIN_WITHDRAW_LAMPORTS = 1_000_000n; // 0.001 SOL
  * SOL leaves the custodial Solana wallet (which keeps its rent-exempt reserve).
  */
 export const withdrawHandler = async (req: Request, res: Response): Promise<void> => {
+  assertPayoutsAllowed();
   const u = await ensureSolWallet(req.user!);
   if (!u.wallet) throw new HttpError(400, "wallet_required");
   const wallet = u.wallet as Address;
@@ -445,6 +448,7 @@ me.post(
 
 /** `POST /v1/me/trade` — executes a custodial buy/sell on the coin's venue; returns the fill, the quote it was checked against and fresh balances. */
 export const tradeHandler = async (req: Request, res: Response): Promise<void> => {
+  assertPayoutsAllowed();
   const u = await ensureSolWallet(req.user!);
   if (!u.wallet) throw new HttpError(400, "wallet_required");
   const body = parse(TradeBody, req.body);
