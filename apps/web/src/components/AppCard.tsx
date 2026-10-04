@@ -43,7 +43,7 @@ export const AppCard = ({ app, className }: AppCardProps) => {
           </div>
         </dl>
       </Link>
-      <div className="flex items-center gap-2 border-t border-line px-4 py-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line px-4 py-2">
         <Chip tone={agent.tone} dot={agent.dot} size="sm" mono>
           {agent.label}
         </Chip>
