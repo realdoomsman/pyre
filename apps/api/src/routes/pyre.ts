@@ -217,32 +217,46 @@ const MIN_STAKER_CLAIM_MICROS = 1_000_000n;
 
 /**
  * Pays a staker their accrued rewards (`earnedMicros` summed across active stakes) in ETH from the
- * treasury, without unstaking. Clears the earned amounts first (inside a transaction) so a concurrent
- * claim cannot double-pay, and restores them if the payout fails — same guarantee as the launcher claim.
+ * treasury, without unstaking. Each stake's earnings are taken by a guarded decrement before the
+ * payout, so a concurrent claim takes nothing, and restored if the payout fails — same guarantee as
+ * the launcher claim.
  */
 export const claimStakerRewardsHandler = async (req: Request, res: Response): Promise<void> => {
   assertPayoutsAllowed();
   const u = req.user!;
   if (!u.wallet) throw new HttpError(400, "wallet_required");
 
-  // Read-and-clear atomically: the next concurrent claim sees zero and pays nothing.
+  // A plain read does not lock: concurrent claims all read the same rows. An unconditional clear
+  // then succeeds for each of them, and each pays — or, under the floor, restores — the same
+  // earnings: the 2026-09-23 drain doubled dust past the floor and paid it up to six times. The
+  // guarded decrement is re-checked by Postgres against the row a concurrent claim committed, so
+  // exactly one claim takes each amount, and a sweep's share credited after the read stays put.
   const stakes = await prisma.$transaction(async (tx) => {
     const rows = await tx.pyreStake.findMany({
       where: { wallet: u.wallet!, withdrawnAt: null, earnedMicros: { gt: 0n } },
       select: { id: true, appId: true, earnedMicros: true },
+      orderBy: { id: "asc" },
     });
-    if (rows.length > 0) {
-      await tx.pyreStake.updateMany({ where: { id: { in: rows.map((r) => r.id) } }, data: { earnedMicros: 0n } });
+    const claimable = rows.reduce((acc, s) => acc + s.earnedMicros, 0n);
+    if (claimable < MIN_STAKER_CLAIM_MICROS) throw new HttpError(400, "nothing_to_claim", { claimableMicros: claimable.toString() });
+    const taken: typeof rows = [];
+    for (const s of rows) {
+      const { count } = await tx.pyreStake.updateMany({
+        where: { id: s.id, earnedMicros: { gte: s.earnedMicros } },
+        data: { earnedMicros: { decrement: s.earnedMicros } },
+      });
+      if (count === 1) taken.push(s);
     }
-    return rows;
+    return taken;
   });
 
   const total = stakes.reduce((acc, s) => acc + s.earnedMicros, 0n);
-  // Increment, never set: a fee sweep may have credited `earnedMicros` since the clear above, and
+  // Increment, never set: a fee sweep may have credited `earnedMicros` since the take above, and
   // an absolute restore would overwrite that share.
   const restore = async (): Promise<void> => {
     for (const s of stakes) await prisma.pyreStake.update({ where: { id: s.id }, data: { earnedMicros: { increment: s.earnedMicros } } });
   };
+  // A concurrent claim took some or all of the stakes first; what is left here is not worth paying.
   if (total < MIN_STAKER_CLAIM_MICROS) {
     await restore();
     throw new HttpError(400, "nothing_to_claim", { claimableMicros: total.toString() });
