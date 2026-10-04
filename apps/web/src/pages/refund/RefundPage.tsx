@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import type { RefundHolderDto, RefundPayoutDto, RefundSummaryDto } from "@pyre/shared";
-import { REFUND_SNAPSHOT, VENUES } from "@pyre/shared";
+import { PYRE_SOL_DEV_LOCK_URL, REFUND_SNAPSHOT, VENUES } from "@pyre/shared";
 import { isHttpError } from "../../api/client.js";
 import { env } from "../../env.js";
 import { SOL, formatBps, formatDate, formatEth, formatNative, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
@@ -114,8 +114,11 @@ const WhatsHappening = () => (
     <div className="flex flex-col gap-3 text-14 text-ink-2">
       <p>
         PYRE relaunches as a new coin on pump.fun. It is a fair launch: no pre-sale, no allocation, no whitelist. The founder makes a 2 SOL dev buy in the creation transaction, on the
-        same curve, and locks those tokens for 12 months on Streamflow. 100% of the coin's creator fees go to the Pyre treasury's Solana wallet through pump.fun fee sharing, a split
-        pump.fun makes final.
+        same curve, and{" "}
+        <a href={PYRE_SOL_DEV_LOCK_URL} target="_blank" rel="noreferrer" className="text-accent underline underline-offset-2">
+          locks those tokens on Streamflow until 2027-10-04
+        </a>
+        , with no way to cancel or transfer the lock. 100% of the coin's creator fees go to the Pyre treasury's Solana wallet through pump.fun fee sharing, a split pump.fun makes final.
       </p>
       <p>
         Who is owed was fixed at Robinhood Chain block <span className="num text-ink">{REFUND_SNAPSHOT.block}</span>, at <span className="num text-ink">{SNAPSHOT_TIME}</span> — before

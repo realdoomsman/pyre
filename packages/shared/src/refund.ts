@@ -15,6 +15,8 @@ export const REFUND_SNAPSHOT = {
   blockHash: "0x141e47824b2a808e47e0e4d5262f7c7b3eb0b4f77c6d0b1113b7aa11874df0d8",
   blockTime: "2026-10-04T09:12:28Z",
 } as const;
+/** Streamflow lock of the founder's 2 SOL dev buy of the Solana PYRE coin: 66,728,855.72 PYRE, unlocks in full 2027-10-04 04:00 UTC, not cancelable or transferable. */
+export const PYRE_SOL_DEV_LOCK_URL = "https://app.streamflow.finance/contract/solana/mainnet/2iQK2icSJgpY8PQMqrDniRAZsS1M5NFgeFe7tnQkVpm8";
 /** Share of the Solana PYRE coin's creator fees credited to the REFUND ledger account (legacy Robinhood Chain coins add their 25% PYRE leg, `FEE_SPLIT_BPS.PYRE_TOKEN`). */
 export const REFUND_FEE_BPS = 2500;
 export const REFUND_LEDGER_ACCOUNT = "REFUND";

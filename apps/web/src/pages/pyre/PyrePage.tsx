@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { PyreBurnDto, PyrePageDto } from "@pyre/shared";
-import { LAUNCH_PHASE, REFUND_SNAPSHOT, explorerTxUrl } from "@pyre/shared";
+import { LAUNCH_PHASE, PYRE_SOL_DEV_LOCK_URL, REFUND_SNAPSHOT, explorerTxUrl } from "@pyre/shared";
 import { env } from "../../env.js";
 import { formatBps, formatEth, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
 import { Address, Button, Card, CardHeader, Chip, EmptyState, GraduationRing, NumberFlow, Progress, Skeleton, Table, UsdFlow, type Column } from "../../ui/index.js";
@@ -159,8 +159,12 @@ const Migration = () => (
   >
     <div className="eyebrow mb-1 text-warn">PYRE is moving to Solana</div>
     <p className="text-ink">
-      PYRE relaunches on Solana as a fair launch on pump.fun; the founder's 2 SOL dev buy at creation is locked for 12 months on Streamflow. Everyone who held PYRE on Robinhood
-      Chain at the snapshot and still holds it is refunded the ETH they put in, minus any ETH they took out and capped at what the PYRE they held cost them.{" "}
+      PYRE relaunches on Solana as a fair launch on pump.fun; the founder's 2 SOL dev buy at creation is{" "}
+      <a href={PYRE_SOL_DEV_LOCK_URL} target="_blank" rel="noreferrer" className="text-accent underline underline-offset-2">
+        locked on Streamflow until 2027-10-04
+      </a>
+      . Everyone who held PYRE on Robinhood Chain at the snapshot and still holds it is refunded the ETH they put in, minus any ETH they took out and capped at what the PYRE they
+      held cost them.{" "}
       <Link to="/refund" className="text-accent underline underline-offset-2">
         Check and link your refund
       </Link>
