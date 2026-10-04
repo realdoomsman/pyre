@@ -113,8 +113,8 @@ const WhatsHappening = () => (
     <CardHeader eyebrow="What's happening" title="PYRE moves to Solana" />
     <div className="flex flex-col gap-3 text-14 text-ink-2">
       <p>
-        PYRE relaunches as a new coin on pump.fun, created from the Pyre treasury. It is a fair launch: no pre-sale, no allocation, no whitelist. The treasury is the coin's creator,
-        so it collects the coin's creator fees.
+        PYRE relaunches as a new coin on pump.fun. It is a fair launch: no pre-sale, no allocation, no whitelist, no dev buy. 100% of its creator fees go to the Pyre
+        treasury's Solana wallet through pump.fun fee sharing, a split pump.fun makes final.
       </p>
       <p>
         Who is owed was fixed at Robinhood Chain block <span className="num text-ink">{REFUND_SNAPSHOT.block}</span>, at <span className="num text-ink">{SNAPSHOT_TIME}</span> — before
