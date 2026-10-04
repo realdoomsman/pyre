@@ -11,7 +11,7 @@ export interface CoinDraft {
   website: string;
 }
 
-export const EMPTY_DRAFT: CoinDraft = { launchpad: "pons_v2", name: "", ticker: "", imageUrl: "", prompt: "", twitter: "", website: "" };
+export const EMPTY_DRAFT: CoinDraft = { launchpad: "pump_fun", name: "", ticker: "", imageUrl: "", prompt: "", twitter: "", website: "" };
 
 /**
  * The exact home-feed card, fed from what the user has typed so far. Numbers are zero because

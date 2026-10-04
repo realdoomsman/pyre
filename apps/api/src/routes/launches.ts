@@ -7,7 +7,7 @@ import { HttpError, parse, wrap } from "../lib/errors.js";
 import { publishEvent } from "../lib/events.js";
 import { createLaunch, settleStake } from "../lib/launch.js";
 import { queues } from "../lib/queues.js";
-import { adapterOf, requiredStake } from "../lib/venue.js";
+import { adapterOf, assertVenueEnabled, requiredStake } from "../lib/venue.js";
 
 export const launches = Router();
 
@@ -60,13 +60,18 @@ launches.get(
   }),
 );
 
-/** Approves the generated spec; the launch now waits for the refundable stake in the venue's native asset. */
+/**
+ * Approves the generated spec; the launch now waits for the refundable stake in the venue's native
+ * asset. Refused (409 `venue_disabled`) when the venue is not accepting launches — a pre-cutover
+ * PONS v2 draft, or pump.fun switched off — so nobody approves into a stake that cannot settle.
+ */
 launches.post(
   "/launches/:id/approve",
   requireAuth,
   wrap(async (req, res) => {
     const app = await ownedLaunch(req.params.id!, req.user!.id, req.user!.isAdmin);
     if (app.status !== "SPEC_READY") throw new HttpError(409, "spec_not_ready", { status: app.status });
+    assertVenueEnabled(app.launchpad);
     const { spec } = parse(ApproveSpecBody, req.body);
     const updated = await prisma.app.update({
       where: { id: app.id },
@@ -78,7 +83,9 @@ launches.post(
 
 /**
  * Settles the stake — `{txHash}` from an external wallet (verified on chain) or `{custodial:true}`
- * (server-signed from the launcher's Pyre wallet) — then hands the app to the launch worker.
+ * (server-signed from the launcher's Pyre wallet) — then hands the app to the launch worker. An app
+ * on a venue that is not accepting launches (PONS v2, closed for good, or pump.fun switched off)
+ * fails its stake with 409 `venue_disabled` before any money moves.
  */
 launches.post(
   "/launches/:id/stake",
@@ -86,6 +93,7 @@ launches.post(
   wrap(async (req, res) => {
     const app = await ownedLaunch(req.params.id!, req.user!.id, req.user!.isAdmin);
     if (app.status !== "AWAITING_STAKE") throw new HttpError(409, "not_awaiting_stake", { status: app.status });
+    assertVenueEnabled(app.launchpad);
     if (!app.walletAddress) throw new HttpError(409, "app_has_no_wallet");
     const body = parse(StakeBody, req.body);
     const stake = await settleStake(app, req.user!, body);

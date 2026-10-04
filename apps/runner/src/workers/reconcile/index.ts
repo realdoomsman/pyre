@@ -6,6 +6,7 @@ import { checkFees } from "./fees.js";
 import { checkJobs } from "./jobs.js";
 import { checkLedger } from "./ledger.js";
 import { checkPayouts } from "./payouts.js";
+import { checkRefunds } from "./refunds.js";
 import { runCheck, type Check, type ReconcileKind } from "./report.js";
 import { checkSandboxes } from "./sandboxes.js";
 import { checkJobTokens } from "./tokens.js";
@@ -28,6 +29,7 @@ const CHECKS: [ReconcileKind, Check][] = [
   ["LEDGER", checkLedger],
   ["FEES", checkFees],
   ["BURNS", checkBurns],
+  ["REFUNDS", checkRefunds],
 ];
 
 /** Runs every check once, writing one `ReconcileRun` row each. Safe to invoke ad hoc. */

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * Launch $PYRE on PONS v2 from the treasury. Run once, after the treasury holds ETH:
+ * Launch the Robinhood Chain $PYRE on PONS v2 from the treasury. Run once, after the treasury holds ETH:
  *
  *   railway ssh --service runner -- node apps/runner/scripts/launch-pyre.mjs --i-am-launching-pyre
  *
  * Prints the token + curve addresses and the exact env changes to apply. Refuses to run if
  * PYRE_TOKEN is already set, if the treasury cannot cover fee + gas, or if PONS gates launches.
- * PYRE lives on Robinhood Chain only: any `--launchpad` other than pons_v2 is refused outright.
+ * This script only launches on PONS v2: any `--launchpad` other than pons_v2 is refused. The
+ * Solana PYRE coin is launched by launch-pyre-sol.mjs instead.
  */
 import { formatEther } from "viem";
 import { getEthBalance, launchPonsToken, predictLaunchCost, ponsUrl, treasury } from "@pyre/chain";
@@ -17,7 +18,7 @@ if (process.env.PYRE_TOKEN) {
 }
 const launchpadFlag = process.argv.indexOf("--launchpad");
 if (launchpadFlag !== -1 && process.argv[launchpadFlag + 1] !== "pons_v2") {
-  console.error(`PYRE is launched on PONS v2 on Robinhood Chain only; --launchpad ${process.argv[launchpadFlag + 1] ?? "(missing)"} is refused.`);
+  console.error(`this script launches PYRE on PONS v2 only; --launchpad ${process.argv[launchpadFlag + 1] ?? "(missing)"} is refused. Use launch-pyre-sol.mjs for the Solana PYRE coin.`);
   process.exit(2);
 }
 if (!process.argv.includes("--i-am-launching-pyre")) {

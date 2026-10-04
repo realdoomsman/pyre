@@ -92,10 +92,11 @@ export const LAUNCH_STAKE_BY_CHAIN: Record<Chain, bigint> = {
 };
 
 /**
- * Creator-fee split per chain (bps, each row sums to 10_000). The 25% leg buys and burns PYRE
- * on Robinhood Chain; off Robinhood Chain there is no PYRE to buy, so the same 25% buys and
- * burns the coin itself (`COINBURN:<appId>` ledger). Build budget and launcher cuts are the
- * same everywhere.
+ * Creator-fee split per chain (bps, each row sums to 10_000). On Robinhood Chain (the legacy PONS
+ * v2 coins) the 25% leg is the PYRE program: it funds PYRE refunds (`REFUND` ledger) while any
+ * snapshot holder is still owed, then buys and burns PYRE (`PYRE_TOKEN` ledger). Off Robinhood
+ * Chain the same 25% buys and burns the coin itself (`COINBURN:<appId>` ledger). Build budget and
+ * launcher cuts are the same everywhere.
  */
 export const FEE_SPLIT_BPS_BY_CHAIN: Record<Chain, { BUILD_BUDGET: number; PYRE_TOKEN: number; COIN_BURN: number; LAUNCHER: number }> = {
   robinhood: { ...FEE_SPLIT_BPS, COIN_BURN: 0 },

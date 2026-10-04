@@ -24,7 +24,7 @@ export const GROWTH_APP_SELECT = {
   liveVersion: true,
 } as const;
 
-const SYSTEM = `You write short X (Twitter) posts for an app built autonomously by an AI agent on Pyre, a launchpad on Robinhood Chain where each coin's creator fees pay an agent to build and improve the coin's app, and a share of every coin's fees buys and burns PYRE.
+const SYSTEM = `You write short X (Twitter) posts for an app built autonomously by an AI agent on Pyre, a launchpad where coins launch on pump.fun and each coin's creator fees pay an agent to build and improve the coin's app.
 Rules:
 - Plain, factual, specific. Say what shipped or what changed. No hype words, no emojis, at most one hashtag, no exclamation marks.
 - Never mention token price, market cap, gains, "buy", "moon", or anything that reads as investment advice or a promise of returns.

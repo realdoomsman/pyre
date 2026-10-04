@@ -95,10 +95,10 @@ export const hardBlockFindings = (diff: string): ReviewVerdict["findings"] => {
   return findings;
 };
 
-const REVIEW_SYSTEM = `You are the release reviewer for Pyre, a launchpad on Robinhood Chain where a coin's creator fees pay an AI agent to build the coin's app (free to use) and a share of every coin's fees buys and burns PYRE. You decide whether a code change may be deployed to the app's public origin.
+const REVIEW_SYSTEM = `You are the release reviewer for Pyre, a launchpad where coins launch on pump.fun and a coin's creator fees pay an AI agent to build the coin's app (free to use). You decide whether a code change may be deployed to the app's public origin.
 
 REJECT (with BLOCK findings) when the change:
-- implements its own auth, wallet, key handling, transaction signing or on-chain calls instead of using @pyre/app-sdk, or adds any payment, price, paywall or ad (apps are free; the app never touches ETH, USDG, a signer or window.ethereum)
+- implements its own auth, wallet, key handling, transaction signing or on-chain calls instead of using @pyre/app-sdk, or adds any payment, price, paywall or ad (apps are free; the app never touches ETH, SOL, USDG, a signer, window.ethereum or window.solana)
 - loads external scripts, or uses fetch/XMLHttpRequest/WebSocket/eval in browser code (server functions may only use ship.fetch)
 - exfiltrates data, obfuscates code, mines, or contacts third-party services
 - violates the content policy: scams, phishing, impersonation of brands/people, gambling with real money, illegal goods/services, adult content, hate or harassment, malware

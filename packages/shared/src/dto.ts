@@ -239,6 +239,7 @@ export const FeeEventDto = z.object({
   ethPriceUsd: z.number(),
   usdMicros: BigIntString,
   buildMicros: BigIntString,
+  /** The 25% PYRE leg of a legacy Robinhood Chain coin: PYRE refunds while a snapshot holder is owed, else the PYRE buy-and-burn. */
   pyreMicros: BigIntString,
   /** The 25% burn leg off Robinhood Chain: buys and burns the coin itself. */
   coinBurnMicros: BigIntString,
@@ -250,7 +251,7 @@ export const FeeEventDto = z.object({
 });
 export type FeeEventDto = z.infer<typeof FeeEventDto>;
 
-/** One treasury buy-and-burn of a Solana coin (the 25% fee leg that would buy PYRE on Robinhood Chain), attested on chain. */
+/** One treasury buy-and-burn of a Solana coin (the 25% fee leg, which on a legacy Robinhood Chain coin goes to PYRE refunds instead), attested on chain. */
 export const CoinBurnDto = z.object({
   id: z.string(),
   appId: z.string(),
@@ -296,10 +297,10 @@ export const AppDetailDto = AppSummaryDto.extend({
   /** Per-app wallet balances the fee sweeper will claim next: unswept on the curve/hook + escrow (creator vault on pump). */
   unsweptWei: BigIntString,
   escrowWei: BigIntString,
-  /** Creator-fee split (bps) on the app's chain: 60/25 PYRE/15 on Robinhood Chain, 60/25 coin burn/15 on Solana. */
+  /** Creator-fee split (bps) on the app's chain: 60/25 PYRE program/15 on Robinhood Chain (the 25% funds PYRE refunds while a snapshot holder is owed, then buys and burns PYRE), 60/25 coin burn/15 on Solana. */
   feeSplit: z.object({ buildBudget: z.number().int(), pyreToken: z.number().int(), coinBurn: z.number().int(), launcher: z.number().int() }),
   graduationThresholdWei: BigIntString,
-  /** Coin buy-and-burns from the app's own fees; null on Robinhood Chain where that leg burns PYRE instead. */
+  /** Coin buy-and-burns from the app's own fees; null on Robinhood Chain, where that leg goes to the PYRE program instead. */
   coinBurns: z
     .object({
       count: z.number().int(),
@@ -682,7 +683,7 @@ export const PyrePageDto = z.object({
       explorerUrl: z.string(),
     })
     .nullable(),
-  /** Ledger account PYRE_TOKEN: the 25% fee share accrued, and what was burned. */
+  /** Ledger account PYRE_TOKEN: the fee share credited to the PYRE buy-and-burn, and what was burned. Legacy Robinhood Chain coins' 25% goes to PYRE refunds while a snapshot holder is owed, so this accrues only before and after that. */
   ledger: z.object({
     accruedMicros: BigIntString,
     burnedMicros: BigIntString,

@@ -8,8 +8,9 @@ import { agentChip } from "./CoinHeader.js";
 
 /*
  * The loop, as four live numbers: Fees accrued → Agent budget → Build state →
- * the burn leg. On Robinhood Chain the 25% share buys and burns PYRE; on
- * Solana it buys and burns the coin itself (PYRE stays on Robinhood Chain).
+ * the 25% leg. A pump.fun coin buys and burns itself. A legacy Robinhood Chain
+ * coin's 25% funds PYRE refunds while any snapshot holder is still owed, then
+ * goes back to buying and burning PYRE.
  * Each cell shows the number, the next thing that will happen to it, and
  * when it last moved.
  */
@@ -34,7 +35,7 @@ export const LoopStatus = ({ app }: { app: AppDetailDto }) => {
   const escrow = BigInt(app.escrowWei);
   const lastFee = app.budgetHistory[0]?.createdAt ?? null;
   const build = app.lastBuild;
-  // This coin's 25% share of every fee claim, booked in USD at claim time; it funds the buy-and-burn.
+  // This coin's 25% share of every fee claim, booked in USD at claim time: the coin burn, or on a legacy coin PYRE refunds then PYRE burns.
   const burnMicros = useMemo(() => app.budgetHistory.reduce((s, f) => s + BigInt(f.pyreMicros) + BigInt(f.coinBurnMicros), 0n), [app.budgetHistory]);
   const burnBps = app.feeSplit.pyreToken + app.feeSplit.coinBurn;
   const burnWei = (feesWei * BigInt(burnBps)) / 10_000n;
@@ -70,12 +71,13 @@ export const LoopStatus = ({ app }: { app: AppDetailDto }) => {
       }
     : {
         key: "pyre",
-        label: "PYRE share burned",
+        label: "PYRE share",
         value: <UsdFlow micros={burnMicros} />,
         tick: burnMicros,
         sub: (
           <>
-            {formatNative(burnWei, native)} <span className="text-ink-3">· {formatPct(burnBps / 10_000, 0)} of every fee claim buys and burns PYRE</span>
+            {formatNative(burnWei, native)}{" "}
+            <span className="text-ink-3">· {formatPct(burnBps / 10_000, 0)} of every fee claim funds PYRE refunds while holders are owed, then buys and burns PYRE</span>
           </>
         ),
         updatedAt: lastFee,
@@ -133,7 +135,7 @@ export const LoopStatus = ({ app }: { app: AppDetailDto }) => {
 
   return (
     <Card as="section" padding="md" aria-label="Loop status">
-      <CardHeader eyebrow="The loop" title={coinBurns ? `Fees → agent → app → $${app.ticker} burn` : "Fees → agent → app → PYRE burn"} />
+      <CardHeader eyebrow="The loop" title={coinBurns ? `Fees → agent → app → $${app.ticker} burn` : "Fees → agent → app → PYRE refunds"} />
       <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cells.map((c, i) => (
           <li key={c.key} className="min-w-0">

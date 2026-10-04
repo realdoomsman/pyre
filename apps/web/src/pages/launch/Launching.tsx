@@ -9,7 +9,7 @@ import { useTxReceipt } from "./hooks.js";
 
 const shareCoin = async (launch: LaunchDraftDto) => {
   const url = `${window.location.origin}/c/${launch.slug}`;
-  const burns = launch.chain === "solana" ? `every fee burns $${launch.ticker}` : "every fee burns PYRE";
+  const burns = launch.chain === "solana" ? `every fee burns $${launch.ticker}` : "25% of its fees funds PYRE refunds";
   const text = `$${launch.ticker} just ignited on Pyre — its creator fees fund an agent that builds ${launch.name}; ${burns}.`;
   try {
     if (navigator.share) {
@@ -170,6 +170,7 @@ export const Launching = ({ launch, onRestart }: { launch: LaunchDraftDto; onRes
           open={show}
           ticker={launch.ticker}
           name={launch.name}
+          chainLabel={venue.chainLabel}
           txHash={launch.launchTx}
           explorerUrl={links.tx(launch.launchTx)}
           ticks={ticks}

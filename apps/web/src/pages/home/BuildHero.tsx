@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { AppSummaryDto, BuildEventDto } from "@pyre/shared";
+import { VENUES, type AppSummaryDto, type BuildEventDto } from "@pyre/shared";
 import { api } from "../../api/client.js";
 import { flatPages, useApps } from "../../api/queries.js";
 import type { GlobalFrame } from "../../api/types.js";
@@ -11,7 +11,7 @@ import { AGENT_CHIP } from "../../components/CoinCard.js";
 import { IconArrowRight } from "../../components/icons.js";
 import { useLiveFrames } from "../../layout/LiveContext.js";
 import { formatCount, formatUsdCompact, timeAgo } from "../../lib/format.js";
-import { ROBINHOOD, useVenueLinks } from "../../lib/venue.js";
+import { useVenueLinks } from "../../lib/venue.js";
 import { Button, Chip, ConsoleFrame, EmptyState, Skeleton, useIsMobile, type ConsoleRow } from "../../ui/index.js";
 
 interface FeedPage {
@@ -78,8 +78,8 @@ export const BuildHero = () => {
     return merged.slice(-MAX_ROWS);
   }, [tail.data, liveRows]);
 
-  // Only build-loop rows reach the console, so the venue just resolves labels; Robinhood until a subject exists.
-  const venue = useVenueLinks(subject?.app ?? ROBINHOOD.meta);
+  // Only build-loop rows reach the console, so the venue just resolves labels; pump.fun until a subject exists.
+  const venue = useVenueLinks(subject?.app ?? VENUES.pump_fun);
   const rows = useMemo<ConsoleRow[]>(() => events.map((e) => consoleRow(e, venue)), [events, venue]);
   const screenshot = useMemo(() => latestScreenshot(events), [events]);
   const lastFinished = useMemo(() => {

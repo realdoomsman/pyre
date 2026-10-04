@@ -21,7 +21,9 @@ import { computeUnitPrice } from "./fees.js";
  * prepended, v0 message signed by the payer (plus any extra signers such as a fresh mint), sent
  * with preflight, and confirmed against the blockhash it was built with — all under the payer's
  * cross-process send lock, the Solana counterpart of `sendTx` on the EVM side. A blockhash that
- * expires before the transaction lands cannot land later, so the send is rebuilt on a fresh one.
+ * expires before the transaction lands cannot land later, so the send is rebuilt on a fresh one —
+ * but only once that is provable (`expiredOutcome`); otherwise it throws
+ * `SolanaTransactionUnconfirmedError` carrying the blockhash's `lastValidBlockHeight`.
  */
 export interface SolanaTxResult {
   signature: string;
@@ -54,6 +56,8 @@ export class SolanaTransactionUnconfirmedError extends Error {
   constructor(
     readonly signature: string,
     override readonly cause?: unknown,
+    /** Block height past which the transaction's blockhash can no longer land (when known): once the finalized height exceeds it and the signature is still unknown, it never will. */
+    readonly lastValidBlockHeight?: number,
   ) {
     super(`solana transaction ${signature} could not be confirmed`);
     this.name = "SolanaTransactionUnconfirmedError";
@@ -62,6 +66,9 @@ export class SolanaTransactionUnconfirmedError extends Error {
 
 const MAX_BLOCKHASH_ATTEMPTS = 3;
 const FETCH_ATTEMPTS = 8;
+/** After a blockhash expires, how long to wait for a provable outcome (finalized lags confirmed by ~32 slots ≈ 13 s). */
+const EXPIRY_POLLS = 15;
+const EXPIRY_POLL_MS = 2_000;
 
 function writableKeys(instructions: TransactionInstruction[]): PublicKey[] {
   const seen: Record<string, PublicKey> = {};
@@ -90,6 +97,32 @@ function preflightError(err: unknown): SolanaTransactionFailedError | undefined 
   return new SolanaTransactionFailedError(null, message, logs ?? []);
 }
 
+/**
+ * After `confirmTransaction` reports the blockhash expired: did `signature` land? Status is read with
+ * full history search (a node that pruned its recent-status cache would otherwise say "unknown").
+ * "landed" once confirmed/finalized; "expired" only when the FINALIZED block height is past
+ * `lastValidBlockHeight` and the signature is still unknown — the one case where signing a second
+ * transaction cannot double-spend. A `processed` status keeps waiting; anything unproven → "unknown".
+ */
+export async function expiredOutcome(conn: Connection, signature: string, lastValidBlockHeight: number): Promise<"landed" | "expired" | "unknown"> {
+  const statusOf = async () => (await conn.getSignatureStatuses([signature], { searchTransactionHistory: true })).value[0];
+  for (let poll = 0; poll < EXPIRY_POLLS; poll++) {
+    if (poll > 0) await sleep(EXPIRY_POLL_MS);
+    const status = await statusOf();
+    if (status) {
+      if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
+        if (status.err) throw new SolanaTransactionFailedError(signature, status.err, []);
+        return "landed";
+      }
+      continue; // processed: may still confirm
+    }
+    if ((await conn.getBlockHeight("finalized")) <= lastValidBlockHeight) continue;
+    // Re-read after the height check: a status seen now is from a slot at or below that height.
+    if (!(await statusOf())) return "expired";
+  }
+  return "unknown";
+}
+
 async function sendLocked(payer: Keypair, instructions: TransactionInstruction[], opts: SendOptions): Promise<SolanaTxResult> {
   const conn = connection();
   const microLamports = await computeUnitPrice(conn, writableKeys(instructions));
@@ -113,20 +146,23 @@ async function sendLocked(payer: Keypair, instructions: TransactionInstruction[]
       }
     } catch (err) {
       if (err instanceof SolanaTransactionFailedError) throw err;
-      if (err instanceof TransactionExpiredBlockheightExceededError) {
-        // The blockhash is dead: either the transaction landed just before expiry or it never will.
-        const status = (await conn.getSignatureStatuses([signature])).value[0];
-        const landed = status && (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized");
-        if (!landed) {
-          if (attempt + 1 >= MAX_BLOCKHASH_ATTEMPTS) throw new SolanaTransactionUnconfirmedError(signature, err);
-          continue;
-        }
-        if (status.err) throw new SolanaTransactionFailedError(signature, status.err, []);
-      } else {
-        throw new SolanaTransactionUnconfirmedError(signature, err);
+      if (!(err instanceof TransactionExpiredBlockheightExceededError)) throw new SolanaTransactionUnconfirmedError(signature, err, lastValidBlockHeight);
+      // The blockhash is dead: either the transaction landed just before expiry or it never will.
+      // A second transfer is signed only once the first provably can no longer land.
+      const outcome = await expiredOutcome(conn, signature, lastValidBlockHeight);
+      if (outcome === "unknown") throw new SolanaTransactionUnconfirmedError(signature, err, lastValidBlockHeight);
+      if (outcome === "expired") {
+        if (attempt + 1 >= MAX_BLOCKHASH_ATTEMPTS) throw new SolanaTransactionUnconfirmedError(signature, err, lastValidBlockHeight);
+        continue;
       }
     }
-    const full = await fetchTransaction(signature, conn);
+    let full: VersionedTransactionResponse;
+    try {
+      full = await fetchTransaction(signature, conn);
+    } catch (err) {
+      if (err instanceof SolanaTransactionUnconfirmedError) throw new SolanaTransactionUnconfirmedError(signature, err, lastValidBlockHeight);
+      throw err;
+    }
     if (full.meta?.err) throw new SolanaTransactionFailedError(signature, full.meta.err, full.meta.logMessages ?? []);
     return { signature, slot: full.slot, tx: full };
   }
@@ -164,10 +200,10 @@ export async function simulateInstructions(payer: PublicKey, instructions: Trans
   return { unitsConsumed: value.unitsConsumed ?? 0, err: value.err, logs: value.logs ?? [], payerLamportsAfter: after === undefined || after === null ? null : BigInt(after) };
 }
 
-/** Lamport change of `address` in a confirmed transaction (positive = received), tx fee excluded for the payer. */
+/** Lamport change of `address` in a confirmed transaction (positive = received), tx fee excluded for the payer. Balances index static keys, then lookup-loaded writable, then readonly. */
 export function lamportDelta(tx: VersionedTransactionResponse, address: PublicKey): bigint {
   const keys = tx.transaction.message.getAccountKeys({ accountKeysFromLookups: tx.meta?.loadedAddresses ?? undefined });
-  const index = keys.staticAccountKeys.findIndex((k) => k.equals(address));
+  const index = keys.keySegments().flat().findIndex((k) => k.equals(address));
   if (index < 0 || !tx.meta) return 0n;
   const delta = BigInt(tx.meta.postBalances[index] ?? 0) - BigInt(tx.meta.preBalances[index] ?? 0);
   return index === 0 ? delta + BigInt(tx.meta.fee) : delta;

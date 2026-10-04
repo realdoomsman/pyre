@@ -23,6 +23,8 @@ const Env = z.object({
   PLATFORM_MASTER_SEED_HEX: z.string().regex(/^(0x)?[0-9a-fA-F]{32,128}$/, "expected 16–64 bytes of hex"),
   /** $PYRE launch token; unset until the treasury launches it (Wave 4). */
   PYRE_TOKEN: optionalAddress,
+  /** Mint of the Solana PYRE coin (base58); unset until launched. While set, 25% of its creator fees fund the PYRE refund pool. */
+  PYRE_SOL_MINT: z.preprocess(empty, z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "expected a base58 Solana mint").optional()),
   USDG_ADDRESS: optionalAddress,
   BLOCKSCOUT_URL: optionalUrl,
   BLOCKSCOUT_API_KEY: optional,

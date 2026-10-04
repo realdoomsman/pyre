@@ -169,7 +169,9 @@ const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
  * before `requireAuth`, so a bearer token only counts as an identity after its HS256 signature
  * verifies (no DB hit) — an unverified header or a self-chosen body field must never mint a fresh
  * bucket, or the limit is bypassed by rotating them. Wallet-login routes are additionally keyed by
- * the claimed address so one attacker cannot stale a victim's challenge from many IPs.
+ * the claimed address so one attacker cannot stale a victim's challenge from many IPs. Refund
+ * linking is keyed by IP + claimed address instead: its nonces are kept per requester (so they
+ * cannot be staled), and a bare-address bucket would let anyone exhaust a victim's budget.
  */
 export async function callerIdentities(req: Request): Promise<string[]> {
   const ip = `ip:${clientIp(req)}`;
@@ -184,11 +186,12 @@ export async function callerIdentities(req: Request): Promise<string[]> {
     const session = token.length > 0 ? await verifySession(token) : null;
     if (session) out.push(`u:${session.userId}`);
   }
-  if (req.path.startsWith("/auth/wallet/")) {
+  const refundLink = req.path.startsWith("/refund/link");
+  if (req.path.startsWith("/auth/wallet/") || refundLink) {
     const body: unknown = req.body;
     if (body !== null && typeof body === "object" && !Array.isArray(body) && "address" in body) {
       const wallet: unknown = body.address;
-      if (typeof wallet === "string" && EVM_ADDRESS.test(wallet)) out.push(`w:${wallet.toLowerCase()}`);
+      if (typeof wallet === "string" && EVM_ADDRESS.test(wallet)) out.push(refundLink ? `w:${wallet.toLowerCase()}@${ip}` : `w:${wallet.toLowerCase()}`);
     }
   }
   return out;
@@ -208,6 +211,8 @@ function classify(req: Request): RateBucket | null {
   if (path.startsWith("/admin")) return "admin";
   if (path === "/rpc") return "rpc";
   if (path.startsWith("/auth/")) return "auth";
+  // Refund wallet linking verifies signatures against single-use nonces: same budget (and fail-closed) as login.
+  if (req.method === "POST" && path.startsWith("/refund/link")) return "auth";
   if (READ_METHODS[req.method]) return "read";
   // Money leaving the platform and public proposal spam get their own, tighter budgets.
   if (path === "/me/withdraw" || path === "/me/claim" || path === "/pyre/claim" || /^\/bounties\/[^/]+\/claim$/.test(path)) return "payout";

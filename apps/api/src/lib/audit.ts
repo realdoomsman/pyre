@@ -20,9 +20,22 @@ export type AuditAction =
   | "PROPOSAL_STATUS"
   | "PYRE_CLAIM"
   /** A treasury payout was broadcast but its receipt could not be read; the runner's PAYOUTS reconcile settles it. */
-  | "PAYOUT_UNCONFIRMED";
+  | "PAYOUT_UNCONFIRMED"
+  /** A PYRE refund holder linked (or re-linked) the Solana wallet refunds are paid to. */
+  | "REFUND_LINK";
 
-export type AuditTargetType = "App" | "BuildJob" | "AbuseFlag" | "Report" | "PlatformSetting" | "Bounty" | "PyreStake" | "User" | "Proposal" | "LedgerEntry";
+export type AuditTargetType =
+  | "App"
+  | "BuildJob"
+  | "AbuseFlag"
+  | "Report"
+  | "PlatformSetting"
+  | "Bounty"
+  | "PyreStake"
+  | "User"
+  | "Proposal"
+  | "LedgerEntry"
+  | "RefundHolder";
 
 export interface AuditEntry {
   /** User.id of the acting admin, or null for system/worker actions. */

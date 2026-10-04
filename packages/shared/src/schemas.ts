@@ -247,8 +247,11 @@ export const CreateLaunchBody = z.object({
   twitter: httpUrl(200).optional(),
   website: httpUrl(200).optional(),
   forkOfAppId: z.string().optional(),
-  /** Where the coin is created; the chain follows from it (`VENUES`). Forks launch on the parent's venue. */
-  launchpad: Launchpad.default("pons_v2"),
+  /**
+   * Where the coin is created; the chain follows from it (`VENUES`). Coins launch on pump.fun; an
+   * explicit `pons_v2` parses so the API can refuse it with `venue_disabled`. Forks always launch on pump.fun.
+   */
+  launchpad: Launchpad.default("pump_fun"),
 });
 export type CreateLaunchBody = z.infer<typeof CreateLaunchBody>;
 

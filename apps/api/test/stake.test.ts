@@ -56,7 +56,7 @@ const chain = (over: Partial<StakeChain> = {}): Fake => ({
   verifyNativeTransfer: vi.fn(async () => ({ ok: true, from: EXTERNAL, amount: LAUNCH_STAKE_WEI })),
   transferNative: vi.fn(async () => ({ hash: HASH, block: 1 })),
   nativeBalance: async () => LAUNCH_STAKE_WEI * 2n,
-  ...over,
+  ...(over as Partial<Fake>),
 });
 
 const solChain = (over: Partial<StakeChain> = {}): Fake => ({
@@ -65,7 +65,7 @@ const solChain = (over: Partial<StakeChain> = {}): Fake => ({
   verifyNativeTransfer: vi.fn(async () => ({ ok: true, from: SOL_USER_WALLET, amount: SOL_STAKE })),
   transferNative: vi.fn(async () => ({ hash: SOL_SIG, block: 300_000_000 })),
   nativeBalance: async () => SOL_STAKE * 2n,
-  ...over,
+  ...(over as Partial<Fake>),
 });
 
 beforeEach(() => {

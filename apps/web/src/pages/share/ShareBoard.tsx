@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useStats } from "../../api/queries.js";
-import { formatCount, formatEth } from "../../lib/format.js";
+import { SOL, formatCount, formatNative } from "../../lib/format.js";
 import { ShareFrame } from "./ShareFrame.js";
 
 /** `/card` — the network share composition. Screenshotted for og:image; no chrome. */
@@ -16,13 +16,13 @@ export const ShareBoard = () => {
         <>
           coins that build apps.
           <br />
-          every fee <em>burns</em> PYRE.
+          every coin <em>burns</em> itself.
         </>
       }
       stats={[
         { label: "apps live", value: s ? formatCount(s.appsLive) : "—" },
-        { label: "fees claimed", value: s ? formatEth(s.feesTotalWei) : "—" },
-        { label: "PYRE burned", value: s ? formatEth(s.burnedEthWei) : "—" },
+        { label: "fees claimed", value: s ? formatNative(s.feesTotalLamports, SOL) : "—" },
+        { label: "coins launched", value: s ? formatCount(s.appsTotal) : "—" },
       ]}
     />
   );

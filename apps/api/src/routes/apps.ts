@@ -241,7 +241,7 @@ const graduationThreshold = (app: Pick<AppSummaryRow, "chain" | "launchpad" | "t
     ? Promise.resolve(PONS_GRADUATION_THRESHOLD_WEI)
     : cached(cacheKey("venue.graduation", { launchpad: app.launchpad }), 600_000, async () => (await adapterOf(app).readLaunch(app.tokenAddress!)).graduationNative.toString()).then(BigInt);
 
-/** `COINBURN:<appId>` balance plus the app's burn history for the coin page; null on Robinhood Chain where that leg burns PYRE. */
+/** `COINBURN:<appId>` balance plus the app's burn history for the coin page; null on Robinhood Chain, where that leg goes to the PYRE program (refunds, then PYRE burns). */
 const coinBurnsOf = async (app: Pick<AppSummaryRow, "id" | "chain" | "launchpad">): Promise<AppDetailDto["coinBurns"]> => {
   if (app.chain === "robinhood") return null;
   const [burned, pending, last] = await Promise.all([

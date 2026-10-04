@@ -1,6 +1,6 @@
 # Pyre architecture
 
-Pyre is a launchpad where every coin funds one app. A coin launches on one of two **venues** — PONS v2 on Robinhood Chain (chain id 4663) or pump.fun on Solana — behind one adapter interface. Creator fees from the coin accrue into a build budget; an AI agent spends that budget building and shipping the app; 25% of every coin's fees is bought back and burned: $PYRE on Robinhood Chain, the coin's own supply on Solana. $PYRE itself is one coin on Robinhood Chain and nowhere else. The app is free to use. Three deployable services, one Postgres, one Redis.
+Pyre is a launchpad where every coin funds one app. Coins launch on pump.fun on Solana. Pyre knows two **venues** behind one adapter interface — pump.fun on Solana and PONS v2 on Robinhood Chain (chain id 4663) — but PONS v2 is closed to launches: it carries only the 7 **legacy Robinhood Chain coins** launched before the move, which keep sweeping, building, trading and paying their launchers. Creator fees from the coin accrue into a build budget; an AI agent spends that budget building and shipping the app; 25% of a Solana coin's fees buys back and burns the coin's own supply, and 25% of a legacy Robinhood coin's fees funds the PYRE refund pool while any snapshot holder is still owed, then buys back and burns $PYRE. $PYRE itself is moving to Solana through a fair launch on pump.fun with no dev buy and 100% of its creator fees going to the treasury's Solana wallet; Robinhood Chain holders at snapshot block 79819827 who still hold that $PYRE are refunded the ETH they put in minus what they took out, capped at what their $PYRE cost, from 25% of that coin's creator fees plus the legacy coins' 25% share (`/refund`, `REFUND` ledger account — see `docs/economics.md`), and until it launches only the mint published on pyre.fun (`PYRE_SOL_MINT`) is ours. The app is free to use. Three deployable services, one Postgres, one Redis.
 
 ## Services
 
@@ -8,7 +8,7 @@ Pyre is a launchpad where every coin funds one app. A coin launches on one of tw
 | --- | --- | --- |
 | `api` | `@pyre/api` | Public JSON API under `/v1`, app hosting (`<slug>.APP_DOMAIN` and `/a/<slug>`), `/_pyre/*` platform endpoints inside app origins, read-only JSON-RPC proxy (`POST /v1/rpc`), Anthropic proxy for sandboxes, GitHub webhook, SSE feeds, `/health`, `/metrics`. Runs `prisma migrate deploy` at container start. |
 | `runner` | `@pyre/runner` | BullMQ workers: intake, launch, build (E2B sandbox + agent), PR review, fee sweep, buyback + burn ($PYRE leg and Solana coin-burn leg), price, holders, market indexer, monitor/self-heal, scheduler, growth, reconcile. Every chain-touching worker dispatches on the app's venue via `adapterFor(launchpad)`. Writes the DB directly; no HTTP to the API except the Anthropic proxy used from inside sandboxes. |
-| `web` | `@pyre/web` | Vite React SPA served by `apps/web/server.mjs`: feed, launch flow, coin pages, account, $PYRE, governance, ops, status, legal. Talks only to the API with a platform session JWT. |
+| `web` | `@pyre/web` | Vite React SPA served by `apps/web/server.mjs`: feed, launch flow, coin pages, account, $PYRE, PYRE refunds (`/refund`), governance, ops, status, legal. Talks only to the API with a platform session JWT. |
 
 Shared libraries: `@pyre/shared` (economics constants by chain, venue registry `VENUES` / `venueOf`, zod schemas, DTO types), `@pyre/db` (Prisma client + types), `@pyre/chain` (the `VenueAdapter` interface and two implementations — see *Venue adapters* — plus the Robinhood-specific viem chain definition, PONS v2 factory/curve/escrow/hook clients, Uniswap v4 quoter and Universal Router swaps, Blockscout holders, and the Solana connection, keys, pump.fun / PumpSwap clients and memo attestation), `@pyre/app-sdk` (browser SDK bundled into every generated app).
 
@@ -16,14 +16,14 @@ Shared libraries: `@pyre/shared` (economics constants by chain, venue registry `
 
 `packages/chain/src/venue.ts` defines `Chain = "robinhood" | "solana"`, `Launchpad = "pons_v2" | "pump_fun"` and `VenueAdapter`; `adapterFor(launchpad)` returns `ponsAdapter` or `pumpAdapter`. Everything above the adapter is venue-agnostic: the API and runner never import a PONS or pump.fun function directly.
 
-| Concern | `ponsAdapter` (Robinhood Chain · PONS v2) | `pumpAdapter` (Solana · pump.fun) |
+| Concern | `ponsAdapter` (Robinhood Chain · pons v2, legacy) | `pumpAdapter` (Solana · pump.fun) |
 | --- | --- | --- |
 | keys (`treasury`, `userWallet`, `appWallet`) | BIP-32 secp256k1 `m/44'/60'/0'/0/<user>`, `m/44'/60'/1'/0/<app>` | SLIP-0010 ed25519 `m/44'/501'/<user>'/0'`, `m/44'/501'/<1000000 + app>'/0'`; same master seed |
 | addresses / hashes | `0x` hex, 32-byte tx hash | base58 pubkey, base58 signature |
 | native | ETH, 18 decimals, wei | SOL, 9 decimals, lamports |
 | `verifyNativeTransfer` (stake) | receipt: mined, to treasury, ≥ amount, from launcher | parsed transaction: system transfer to treasury, ≥ lamports, from launcher |
 | `nativePriceUsd` | DeFiLlama, 30 s cache | Jupiter price v3, CoinGecko fallback, 60 s cache |
-| `launch` | `factory.launchToken` from the app wallet, 0.0005 ETH fee | `create_v2` from the app wallet (mint = fresh keypair, creator = app wallet), metadata URI `GET /v1/apps/:slug/metadata.json`, no initial buy |
+| `launch` | closed to new launches; the legacy coins were launched by `factory.launchToken` from the app wallet, 0.0005 ETH fee | `create_v2` from the app wallet (mint = fresh keypair, creator = app wallet), metadata URI `GET /v1/apps/:slug/metadata.json`, no initial buy |
 | `canLaunch` | `factory.canLaunch(appWallet)` | `Global.createV2Enabled` |
 | `readLaunch` phases | `LaunchedToken.phase` 0/1/2/3 | 0 while `BondingCurve.complete` is false, 1 complete without a pool, 2 once the canonical PumpSwap pool exists |
 | `sweepFees` / `claimFees` | `curve.sweepFees` / `hook.sweepPoolFees` → `escrow.claim()` | no-op / `collect_creator_fee` + `collect_coin_creator_fee` (permissionless; payer = creator so WSOL unwraps) |
@@ -33,7 +33,7 @@ Shared libraries: `@pyre/shared` (economics constants by chain, venue registry `
 | `trades` | `CurveBuy`/`CurveSell` and PoolManager `Swap` logs by block range | `getSignaturesForAddress(curve \| pool)` from a cursor slot, `TradeEvent`/`BuyEvent`/`SellEvent` decoded from the event-CPI inner instruction |
 | `holders` | Blockscout holders API or self-indexed `Transfer` logs | `getTokenLargestAccounts` (top 20), curve ATA and pool base account tagged as liquidity |
 
-The Solana venue is enabled only when `SOLANA_RPC_URL` is set (`SOLANA_CLUSTER` selects `mainnet-beta` or `devnet`; `SOLANA_WSS_URL` optional; `PUMP_LAUNCH_ENABLED=false` hides it without unsetting the RPC). `GET /v1/venues` reports the enabled set and the web only offers those.
+New launches use `pump_fun` only: `POST /v1/launches` defaults `launchpad` to it and refuses `pons_v2` (`assertVenueEnabled`), and `POST /v1/apps/:slug/fork` always launches on it, even for a fork of a legacy coin. The Solana venue is enabled only when `SOLANA_RPC_URL` is set (`SOLANA_CLUSTER` selects `mainnet-beta` or `devnet`; `SOLANA_WSS_URL` optional; `PUMP_LAUNCH_ENABLED=false` closes it without unsetting the RPC). `GET /v1/venues` lists both venues — `pons_v2` always `enabled: false`, kept so legacy coin pages can describe their venue — and the web offers only enabled ones. `ponsAdapter` keeps serving every read, trade, sweep, burn and payout path of the legacy coins.
 
 ```mermaid
 flowchart LR
@@ -65,11 +65,11 @@ Thirteen queues, registered in `apps/runner/src/index.ts`. Repeatables are upser
 | Queue | Producer | Consumer | Job |
 | --- | --- | --- | --- |
 | `intake` | API (`POST /v1/launches`, `POST /v1/apps/:slug/fork`) | runner | moderation classifier + spec generation → `SPEC_READY` (or `FAILED` after 3 retries) |
-| `launch` | API (`POST /v1/launches/:id/stake`), repeatable `retryGated` every 10 min | runner | pre-fund the app wallet from that chain's treasury wallet (`predictLaunchCost` + gas float), `adapter.launch` from the app wallet → `LIVE`; `canLaunch()` false (PONS gate, pump.fun `createV2Enabled`) → `LAUNCH_GATED` |
+| `launch` | API (`POST /v1/launches/:id/stake`), repeatable `retryGated` every 10 min | runner | pre-fund the app wallet from the treasury Solana wallet (`predictLaunchCost` + gas float), `adapter.launch` from the app wallet → `LIVE`; `canLaunch()` false (pump.fun `createV2Enabled`) → `LAUNCH_GATED`. New launches are pump.fun only |
 | `build` | scheduler, monitor, API | runner | `BuildJobData`: SCAFFOLD + MVP + VERIFY + DEPLOY, ITERATE, SELF_HEAL, PR_REVIEW |
 | `prReview` | API (GitHub webhook) | runner | review + merge community PR, pay bounty |
-| `feeSweep` | repeatable, every 5 min | runner | per LIVE/DORMANT app: `adapter.sweepFees` → `adapter.claimFees` → `FeeEvent` + split by `FEE_SPLIT_BPS_BY_CHAIN` (PONS: sweep into escrow then claim; pump.fun: collect creator fees, no sweep); then $PYRE platform fees, stake refunds, credits funding |
-| `buyback` | repeatable `scan`, every 10 min | runner | two legs. $PYRE: when the `PYRE_TOKEN` ledger balance ≥ $5 and `PYRE_TOKEN` is set, buy $PYRE → `burn()` → attest on a `PyreBurn` row. Coin burn: for every Solana app whose `COINBURN:<appId>` balance ≥ $5, the treasury Solana wallet buys that coin → `burnChecked` → memo attest on a `CoinBurn` row. Both walk PENDING → SWAPPING → SWAPPED → BURNED |
+| `feeSweep` | repeatable, every 5 min | runner | per LIVE/DORMANT app: `adapter.sweepFees` → `adapter.claimFees` → `FeeEvent` + split by `FEE_SPLIT_BPS_BY_CHAIN` (pump.fun: collect creator fees, no sweep; PONS: sweep into escrow then claim). A legacy Robinhood coin's 25% leg is credited to `REFUND` while any refund snapshot holder is still owed, else to `PYRE_TOKEN`. Then $PYRE platform fees (Solana $PYRE's 25% refund share), stake refunds, credits funding |
+| `buyback` | repeatable `scan`, every 10 min | runner | two legs. Coin burn: for every Solana app whose `COINBURN:<appId>` balance ≥ $5, the treasury Solana wallet buys that coin → `burnChecked` → memo attest on a `CoinBurn` row. $PYRE: when the `PYRE_TOKEN` ledger balance ≥ $5 and `PYRE_TOKEN` is set, buy $PYRE → `burn()` → attest on a `PyreBurn` row. Both walk PENDING → SWAPPING → SWAPPED → BURNED |
 | `price` | repeatable, every 60 s | runner | first persists `MarketSnapshot` (ETH/USD, SOL/USD + $PYRE on-chain state) to `PlatformSetting["market:snapshot"]`, which is the ONLY market source the API's public reads use (`/v1/stats`, `/v1/pyre`, app summaries; 30 s cache, never an RPC call in the request path); then per app: `adapter.readLaunch` (curve reserves in phase 0, pool state in phase 2) × native/USD → `priceUsd`, `marketCapUsd`, `progress`, `change24hPct` |
 | `holders` | repeatable, every 10 min | runner | `adapter.holders`: Blockscout holders API when `BLOCKSCOUT_API_KEY` is set, otherwise self-indexed ERC-20 `Transfer` logs; `getTokenLargestAccounts` on Solana → `HolderBalance` |
 | `market` | repeatable, every 60 s | runner | `adapter.trades` from `lastIndexedBlock` (block on Robinhood Chain, slot on Solana) → `Trade` rows, 1m…1d candles in native units, `volume24hUsd`, `TRADE` feed events |
@@ -88,7 +88,7 @@ stateDiagram-v2
   DRAFT --> SPEC_READY: intake (moderation + spec)
   DRAFT --> FAILED: intake exhausted retries
   SPEC_READY --> AWAITING_STAKE: launcher approves spec
-  AWAITING_STAKE --> LAUNCHING: stake verified (0.05 ETH or 1 SOL)
+  AWAITING_STAKE --> LAUNCHING: stake verified (1 SOL; legacy coins 0.05 ETH)
   LAUNCHING --> LIVE: coin launched on the venue
   LAUNCHING --> LAUNCH_GATED: adapter.canLaunch() false
   LAUNCH_GATED --> LAUNCHING: retryGated (every 10 min)
@@ -114,7 +114,8 @@ flowchart TD
   AW -->|FeeEvent wei × ethPriceUsd| Split{FEE_SPLIT_BPS_BY_CHAIN}
   AWS -->|FeeEvent lamports × solPriceUsd| Split
   Split -->|60%| Build[BUILD:app + CREDITS:app, 50/50]
-  Split -->|25% robinhood| PYRE[PYRE_TOKEN ledger]
+  Split -->|25% robinhood, refund holders still owed| RF[REFUND ledger: PYRE refund pool]
+  Split -->|25% robinhood, refunds settled| PYRE[PYRE_TOKEN ledger]
   Split -->|25% solana| CB[COINBURN:app ledger]
   Split -->|15%| Launcher[LAUNCHER:user, paid in ETH on Robinhood Chain]
   Build -->|JobToken| Agent[Build agent]
@@ -122,11 +123,12 @@ flowchart TD
   Users[App users] -->|free; holder tier reads balance| App[Hosted app]
   PYRE -->|≥ $5, when PYRE_TOKEN set| PBurn[treasury buys $PYRE on curve or v4 → token.burn → calldata attest]
   CB -->|≥ $5 per coin| CBurn[treasury Solana wallet buys the coin on curve or PumpSwap → burnChecked → memo attest]
+  RF -->|pro-rata allocation| RPay[SOL payouts from the treasury Solana wallet to linked holders]
 ```
 
-Every movement writes a `LedgerEntry` on one of `TREASURY`, `PYRE_TOKEN`, `COINBURN:<appId>`, `CREDITS:<appId>`, `LAUNCHER:<userId>`, `BUILD:<appId>`, `STAKERS:<appId>`. Claimed ETH after each sweep (minus a 0.0005 ETH gas reserve) is moved from the app wallet to the treasury, which is the only wallet that spends: it pre-funds launches, executes the $PYRE buyback and burn, refunds stakes, pays launchers (always in ETH on Robinhood Chain, whatever chain the coin is on), and never drops below `TREASURY_FLOOR_WEI` (0.01 ETH) — passes that would breach it fail closed and retry next cycle. The **treasury Solana wallet** (`walletIndex` 0 on the Solana branch) is its counterpart on Solana: it pre-funds Solana app wallets, receives claimed SOL, executes coin burns and refunds SOL stakes, and it never pays launchers. Nothing bridges between the two treasuries. The treasury and app wallets are signed from both the API and the runner, never the browser: on Robinhood Chain every send goes through `sendTx` in `@pyre/chain`, which holds a Redis mutex `lock:send:<address>` from broadcast to receipt (viem's nonce manager covers in-process concurrency), so two processes can never race a wallet; Solana sends go through the adapter from the same process memory.
+Every movement writes a `LedgerEntry` on one of `TREASURY`, `PYRE_TOKEN`, `COINBURN:<appId>`, `CREDITS:<appId>`, `LAUNCHER:<userId>`, `BUILD:<appId>`, `STAKERS:<appId>`, `REFUND`. Claimed ETH after each sweep (minus a 0.0005 ETH gas reserve) is moved from the app wallet to the treasury, which is the only wallet that spends: it pre-funded the legacy launches, executes the $PYRE buyback and burn, refunds stakes, pays launchers (always in ETH on Robinhood Chain, whatever chain the coin is on), and never drops below `TREASURY_FLOOR_WEI` (0.01 ETH) — passes that would breach it fail closed and retry next cycle. The **treasury Solana wallet** (`walletIndex` 0 on the Solana branch) is its counterpart on Solana: it pre-funds Solana app wallets, receives claimed SOL, executes coin burns, refunds SOL stakes and pays PYRE refunds, and it never pays launchers. Nothing bridges between the two treasuries: the legacy coins' 25% refund share arrives as ETH in the Robinhood treasury but is paid out as SOL, so the operator keeps the Solana wallet funded. The treasury and app wallets are signed from both the API and the runner, never the browser: on Robinhood Chain every send goes through `sendTx` in `@pyre/chain`, which holds a Redis mutex `lock:send:<address>` from broadcast to receipt (viem's nonce manager covers in-process concurrency), so two processes can never race a wallet; Solana sends go through the adapter from the same process memory.
 
-No money moves inside a hosted app. There is no checkout, subscription, per-call price or ad slot; the host exposes auth, KV, functions, `llm` and a holder gate, and the holder gate is a `balanceOf` read, not a charge. Robinhood coins are never bought back or burned by the platform; a Solana coin is bought back and burned only with its own 25% fee share.
+No money moves inside a hosted app. There is no checkout, subscription, per-call price or ad slot; the host exposes auth, KV, functions, `llm` and a holder gate, and the holder gate is a `balanceOf` read, not a charge. Legacy Robinhood coins are never bought back or burned by the platform; a Solana coin is bought back and burned only with its own 25% fee share.
 
 The burn attestation on Robinhood Chain is a zero-value transaction from the treasury to itself with calldata `0x50595245 ‖ 0x01 ‖ sha256(sorted ids of the PYRE_TOKEN fee-share entries consumed)` (`ATTESTATION_PREFIX`, `encodeAttestation` in `@pyre/chain`); `PyreBurn.attestTx` stores it and the burned amount is proven by the `totalSupply()` delta (`PyreBurn.burnedUnits`). On Solana the same digest (over the `COINBURN:<appId>` entries consumed) is written as an SPL Memo v2 instruction in its own transaction from the treasury Solana wallet, text `pyre:burn:v1:<sha256 hex>`; `CoinBurn.attestTx` stores the signature, `readAttestation` finds the memo, and the burned amount is proven by the `getTokenSupply` delta (`CoinBurn.burnedUnits`).
 

@@ -26,6 +26,10 @@ export type AuditAction =
   | "STAKE_REFUND"
   | "CREDIT_FUNDING"
   | "PLATFORM_FEE_CLAIM"
+  /** The Solana PYRE coin's creator-fee route (creator / fee sharing / someone else) changed (meta.previous is the last one seen). */
+  | "PLATFORM_FEE_ROUTE"
+  /** A fee-sharing distribution (sent by anyone) paid the treasury its share of the Solana PYRE coin's creator fees and the REFUND share was credited (meta.signature is that transaction). */
+  | "PLATFORM_FEE_DISTRIBUTION"
   | "PYRE_BURN"
   | "COIN_BURN"
   | "KILL_SANDBOX"
@@ -33,6 +37,10 @@ export type AuditAction =
   | "RECONCILE"
   /** A `PAYOUT_UNCONFIRMED` row from the API was settled from its receipt (meta.unconfirmedId points at it). */
   | "PAYOUT_RESOLVED"
+  /** The refund pool was allocated to snapshot holders (targetId = allocation run id). */
+  | "REFUND_ALLOCATION"
+  /** A refund payout reached a terminal or ambiguous state (targetId = RefundPayout.id). */
+  | "REFUND_PAYOUT"
   | "SHUTDOWN";
 
 export interface AuditInput {

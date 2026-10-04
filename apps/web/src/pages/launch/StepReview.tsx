@@ -62,7 +62,7 @@ export const StepReview = ({ launch, spec, me, busy, error, onStake, onBack }: P
               </Fact>
               <Fact n="04" title="Fees burn the coin">
                 The <span className="num text-ink">{formatBps(split.COIN_BURN)}</span> share of every claim pools per coin and, at $5, buys ${launch.ticker} and burns it, with an on-chain
-                attestation. Supply falls; nothing is paid to holders. PYRE lives on Robinhood Chain only, so there is no PYRE leg here.
+                attestation. Supply falls; nothing is paid to holders. This coin's fees never buy PYRE: the burn share only ever buys ${launch.ticker}.
               </Fact>
             </>
           ) : (
@@ -77,12 +77,12 @@ export const StepReview = ({ launch, spec, me, busy, error, onStake, onBack }: P
               </Fact>
               <Fact n="03" title="Fees fund the agent">
                 Every claimed fee splits <span className="num text-ink">{formatBps(split.BUILD_BUDGET)}</span> build budget ·{" "}
-                <span className="num text-ink">{formatBps(split.PYRE_TOKEN)}</span> PYRE burn · <span className="num text-ink">{formatBps(split.LAUNCHER)}</span> to you. The agent starts
-                building at $50 of budget.
+                <span className="num text-ink">{formatBps(split.PYRE_TOKEN)}</span> PYRE refunds, then PYRE burn · <span className="num text-ink">{formatBps(split.LAUNCHER)}</span> to you. The agent
+                starts building at $50 of budget.
               </Fact>
-              <Fact n="04" title="Fees burn PYRE">
-                The <span className="num text-ink">{formatBps(split.PYRE_TOKEN)}</span> PYRE share of every claim is pooled with every other coin's and, at $5, buys PYRE and burns it. The app
-                itself is free to use; holders of ${launch.ticker} unlock its holder tier. Burns reduce supply; nothing is paid to holders.
+              <Fact n="04" title="Fees fund PYRE refunds">
+                The <span className="num text-ink">{formatBps(split.PYRE_TOKEN)}</span> share of every claim funds PYRE refunds while any snapshot holder is still owed; once every holder is
+                refunded it buys PYRE on Robinhood Chain and burns it. The app itself is free to use; holders of ${launch.ticker} unlock its holder tier. Nothing is paid to holders.
               </Fact>
             </>
           )}

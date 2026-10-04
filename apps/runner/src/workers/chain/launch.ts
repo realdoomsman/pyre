@@ -4,30 +4,26 @@ import { big, prisma, type Prisma } from "@pyre/db";
 import { AppSpec, VENUES, explorerTxUrl, ponsUrl, usdMicrosFromNative, usdMicrosFromWei } from "@pyre/shared";
 import {
   LOG_CHUNK_BLOCKS,
-  LaunchGatedError,
   adapterFor,
   factoryAbi,
   getEthBalance,
   getEthPriceUsd,
-  launchPonsToken,
   ponsAddresses,
-  predictLaunchCost,
   publicClient,
   readLaunch,
   transferEth,
   treasury,
-  type LaunchParams,
   type DerivedWallet,
   type VenueAdapter,
 } from "@pyre/chain";
-import { getAbiItem, getAddress, keccak256, stringToBytes, type Address, type Hash } from "viem";
+import { getAbiItem, getAddress, type Address, type Hash } from "viem";
 import { z } from "zod";
 import { audit } from "../../lib/audit.js";
 import { withLock } from "../../lib/lock.js";
 import { CHAIN_QUEUES, type ChainWorkerContext } from "./context.js";
 import { chainWorkerEnv } from "./env.js";
 import { publishEvent, publishGlobal } from "./publish.js";
-import { APP_GAS_LOW_WEI, APP_GAS_RESERVE_WEI, TREASURY_FLOOR_WEI, appWallet, topUpFromTreasury } from "./wallet.js";
+import { APP_GAS_LOW_WEI, TREASURY_FLOOR_WEI, appWallet } from "./wallet.js";
 
 const LaunchJob = z.object({ appId: z.string().min(1) });
 
@@ -39,26 +35,8 @@ const FUNDING_MARGIN_DEN = 10n;
 /** How far back a crashed launch is searched for when the app wallet has already sent a transaction (~5.5 h). */
 const ADOPT_SCAN_BLOCKS = 200_000n;
 
-/**
- * Every retry of the same app launches with the same CREATE2 salt, so a second `launchToken`
- * after a crash-then-retry reverts on the factory instead of minting a second coin.
- */
-const launchSalt = (appId: string) => keccak256(stringToBytes(`pyre:launch:${appId}`));
-
-function launchParams(app: LaunchApp, wallet: DerivedWallet): LaunchParams {
-  const env = chainWorkerEnv();
-  const spec = AppSpec.safeParse(app.spec);
-  const website = env.APP_DOMAIN ? `https://${app.slug}.${env.APP_DOMAIN}` : `${env.API_ORIGIN}/a/${app.slug}`;
-  return {
-    name: app.name,
-    symbol: app.ticker,
-    logo: app.imageUrl,
-    description: (spec.success ? spec.data.oneLiner : app.prompt).slice(0, 2048),
-    socials: { website, ...(app.twitterUrl ? { twitter: app.twitterUrl } : {}) },
-    creatorFeeRecipient: wallet.address,
-    salt: launchSalt(app.id),
-  };
-}
+/** Why a Robinhood Chain app that never reached the chain cannot launch any more. */
+const PONS_CLOSED = "PONS v2 launches are closed; new coins launch on pump.fun";
 
 /**
  * The factory's `TokenLaunched` for this app wallet, if a prior attempt broadcast one. Each app
@@ -114,30 +92,18 @@ async function finishLive(ctx: ChainWorkerContext, app: LaunchApp, found: { toke
   await publishGlobal(ctx.redis, app.id);
 }
 
-async function markGated(ctx: ChainWorkerContext, app: LaunchApp, wallet: DerivedWallet, log: Logger): Promise<void> {
-  await prisma.app.update({ where: { id: app.id }, data: { status: "LAUNCH_GATED" } });
-  await audit({
-    actor: "worker:launch",
-    action: "APP_STATUS",
-    targetType: "App",
-    targetId: app.id,
-    meta: { from: app.status, to: "LAUNCH_GATED", wallet: wallet.address, reason: "PONS canLaunch() returned false" },
-  });
-  await publishEvent(prisma, ctx.redis, app.id, { type: "LAUNCH_GATED", wallet: wallet.address });
-  const existing = await prisma.notification.findFirst({ where: { userId: app.launcherId, type: "LAUNCH_GATED", readAt: null }, select: { id: true } });
-  if (!existing) {
-    await prisma.notification.create({
-      data: {
-        userId: app.launcherId,
-        type: "LAUNCH_GATED",
-        title: "Launch is gated on PONS right now",
-        body: "PONS is not accepting public launches from new wallets at the moment. Your stake is safe; the launch retries automatically.",
-        href: `/c/${app.slug}`,
-      },
-    });
-  }
+/**
+ * A Robinhood Chain app still LAUNCHING or LAUNCH_GATED whose coin never reached the chain: PONS v2
+ * launches are closed for good, so it fails and its stake (and any pre-funding) goes back.
+ */
+async function closePonsLaunch(ctx: ChainWorkerContext, app: LaunchApp, wallet: DerivedWallet, log: Logger): Promise<void> {
+  const reason = `launch failed: ${PONS_CLOSED}`;
+  log.warn({ wallet: wallet.address }, "PONS v2 launches are closed; failing the launch and refunding the stake");
+  await prisma.app.update({ where: { id: app.id }, data: { status: "FAILED", killedReason: reason } });
+  await audit({ actor: "worker:launch", action: "APP_STATUS", targetType: "App", targetId: app.id, meta: { from: app.status, to: "FAILED", reason } });
+  await publishEvent(prisma, ctx.redis, app.id, { type: "AGENT_NOTE", text: `Launch failed: ${PONS_CLOSED}. Stake is being refunded.` });
+  await refundFailedLaunch(ctx, app, wallet, log);
   await publishGlobal(ctx.redis, app.id);
-  log.warn({ wallet: wallet.address }, "launch gated by PONS");
 }
 
 /**
@@ -345,7 +311,7 @@ async function launchApp(ctx: ChainWorkerContext, appId: string, jobId: string):
   }
   const client = publicClient();
   // A fresh app wallet has never sent a transaction; a nonce means an earlier attempt broadcast the
-  // launch. Adopt that coin instead of launching a second one.
+  // launch before PONS v2 closed. Adopt that coin: it is a legacy Robinhood Chain coin like any other.
   if ((await client.getTransactionCount({ address: wallet.address })) > 0) {
     const latest = await client.getBlockNumber();
     const from = app.launchBlock ?? (latest > ADOPT_SCAN_BLOCKS ? latest - ADOPT_SCAN_BLOCKS : 0n);
@@ -354,55 +320,14 @@ async function launchApp(ctx: ChainWorkerContext, appId: string, jobId: string):
       await finishLive(ctx, app, prior, "prior launch found on-chain; adopted", log);
       return;
     }
-    log.warn({ wallet: wallet.address }, "app wallet has a nonce but no TokenLaunched was found; launching");
+    log.warn({ wallet: wallet.address }, "app wallet has a nonce but no TokenLaunched was found");
   }
-  const params = launchParams(app, wallet);
-  try {
-    const cost = await predictLaunchCost(wallet.address, params);
-    const need = (cost.totalWei * FUNDING_MARGIN_NUM) / FUNDING_MARGIN_DEN;
-    const funded = await topUpFromTreasury(wallet, need + APP_GAS_RESERVE_WEI, need, log);
-    if (funded.hash) {
-      await audit({ actor: "worker:launch", action: "APP_WALLET_FUND", targetType: "App", targetId: app.id, meta: { wei: funded.wei, hash: funded.hash, need, launchFeeWei: cost.launchFeeWei } });
-    }
-    // Anchor the adoption scan before broadcasting so a crash between send and record is recoverable.
-    const anchor = await client.getBlockNumber();
-    await prisma.app.update({ where: { id: app.id }, data: { launchBlock: anchor } });
-    const result = await launchPonsToken(wallet.account, params);
-    const receipt = await client.getTransactionReceipt({ hash: result.hash });
-    await finishLive(ctx, app, { token: result.token, curve: result.curve, hash: result.hash, block: receipt.blockNumber }, "coin launched on PONS v2", log);
-  } catch (err) {
-    if (err instanceof LaunchGatedError) {
-      await markGated(ctx, app, wallet, log);
-      return;
-    }
-    // The launch tx can land even when the call throws (broadcast then timeout). Adopt it rather
-    // than failing the app and refunding a stake that already bought a coin.
-    const prior = app.launchBlock !== null || (await client.getTransactionCount({ address: wallet.address })) > 0
-      ? await findPriorLaunch(wallet.address, app.launchBlock ?? (await client.getBlockNumber()) - ADOPT_SCAN_BLOCKS).catch(() => null)
-      : null;
-    if (prior) {
-      await finishLive(ctx, app, prior, "launch call errored but the coin landed on-chain; adopted", log);
-      return;
-    }
-    const message = err instanceof Error ? err.message : String(err);
-    log.error({ err }, "launch failed");
-    await prisma.app.update({ where: { id: app.id }, data: { status: "FAILED", killedReason: `launch failed: ${message}`.slice(0, 500) } });
-    await audit({
-      actor: "worker:launch",
-      action: "APP_STATUS",
-      targetType: "App",
-      targetId: app.id,
-      meta: { from: app.status, to: "FAILED", reason: `launch failed: ${message}`.slice(0, 500) },
-    });
-    await publishEvent(prisma, ctx.redis, app.id, { type: "AGENT_NOTE", text: `Launch failed: ${message}. Stake is being refunded.` });
-    await refundFailedLaunch(ctx, app, wallet, log);
-    await publishGlobal(ctx.redis, app.id);
-  }
+  await closePonsLaunch(ctx, app, wallet, log);
 }
 
 /** A launch is a handful of RPC round trips plus one mined transaction; well inside this. */
 const LAUNCH_LOCK_TTL_SECONDS = 300;
-/** Job name of the repeatable sweep that re-attempts LAUNCH_GATED apps (PONS gate may reopen any time). */
+/** Job name of the repeatable sweep that re-attempts LAUNCH_GATED apps (pump.fun's switch may reopen any time; gated PONS apps fail and refund). */
 export const RETRY_GATED_JOB = "retryGated";
 
 async function launchLocked(ctx: ChainWorkerContext, appId: string, jobId: string): Promise<void> {

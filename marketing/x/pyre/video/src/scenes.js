@@ -490,6 +490,182 @@
     },
   };
 
+  /* ════════ pyre-solana ════════ */
+
+  S["s-open"] = {
+    el: $("#s-s-open"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      heat(el, lerp(0, 0.36, seg(t, 0.2, 1.6, quint)), seg(t, 0.2, 1.2, quart) * 0.9);
+      const mark = $(".mark", el);
+      const mp = seg(t, 0.3, 1.0, expo);
+      mark.style.opacity = mp;
+      mark.style.transform = `translate(-50%, ${sq ? -240 : -285}px) scale(${lerp(0.9, 1, mp)})`;
+      revealWords($(".l1", el), t, 0.5, 0.8, 0.09);
+      revealWords($(".l2", el), t, 1.3, 0.8, 0.09);
+      const sp = seg(t, 2.0, 0.7);
+      $(".sub", el).style.opacity = sp;
+      $(".sub", el).style.transform = `translate(-50%, ${(sq ? 200 : 250) + (1 - sp) * 12}px)`;
+    },
+  };
+
+  S["s-move"] = {
+    el: $("#s-s-move"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.6), 10);
+      revealWords($(".h2", el), t, 0.35, 0.7, 0.07);
+      const from = $(".chain.from", el), to = $(".chain.to", el);
+      const fp = seg(t, 0.4, 0.6, expo);
+      fadeUp(from, fp, 20);
+      from.style.opacity = fp * lerp(1, 0.45, seg(t, 2.2, 0.8));
+      fadeUp(to, seg(t, 0.55, 0.6, expo), 20);
+      // the mark leaves Robinhood Chain and lands on Solana; the source card cools behind it
+      const mp = seg(t, 1.7, 1.8, inout);
+      $(".rail i", el).style.width = `${mp * 100}%`;
+      const coin = $(".coin", el);
+      coin.style.left = `${mp * 100}%`;
+      coin.style.opacity = seg(t, 1.5, 0.3) * (1 - seg(t, 3.5, 0.3));
+      const land = seg(t, 3.4, 0.15, quart) * (1 - seg(t, 3.55, 1.2, quart));
+      to.style.boxShadow = `0 0 ${60 * land}px rgba(122,102,245,${0.55 * land})`;
+      to.style.borderColor = land > 0.05 ? "var(--accent)" : "";
+      $$(".terms .chip", el).forEach((c, i) => fadeUp(c, seg(t, 3.7 + i * 0.5, 0.5, expo), 12));
+      heat(el, lerp(0.12, 0.3, seg(t, 3.4, 1.4, quint)), lerp(0.3, 0.85, seg(t, 3.4, 1.2)));
+    },
+  };
+
+  S["s-why"] = {
+    el: $("#s-s-why"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.6), 10);
+      revealWords($(".h2", el), t, 0.35, 0.7, 0.07);
+      fadeUp($(".already", el), seg(t, 0.8, 0.6, expo), 14);
+      const steps = [[".loopline .s1", 1.8], [".loopline .s2", 2.4], [".loopline .s3", 3.0]];
+      for (const [sel, at] of steps) fadeUp($(sel, el), seg(t, at, 0.5, expo), 12);
+      $$(".loopline .arr", el).forEach((a, i) => show(a, seg(t, steps[i + 1][1] - 0.25, 0.4)));
+      fadeUp($(".foot", el), seg(t, 3.6, 0.6), 8);
+      heat(el, 0.16, lerp(0.3, 0.6, seg(t, 2.4, 2)));
+    },
+  };
+
+  const SNAP_BLOCK = "79819827";
+  S["s-snap"] = {
+    el: $("#s-s-snap"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.5), 10);
+      fadeUp($(".blk .k", el), seg(t, 0.3, 0.5), 10);
+      // the block number types in and locks on the thump (scene-local 1.6 s, script-solana.mjs)
+      const num = $(".num", el);
+      typed($(".d", num), SNAP_BLOCK, seg(t, 0.45, 1.05, lin));
+      caret($(".caret", num), t, t < 1.6);
+      const flare = seg(t, 1.6, 0.12, quart) * (1 - seg(t, 1.72, 1.6, quart));
+      $(".d", num).style.color = flare > 0.05 ? "var(--hot)" : "var(--ink)";
+      $(".d", num).style.textShadow = `0 0 ${50 * flare}px rgba(62,139,255,${0.8 * flare})`;
+      fadeUp($(".when", el), seg(t, 1.8, 0.6, expo), 12);
+      const held = $(".side.held", el), after = $(".side.after", el);
+      fadeUp(held, seg(t, 2.5, 0.6, expo), 16);
+      $(".line .pin", el).style.opacity = seg(t, 2.5, 0.4);
+      const lp = seg(t, 2.6, 0.9, quart);
+      $(".line .a", el).style.width = `${lp * 50}%`;
+      $(".line .b", el).style.width = `${lp * 50}%`;
+      fadeUp(after, seg(t, 3.0, 0.6, expo), 16);
+      // second row: keep holding — lands with the second spoken sentence of this shot
+      const shot = TL.shots.find((s) => s.id === "s-snap");
+      const said = TL.sentences.filter((s) => s.shot === "s-snap");
+      const KEEP_AT = shot && said[1] ? said[1].start - shot.start + 0.2 : 4.6;
+      const keep = $(".cut.keep", el);
+      fadeUp($(".side.held", keep), seg(t, KEEP_AT, 0.6, expo), 16);
+      $(".line .pin", keep).style.opacity = seg(t, KEEP_AT, 0.4);
+      const kp = seg(t, KEEP_AT + 0.1, 0.9, quart);
+      $(".line .a", keep).style.width = `${kp * 50}%`;
+      $(".line .b", keep).style.width = `${kp * 50}%`;
+      fadeUp($(".side.after", keep), seg(t, KEEP_AT + 0.7, 0.6, expo), 16);
+      heat(el, lerp(0.16, 0.48, flare), lerp(0.35, 1, flare));
+    },
+  };
+
+  S["s-refund"] = {
+    el: $("#s-s-refund"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.6), 10);
+      revealWords($(".h2", el), t, 0.35, 0.7, 0.07);
+      const order = [[".t1", 1.2], [".o1", 1.7], [".t2", 2.0], [".o2", 2.6], [".t3", 2.9]];
+      for (const [sel, at] of order) fadeUp($(sel, el), seg(t, at, 0.55, expo), 16);
+      const glow = seg(t, 3.1, 0.6);
+      $(".t3", el).style.boxShadow = `0 0 ${40 * glow}px rgba(122,102,245,${0.3 * glow})`;
+      fadeUp($(".foot", el), seg(t, 3.6, 0.6), 8);
+      heat(el, 0.16, lerp(0.3, 0.7, seg(t, 2.9, 1.5)));
+    },
+  };
+
+  const OWED = [0.92, 0.56, 0.3];
+  S["s-fees"] = {
+    el: $("#s-s-fees"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.6), 10);
+      revealWords($(".h2", el), t, 0.35, 0.7, 0.06);
+      const fb = $(".feebar", el);
+      fadeUp(fb, seg(t, 1.0, 0.6, expo), 16);
+      const sp = seg(t, 1.4, 1.1, quart);
+      const a = $(".split .a", fb), b = $(".split .b", fb);
+      a.style.width = `${Math.min(25, sp * 100)}%`;
+      b.style.left = `${Math.min(25, sp * 100)}%`;
+      b.style.width = `${Math.max(0, sp * 100 - 25)}%`;
+      a.style.boxShadow = `0 0 ${30 * seg(t, 2.4, 0.5)}px rgba(122,102,245,.6)`;
+      fadeUp($(".tag", fb), seg(t, 2.3, 0.5), 8);
+      // pro-rata: every holder is paid back the same fraction of what they are owed at the same time
+      const paid = seg(t, 3.9, 3.0, inout);
+      $$(".hr", el).forEach((r, i) => {
+        fadeUp(r, seg(t, 3.0 + i * 0.15, 0.5, expo), 12);
+        $(".owed", r).style.width = `${OWED[i] * 100}%`;
+        $(".paid", r).style.width = `${OWED[i] * paid * 100}%`;
+        const v = $(".v", r);
+        const full = paid >= 0.999;
+        v.textContent = full ? "✓ paid back in full" : `${Math.floor(paid * 100)}% paid back`;
+        v.classList.toggle("full", full);
+      });
+      $$(".terms .chip", el).forEach((c, i) => fadeUp(c, seg(t, i ? 6.7 : 4.2, 0.5, expo), 12));
+      heat(el, 0.18, lerp(0.3, 0.75, seg(t, 3.9, 3)));
+    },
+  };
+
+  S["s-claim"] = {
+    el: $("#s-s-claim"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      fadeUp($(".label", el), seg(t, 0.2, 0.6), 10);
+      revealWords($(".h2", el), t, 0.35, 0.7, 0.07);
+      const steps = [[".st1", 0.9, 2.1], [".st2", 2.5, 3.6], [".st3", 3.9, 4.6]];
+      for (const [sel, at, ok] of steps) {
+        const s = $(sel, el);
+        fadeUp(s, seg(t, at, 0.55, expo), 18);
+        fadeUp($(".ok", s), seg(t, ok, 0.4, expo), 6);
+        s.classList.toggle("done", t >= ok);
+      }
+      show($(".a1", el), seg(t, 2.3, 0.4));
+      show($(".a2", el), seg(t, 3.7, 0.4));
+      fadeUp($(".soonchip", el), seg(t, 4.9, 0.6, expo), 10);
+      heat(el, 0.16, lerp(0.3, 0.85, seg(t, 4.6, 1.2)));
+    },
+  };
+
+  S["s-close"] = {
+    el: $("#s-s-close"), kind: "wipe",
+    update(t) {
+      const el = this.el;
+      riseIn($(".lockup", el), t, 0.3, 0.9);
+      fadeUp($(".line", el), seg(t, 0.9, 0.6), 10);
+      $(".line", el).style.transform = `translate(-50%, ${150 + (1 - seg(t, 0.9, 0.6)) * 10}px)`;
+      fadeUp($(".soon", el), seg(t, 1.6, 0.6), 6);
+      $(".soon", el).style.transform = `translate(-50%, 215px)`;
+      heat(el, lerp(0.1, 0.3, seg(t, 0.3, 2.0, quint)), lerp(0.4, 0.95, seg(t, 0.3, 1.5)));
+    },
+  };
+
   for (const s of Object.values(S)) s.init?.();
 
   /* ── the clock ── */

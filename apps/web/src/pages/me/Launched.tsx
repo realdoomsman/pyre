@@ -17,7 +17,7 @@ const STATUS: Record<LaunchDraftDto["status"], { tone: ChipTone; led: LedTone; l
   SPEC_READY: { tone: "accent", led: "warn", label: "Brief awaiting approval" },
   AWAITING_STAKE: { tone: "accent", led: "warn", label: "Awaiting stake" },
   LAUNCHING: { tone: "build", led: "build", label: "Launching" },
-  LAUNCH_GATED: { tone: "warn", led: "warn", label: "Waiting on PONS" },
+  LAUNCH_GATED: { tone: "warn", led: "warn", label: "Waiting on the launchpad" },
   LIVE: { tone: "earn", led: "live", label: "Live" },
   DORMANT: { tone: "neutral", led: "idle", label: "Dormant" },
   KILLED: { tone: "burn", led: "error", label: "Killed" },

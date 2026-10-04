@@ -87,9 +87,9 @@ describe("CreateLaunchBody", () => {
     }
   });
 
-  it("defaults the launchpad to pons v2 and accepts pump.fun", () => {
-    expect(CreateLaunchBody.parse(base).launchpad).toBe("pons_v2");
-    expect(CreateLaunchBody.parse({ ...base, launchpad: "pump_fun" }).launchpad).toBe("pump_fun");
+  it("defaults the launchpad to pump.fun and still parses an explicit pons v2 (refused later by the API)", () => {
+    expect(CreateLaunchBody.parse(base).launchpad).toBe("pump_fun");
+    expect(CreateLaunchBody.parse({ ...base, launchpad: "pons_v2" }).launchpad).toBe("pons_v2");
     expect(CreateLaunchBody.safeParse({ ...base, launchpad: "raydium" }).success).toBe(false);
   });
 });

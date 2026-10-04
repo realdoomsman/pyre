@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { PyreBurnDto, PyrePageDto } from "@pyre/shared";
-import { LAUNCH_PHASE, explorerTxUrl } from "@pyre/shared";
+import { LAUNCH_PHASE, REFUND_SNAPSHOT, explorerTxUrl } from "@pyre/shared";
 import { env } from "../../env.js";
 import { formatBps, formatEth, formatTokenUnits, formatUsd, timeAgo } from "../../lib/format.js";
 import { Address, Button, Card, CardHeader, Chip, EmptyState, GraduationRing, NumberFlow, Progress, Skeleton, Table, UsdFlow, type Column } from "../../ui/index.js";
@@ -41,7 +41,7 @@ export const PyrePage = () => {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
       {page.token ? <Header page={page} token={page.token} /> : <PreLaunch page={page} />}
-      <OneChain />
+      <Migration />
       <Accrual page={page} />
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <StakeForm page={page} />
@@ -68,7 +68,7 @@ const Header = ({ page, token }: { page: PyrePageDto; token: NonNullable<PyrePag
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Chip size="sm" mono tone={graduated ? "earn" : "accent"}>
-                {graduated ? "Uniswap v4 pool" : `PONS curve · ${Math.round(token.progress * 100)}% to 4.2 ETH`}
+                {graduated ? "Robinhood Chain · Uniswap v4 pool" : `Robinhood Chain · PONS curve · ${Math.round(token.progress * 100)}% to 4.2 ETH`}
               </Chip>
               <Address address={token.address} chars={6} explorerUrl={token.explorerUrl} className="text-13" />
             </div>
@@ -95,7 +95,7 @@ const Header = ({ page, token }: { page: PyrePageDto; token: NonNullable<PyrePag
         </dl>
         <div className="flex flex-wrap gap-2">
           <Button href={token.ponsUrl} target="_blank" rel="noreferrer noopener">
-            Trade on PONS ↗
+            Robinhood PYRE on PONS ↗
           </Button>
           <Button variant="ghost" href={token.explorerUrl} target="_blank" rel="noreferrer noopener">
             Blockscout ↗
@@ -123,9 +123,9 @@ const PreLaunch = ({ page }: { page: PyrePageDto }) => (
         Not launched yet
       </Chip>
       <p className="body max-w-2xl text-ink-2">
-        $PYRE is the platform's own coin: a PONS v2 launch made from the treasury wallet, on the same curve and under the same rules as every coin on Pyre. It does not exist
-        on-chain yet, so there is no price, no market cap and no burn to show. What already exists is the ledger below — the share of every coin's creator fees that is
-        earmarked for buying and burning it the moment it launches.
+        $PYRE is the platform's own coin. On Robinhood Chain it was a PONS v2 launch made from the treasury wallet; it is moving to Solana as a fair launch on pump.fun. There is no
+        Robinhood Chain contract to show here, so there is no price, no market cap and no burn. What exists is the ledger below — the share of legacy Robinhood Chain coins' creator
+        fees that buys and burns PYRE once every refund is paid.
       </p>
       <dl className="grid max-w-md grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 border-y border-line py-3 text-13">
         <dt className="eyebrow">Contract</dt>
@@ -135,33 +135,39 @@ const PreLaunch = ({ page }: { page: PyrePageDto }) => (
           {env.chainName} · {env.chainId}
         </dd>
         <dt className="eyebrow">Venue</dt>
-        <dd className="num text-ink">PONS v2 curve, then Uniswap v4</dd>
+        <dd className="num text-ink">PONS v2 curve, then Uniswap v4 · legacy</dd>
       </dl>
-      <p className="small text-ink-3">No pre-sale, no allocation, no whitelist. When it launches, the address appears here and on the feed. It launches on Robinhood Chain and nowhere else.</p>
+      <p className="small text-ink-3">No pre-sale, no allocation, no whitelist. Until the Solana coin launches, only the mint published on pyre.fun is ours.</p>
     </div>
     <Card tone="inset">
-      <CardHeader eyebrow="Earmarked so far" title={formatUsd(BigInt(page.ledger.pendingMicros))} description="Accrued to the PYRE_TOKEN ledger account, waiting for a token to buy." />
+      <CardHeader eyebrow="Earmarked so far" title={formatUsd(BigInt(page.ledger.pendingMicros))} description="Accrued to the PYRE_TOKEN ledger account, waiting to buy and burn PYRE." />
       <dl className="grid grid-cols-1 gap-3 text-13">
         <div>
           <dt className="eyebrow">From fees</dt>
-          <dd className="num text-ink">{formatBps(page.feeShareBps)} of every coin's fee claims</dd>
+          <dd className="num text-ink">{formatBps(page.feeShareBps)} of every legacy Robinhood Chain coin's fee claims, once PYRE refunds are paid</dd>
         </div>
       </dl>
     </Card>
   </header>
 );
 
-/** The one thing a reader must not get wrong: there is exactly one PYRE, on exactly one chain. */
-const OneChain = () => (
+/** The one thing a reader must not get wrong: PYRE is moving to Solana, Robinhood Chain holders who still hold are refunded, and only the published mint is ours. */
+const Migration = () => (
   <section
-    aria-label="PYRE is single-chain"
+    aria-label="PYRE is moving to Solana"
     className="rounded-card border border-[color-mix(in_oklab,var(--color-warn)_40%,transparent)] bg-[color-mix(in_oklab,var(--color-warn)_6%,transparent)] px-4 py-3 text-14"
   >
-    <div className="eyebrow mb-1 text-warn">One coin, one chain</div>
-    <p className="text-ink">PYRE lives on Robinhood Chain only — any PYRE on another chain is not ours.</p>
+    <div className="eyebrow mb-1 text-warn">PYRE is moving to Solana</div>
+    <p className="text-ink">
+      PYRE relaunches on Solana as a fair launch on pump.fun. Everyone who held PYRE on Robinhood Chain at the snapshot and still holds it is refunded the ETH they put in, minus
+      any ETH they took out and capped at what the PYRE they held cost them.{" "}
+      <Link to="/refund" className="text-accent underline underline-offset-2">
+        Check and link your refund
+      </Link>
+    </p>
     <p className="small mt-1 text-ink-2">
-      Coins launched on Solana still route 25% of their fees to a buy-and-burn, but it buys and burns the coin itself, never a bridged or wrapped PYRE. There is no PYRE on Solana, no
-      bridge, and no plan for one.
+      Snapshot: Robinhood Chain block <span className="num text-ink">{REFUND_SNAPSHOT.block}</span>, taken before the announcement; PYRE bought after it doesn't count, and selling or
+      moving PYRE after it shrinks your refund for good. Until the Solana coin launches, only the mint published on pyre.fun is ours.
     </p>
   </section>
 );
@@ -174,17 +180,22 @@ const Accrual = ({ page }: { page: PyrePageDto }) => (
         <li className="flex gap-3">
           <span className="num shrink-0 text-ink-3">01</span>
           <span>
-            <span className="num text-ink">{formatBps(page.feeShareBps)}</span> of every coin's claimed creator fees is credited to the <span className="num">PYRE_TOKEN</span> ledger account.
+            <span className="num text-ink">{formatBps(page.feeShareBps)}</span> of every legacy Robinhood Chain coin's claimed creator fees funds{" "}
+            <Link to="/refund" className="text-accent underline underline-offset-2">
+              PYRE refunds
+            </Link>{" "}
+            while any snapshot holder is still owed. Once every holder is refunded, it is credited to the <span className="num">PYRE_TOKEN</span> ledger account again.
           </span>
         </li>
         <li className="flex gap-3">
           <span className="num shrink-0 text-ink-3">02</span>
           <span>
-            Every 10 minutes, when the balance clears $5, the treasury buys $PYRE on the curve or in the pool and calls <span className="num">burn()</span>. Supply falls. Each burn is attested on-chain.
+            Every 10 minutes, when the <span className="num">PYRE_TOKEN</span> balance clears $5 — including PYRE share already accrued — the treasury buys $PYRE on the curve or in the pool
+            and calls <span className="num">burn()</span>. Supply falls. Each burn is attested on-chain.
           </span>
         </li>
       </ol>
-      <p className="small mt-4 text-ink-3">Nothing is ever sent to holders. Holding $PYRE gets you governance weight — {page.proposals.open} open proposals, {page.proposals.shipped} shipped — and the right to stake it to an app.{" "}
+      <p className="small mt-4 text-ink-3">Burns pay nothing to holders. Holding $PYRE gets you governance weight — {page.proposals.open} open proposals, {page.proposals.shipped} shipped — and the right to stake it to an app.{" "}
         <Link to="/governance" className="text-accent underline underline-offset-2">Governance</Link>
       </p>
     </Card>

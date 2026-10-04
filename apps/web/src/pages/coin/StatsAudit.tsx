@@ -136,7 +136,7 @@ export const StatsAudit = ({ app, trades, holders, nativePriceUsd }: Props) => {
           <Line k="Total fees claimed" v={formatNative(feesWei, native)} tone="earn" />
           <Line k="Fees → agent" v={formatNative((feesWei * BigInt(app.feeSplit.buildBudget)) / 10_000n, native)} tone="earn" />
           <Line k="Fees accruing" v={formatNative(BigInt(app.unsweptWei) + BigInt(app.escrowWei), native)} />
-          <Line k={venue.chain === "solana" ? `Fees → $${app.ticker} burn` : "Fees → PYRE burn"} v={formatNative((feesWei * BigInt(burnBps)) / 10_000n, native)} tone="burn" />
+          <Line k={venue.chain === "solana" ? `Fees → $${app.ticker} burn` : "Fees → PYRE refunds / burn"} v={formatNative((feesWei * BigInt(burnBps)) / 10_000n, native)} tone="burn" />
           <Line k="Creator tax" v="0%" />
           <Line k="Uptime" v={formatPct(app.uptimeBps / 10_000, 1)} tone={app.healthy ? "earn" : undefined} />
         </dl>

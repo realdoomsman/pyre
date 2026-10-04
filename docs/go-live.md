@@ -1,6 +1,17 @@
 # Go-live checklist
 
-Live state of Pyre on Robinhood Chain as of 2026-09-21, annotated on 2026-09-22 where the removal of in-app payments changed it. Lines marked **pending** have not been run against production yet; nothing below is inferred. Secrets live in `.secrets/pyre-keys.env` (git-ignored) and are set on the Railway services.
+Live state of Pyre on Robinhood Chain as of 2026-09-21, annotated on 2026-09-22 where the removal of in-app payments changed it and on 2026-10-04 for the move to Solana: new coins launch on pump.fun only, PONS v2 launches are closed in code, and the 7 Robinhood Chain coins launched since the 2026-09-21 record (deadline-radar-2, basket, pyrecat, jackpot-2, paperhood-4, pyredog-3, business-builder) keep running as legacy coins. *Deployed*, *Verified against production* and *Blocked on you* are the 2026-09-21 record. Lines marked **pending** have not been run against production yet; nothing below is inferred. Secrets live in `.secrets/pyre-keys.env` (git-ignored) and are set on the Railway services.
+
+## PYRE → Solana
+
+PYRE relaunches on Solana as a fair launch on pump.fun with no dev buy and 100% of its creator fees going to the treasury Solana wallet; Robinhood Chain holders at the snapshot who still hold that PYRE are refunded at `/refund` (`docs/economics.md` → *PYRE refund program*). The refund pool is funded by 25% of the Solana PYRE coin's creator fees and by the legacy Robinhood Chain coins' 25% share while any snapshot holder is still owed.
+
+- **Snapshot recorded:** Robinhood Chain block `79819827`, hash `0x141e47824b2a808e47e0e4d5262f7c7b3eb0b4f77c6d0b1113b7aa11874df0d8`, 2026-10-04T09:12:28Z (`docs/sol-migration-snapshot.md`).
+- **Announced:** pinned post https://x.com/PyreFun/status/2106687742541287487 (2026-10-04, 10:07:52Z, after the snapshot). The first announcement (09:18:42Z) was deleted.
+- **Pending — snapshot load:** apply migration `20261004000000_pyre_refund` and load `data/pyre-refund-snapshot.json` into `RefundHolder`; until then `/v1/refund` shows no holders, every lookup is `not_eligible`, and the legacy coins' 25% share keeps going to `PYRE_TOKEN` (nobody counts as owed). Load it before the runner that routes that share deploys.
+- **Pending — Solana coin launch (chosen path):** the founder launches the coin from his own wallet on pump.fun with no dev buy and immediately sets creator fee sharing to the treasury Solana wallet `CZeNrWsfVqBciYLWYoLGc2wcMqozsAeVB14HVMwWqjah` as the only shareholder at 100%, finalized (`docs/runbook.md` → *PYRE refund program*, step 4); then publish its mint on pyre.fun. The `launch-pyre-sol.mjs` treasury launch stays as the fallback.
+- **Pending — `PYRE_SOL_MINT`:** set it on `api` and `runner` once the mint exists. Until then `/refund` says payouts start once the Solana coin is live, nothing accrues to `REFUND` from the Solana coin, and only linking works; the legacy coins' share accrues to `REFUND` regardless once the snapshot is loaded.
+- **Pending — treasury Solana wallet funding for refunds:** payouts are SOL from the treasury Solana wallet; the legacy coins' share arrives as ETH in the Robinhood treasury and nothing bridges automatically, so the wallet must be funded by hand to cover outstanding credit.
 
 ## Deployed
 
@@ -34,7 +45,7 @@ Production configuration:
 | `ZENTRO_STATE` | unset | credits slice accrues on `CREDITS:<appId>` ledger only (`credits_accrue_only` on /ops) |
 | `X_API_*` | unset | growth posts are recorded as `[X not connected]` |
 | `APP_DOMAIN` / `VITE_APP_DOMAIN` | `pyre.fun` | apps serve at `<slug>.pyre.fun` |
-| `SOLANA_RPC_URL` / `SOLANA_CLUSTER` / `SOLANA_WSS_URL` / `PUMP_LAUNCH_ENABLED` | unset | the Solana · pump.fun venue is dark in production; `/v1/venues` lists `pons_v2` only (see *Solana venue* below) |
+| `SOLANA_RPC_URL` / `SOLANA_CLUSTER` / `SOLANA_WSS_URL` / `PUMP_LAUNCH_ENABLED` | unset as of the last check | **pending** — to be set to a keyed mainnet RPC with `SOLANA_CLUSTER=mainnet-beta` (owner decision 2026-10-04, see *Solana venue* below). With PONS v2 launches closed in code, production accepts no launches until it is set |
 
 ## Verified against production
 
@@ -62,31 +73,33 @@ Production was purged on 2026-09-21: `seed-demo-data.mjs --remove` and `seed-dem
 3. **$PYRE launch.** `PYRE_TOKEN` is empty, so the $PYRE share (25% of every Robinhood coin's creator fees) accrues on the `PYRE_TOKEN` ledger without being swapped or burned, staking and platform governance are closed, and `/pyre` shows the pre-launch state. Launch from the treasury after step 1 (procedure in `docs/runbook.md` → Launching $PYRE), then set `PYRE_TOKEN` on `api` and `runner` and `VITE_PYRE_TOKEN` on `web` and redeploy.
 4. **Optional keys.** (a) **Alchemy** — create a Robinhood Chain app, set `RPC_URL` on `api` and `runner`; the public RPC is rate-limited per origin and shared by the indexer, price, holders, reconcile and every browser read. (b) **Blockscout API key** — set `BLOCKSCOUT_API_KEY` on `runner` so holder lists come from the explorer instead of self-indexed logs. (c) **X API keys** — `X_API_*` on `runner` so the growth agent publishes instead of recording.
 
-## First real launch
+## First pump.fun launch (mainnet)
 
-1. Fund the treasury and confirm Anthropic credits.
-2. Confirm `/v1/stats` still reports zeros (nothing seeded since the purge).
-3. Sign in on `https://pyre.fun` with Google (a custodial wallet is derived) or an external wallet (EIP-191 challenge).
-4. `/launch`: name, ticker, image, prompt → the intake agent writes a spec → approve it → stake 0.05 ETH (one click from the custodial balance, or send it to the treasury and submit the tx hash).
-5. The `launch` worker pre-funds the app wallet, launches on PONS v2 and flips the app to `LIVE` (`LAUNCH_GATED` with a 10-minute retry if PONS refuses the sender).
-6. `feeSweep` claims creator fees every 5 minutes and splits them 60/25/15: 60% to the build budget (half of it as the credits slice), 25% to the `PYRE_TOKEN` ledger, 15% to the launcher.
+**Pending** — none of this has run against production yet.
+
+1. Fund the treasury Solana wallet (launch pre-funding, stake refunds, coin burns, refund payouts) and confirm Anthropic credits.
+2. Set `SOLANA_RPC_URL` (keyed mainnet provider) and `SOLANA_CLUSTER=mainnet-beta` on `api` and `runner`, redeploy both; `GET /v1/venues` should report `pump_fun` enabled and `pons_v2` disabled.
+3. Sign in on `https://pyre.fun` with Google (a custodial wallet is derived on each chain) and deposit SOL to the custodial Solana address.
+4. `/launch`: name, ticker, image, prompt → the intake agent writes a spec → approve it → stake 1 SOL from the custodial balance.
+5. The `launch` worker pre-funds the app wallet from the treasury Solana wallet, sends pump.fun `create_v2` and flips the app to `LIVE` (`LAUNCH_GATED` with a 10-minute retry if pump.fun's `createV2Enabled` is off).
+6. `feeSweep` collects creator fees every 5 minutes and splits them 60/25/15: 60% to the build budget (half of it as the credits slice), 25% to `COINBURN:<appId>`, 15% to the launcher (paid in ETH on Robinhood Chain).
 7. At $50 of accrued budget the scheduler starts the first build; watch it stream on the coin page. The app that deploys is free to use; holding the coin can unlock features inside it.
-8. Once `PYRE_TOKEN` is set and the ledger holds $5, `buyback` buys and burns $PYRE every 10 minutes and sends the `0x5059524501‖sha256(ids)` attestation from the treasury.
+8. Once `COINBURN:<appId>` holds $5, `buyback` buys the coin from the treasury Solana wallet, burns it with `burnChecked` and sends the `pyre:burn:v1:<sha256 hex>` memo. Record the launch, burn and memo signatures here.
 
-## Solana venue (pump.fun) — staging on devnet, not in production
+The legacy Robinhood Chain coins need nothing new: their sweeps, builds, trading pages, holders and launcher payouts are unchanged, except that their 25% share is credited to `REFUND` while any refund snapshot holder is still owed (*PYRE → Solana* above).
 
-The `multichain` branch adds a second venue: coins can launch on Solana through pump.fun behind the same loop (`docs/economics.md` → Venues). It is **not deployed to production** and nothing above changes until it is: the venue only exists when `SOLANA_RPC_URL` is set, and production does not set it. $PYRE stays a single coin on Robinhood Chain; there is no $PYRE on Solana and any that appears there is not ours.
+## Solana venue (pump.fun) — mainnet by owner decision, pending deploy
 
-What ships dark, and what enabling it looks like (procedure in `docs/runbook.md` → Enabling the pump.fun venue):
+New coins launch on Solana through pump.fun only (`docs/economics.md` → Venues); PONS v2 launches are closed in code. **Decision (owner, 2026-10-04): production goes to Solana mainnet directly, without the devnet staging run.** It is **not yet deployed**: the venue only exists when `SOLANA_RPC_URL` is set, and until the integrator sets it and redeploys, production accepts no launches. Results get recorded here once observed. $PYRE's own move to Solana (above) is separate from the app venue; until the Solana PYRE coin launches, only the mint published on pyre.fun is ours.
+
+Procedure in `docs/runbook.md` → Enabling the pump.fun venue.
 
 | Item | State |
 | --- | --- |
-| Adapter, workers, API, web | on the branch; `pons_v2` behaviour byte-for-byte unchanged; the existing suite is the integration gate |
-| Prisma migration `20260923000000_multichain` | adds `App.chain` / `App.launchpad` (backfilled `robinhood` / `pons_v2`), `User.solWallet`, `CoinBurn`; runs on the next `prisma migrate deploy`, harmless with the venue dark |
-| Railway `staging` environment | **pending** — `SOLANA_RPC_URL` (devnet), `SOLANA_CLUSTER=devnet` on `api` and `runner` |
-| Devnet treasury Solana wallet | **pending** — needs 3–5 devnet SOL from a human-run faucet or `solana airdrop`; the address is `adapterFor('pump_fun').treasury().address` from the production seed (same key on devnet and mainnet) |
-| Devnet integration run (`packages/chain/scripts/pump-devnet.mjs`: launch → buy → claim → burn → memo attest, signatures recorded here) | **pending** |
-| Staging product smoke (deposit SOL, launch on the Solana card, 1 SOL stake, custodial buy, `FeeEvent` in lamports, `CoinBurn` with memo, `BURNS` reconcile clean) | **pending** |
-| Mainnet: fund the treasury Solana wallet, keyed `SOLANA_RPC_URL`, `SOLANA_CLUSTER=mainnet-beta` on `api` + `runner` | **not before** the two rows above pass |
+| Adapter, workers, API, web | in the repo; `pons_v2` closed to launches, every legacy-coin read, trade, sweep, build and payout path kept; the existing suite is the integration gate |
+| Prisma migration `20260923000000_multichain` | adds `App.chain` / `App.launchpad` (backfilled `robinhood` / `pons_v2`), `User.solWallet`, `CoinBurn`; runs on the next `prisma migrate deploy` |
+| Railway `staging` environment, devnet treasury Solana wallet, devnet integration run, staging product smoke | **skipped** for production by owner decision 2026-10-04 |
+| Mainnet: fund the treasury Solana wallet, keyed `SOLANA_RPC_URL`, `SOLANA_CLUSTER=mainnet-beta` on `api` + `runner` | **pending deploy** |
+| First mainnet launch → claim → burn → memo attest, signatures recorded here (*First pump.fun launch* above) | **pending** |
 
-Facts the staging run must confirm before mainnet, all read from pump.fun's live programs today and subject to pump.fun changing them: create costs 0 SOL platform fee plus ≈ 0.005 SOL of rent; the creator earns 30 bps of curve trades and a market-cap-tiered 0.30%–0.95% (declining to 0.05%) on the canonical PumpSwap pool; `collect_creator_fee` / `collect_coin_creator_fee` are permissionless and always pay the recorded creator; devnet graduates at ≈ 2.83 SOL raised, mainnet at ≈ 85 SOL.
+Facts the first mainnet launch has to confirm, all read from pump.fun's live programs and subject to pump.fun changing them: create costs 0 SOL platform fee plus ≈ 0.005 SOL of rent; the creator earns 30 bps of curve trades and a market-cap-tiered 0.30%–0.95% (declining to 0.05%) on the canonical PumpSwap pool; `collect_creator_fee` / `collect_coin_creator_fee` are permissionless and always pay the recorded creator; mainnet graduates at ≈ 85 SOL raised.

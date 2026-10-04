@@ -43,8 +43,12 @@ export interface FeeSplit {
   usdMicros: bigint;
   buildMicros: bigint;
   creditsMicros: bigint;
+  /**
+   * The 25% PYRE leg on Robinhood Chain (legacy coins): credited to the PYRE refund pool (`REFUND`)
+   * while a snapshot holder is still owed, else to the `PYRE_TOKEN` buy-and-burn. 0 elsewhere.
+   */
   pyreMicros: bigint;
-  /** The 25% leg off Robinhood Chain: buys and burns the coin itself instead of PYRE. */
+  /** The 25% leg off Robinhood Chain: buys and burns the coin itself. */
   coinBurnMicros: bigint;
   launcherMicros: bigint;
   upstreamMicros: bigint;

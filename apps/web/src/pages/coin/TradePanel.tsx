@@ -184,7 +184,7 @@ export const TradePanel = ({ app, nativePriceUsd, initialSide = "buy", className
       <Card as="section" aria-label="Trade" className={cx("flex flex-col gap-3", className)}>
         <div className="eyebrow">Trade ${app.ticker}</div>
         <p className="text-14 text-ink-2">
-          You signed in with a Robinhood Chain wallet. ${app.ticker} lives on Solana, so trade it from a Solana wallet on pump.fun — or deposit SOL to your Pyre wallet and trade here with one click.
+          You signed in with an EVM wallet, which signs trades on legacy Robinhood Chain coins only. ${app.ticker} lives on Solana, so trade it from a Solana wallet on pump.fun — or deposit SOL to your Pyre wallet and trade here with one click.
         </p>
         <div className="flex flex-wrap gap-2">
           {app.launchpadUrl && (

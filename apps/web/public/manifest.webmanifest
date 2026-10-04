@@ -1,7 +1,7 @@
 {
   "name": "Pyre",
   "short_name": "Pyre",
-  "description": "coins that build apps. every fee burns PYRE.",
+  "description": "coins that build apps. every coin launches on pump.fun and burns itself.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0c",

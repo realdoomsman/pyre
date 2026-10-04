@@ -1,13 +1,13 @@
 import type { Launchpad, VenuesDto } from "@pyre/shared";
 import { VENUES } from "@pyre/shared";
 import { formatNative } from "../../lib/format.js";
+import { isLaunchable } from "../../lib/venue.js";
 import { Chip, Skeleton, cx } from "../../ui/index.js";
 
 type VenueRow = VenuesDto["venues"][number];
 
-/** What the 25% burn leg does on each chain — the one economic difference a launcher must see. */
-const BURN_COPY: Record<Launchpad, string> = {
-  pons_v2: "25% of fees buys and burns PYRE",
+/** What the 25% burn leg does — the one economic fact a launcher must see. Only launchable venues render. */
+const BURN_COPY: Partial<Record<Launchpad, string>> = {
   pump_fun: "25% of fees buys and burns the coin",
 };
 
@@ -16,28 +16,29 @@ interface Props {
   onChange: (launchpad: Launchpad) => void;
   /** `undefined` while `/v1/venues` loads. */
   venues: ReadonlyArray<VenueRow> | undefined;
-  /** A fork launches on its parent's venue; the picker shows why it is fixed. */
+  /** A fork launches on pump.fun whatever its parent's venue; the picker shows why it is fixed. */
   locked?: { launchpad: Launchpad; reason: string } | null;
   disabled?: boolean;
 }
 
 /**
- * Step 1's first question: where does the coin launch? One card per venue the API offers,
- * with the chain, the launchpad, the stake it asks for and where the burn leg goes. A venue
- * the API reports as disabled stays visible but cannot be picked.
+ * Step 1's first question: where does the coin launch? One card per venue that accepts new
+ * coins, with the chain, the launchpad, the stake it asks for and where the burn leg goes. PONS v2
+ * is closed for good and never shown; a launchable venue the API reports as disabled stays
+ * visible but cannot be picked.
  */
 export const VenuePicker = ({ value, onChange, venues, locked, disabled }: Props) => {
   if (!venues) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2" aria-busy>
-        <Skeleton className="h-28" rounded="card" />
+      <div className="grid gap-3" aria-busy>
         <Skeleton className="h-28" rounded="card" />
       </div>
     );
   }
+  const open = venues.filter((v) => isLaunchable(v.launchpad));
   return (
-    <div role="radiogroup" aria-label="Launch venue" className="grid gap-3 sm:grid-cols-2">
-      {venues.map((v) => {
+    <div role="radiogroup" aria-label="Launch venue" className={cx("grid gap-3", open.length > 1 && "sm:grid-cols-2")}>
+      {open.map((v) => {
         const meta = VENUES[v.launchpad];
         const selected = v.launchpad === value;
         const off = !v.enabled || disabled || (locked ? locked.launchpad !== v.launchpad : false);
@@ -81,7 +82,9 @@ export const VenuePicker = ({ value, onChange, venues, locked, disabled }: Props
                 <dd className="text-ink">1B supply · {v.tokenDecimals} dec</dd>
               </div>
             </dl>
-            <p className="small text-ink-3">{BURN_COPY[v.launchpad]}. Refundable stake, spam control only.</p>
+            <p className="small text-ink-3">
+              {BURN_COPY[v.launchpad] ? `${BURN_COPY[v.launchpad]}. ` : ""}Refundable stake, spam control only.
+            </p>
             {locked && locked.launchpad === v.launchpad && <p className="small text-ink-3">{locked.reason}</p>}
           </button>
         );

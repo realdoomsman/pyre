@@ -5,7 +5,6 @@ import { useStats } from "../api/queries.js";
 import type { GlobalFrame } from "../api/types.js";
 import { Lockup, Mark } from "../components/Lockup.js";
 import { IconApps, IconBurn, IconGitHub, IconHome, IconLaunch, IconPyre, IconRefresh, IconSearch, IconUser, IconX } from "../components/icons.js";
-import { env } from "../env.js";
 import { Button, Kbd, ProofStrip, Toaster, cx, type ProofItem } from "../ui/index.js";
 import { AccountMenu } from "./AccountMenu.js";
 import { LiveProvider, useLiveFrames } from "./LiveContext.js";
@@ -136,16 +135,21 @@ const Footer = () => (
       <div>
         <Lockup height={20} />
         <p className="small mt-3 max-w-sm text-ink-2">
-          coins that build apps. fees pay an agent to build the app; 25% of every coin's fees buys and <span className="text-ink">burns</span> PYRE on Robinhood Chain, or the coin itself on Solana.
+          coins that build apps. coins launch on pump.fun. fees pay an agent to build the app; 25% of every coin's fees buys the coin back and <span className="text-ink">burns</span> it. legacy
+          Robinhood Chain coins send their 25% to PYRE refunds until every holder is refunded, then back to burning PYRE.
         </p>
         <p className="micro mt-3 max-w-sm text-ink-3">coins are not investments. apps can fail. buybacks are burns, never distributions. not financial advice.</p>
         <p className="micro mt-2 max-w-sm text-ink-3">
-          <span className="text-ink-2">PYRE lives on Robinhood Chain only</span> — any PYRE on another chain is not ours.
+          <span className="text-ink-2">PYRE is moving to Solana</span> — Robinhood Chain holders: see{" "}
+          <Link to="/refund" className="text-ink-2 underline underline-offset-2 transition-colors hover:text-ink">
+            /refund
+          </Link>
+          .
         </p>
         <div className="mt-4 flex items-center gap-3">
           <span className="num inline-flex items-center gap-1.5 rounded-pill border border-line px-2.5 py-1 text-12 text-ink-2">
             <span className="h-1.5 w-1.5 rounded-pill bg-earn" aria-hidden />
-            {env.chainName} · {env.chainId}
+            solana · pump.fun
           </span>
           <a href={GITHUB_URL} target="_blank" rel="noreferrer noopener" aria-label="GitHub" className="text-ink-3 transition-colors hover:text-ink">
             <IconGitHub size={16} />
@@ -163,6 +167,7 @@ const Footer = () => (
             ["/apps", "app store"],
             ["/burns", "burn ledger"],
             ["/pyre", "$PYRE"],
+            ["/refund", "PYRE refunds"],
             ["/governance", "governance"],
             ["/status", "status"],
           ].map(([to, label]) => (

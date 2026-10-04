@@ -14,13 +14,15 @@ const app = { update: vi.fn() };
 const pyreStake = { findMany: vi.fn(), update: vi.fn() };
 const ledgerEntry = { createMany: vi.fn() };
 const notification = { findFirst: vi.fn(), create: vi.fn() };
+const refundHolder = { fields: { owedWei: "owedWei" }, findMany: vi.fn() };
 const prisma = {
   feeEvent,
   app,
   pyreStake,
   ledgerEntry,
   notification,
-  $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({ feeEvent, app, pyreStake, ledgerEntry }),
+  refundHolder,
+  $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({ feeEvent, app, pyreStake, ledgerEntry, refundHolder }),
 };
 
 const TREASURY = "0x00000000000000000000000000000000000000AA";
@@ -88,6 +90,7 @@ beforeEach(() => {
   app.update.mockResolvedValue({ budgetMicros: 123n });
   pyreStake.findMany.mockResolvedValue([]);
   notification.findFirst.mockResolvedValue({ id: "n1" });
+  refundHolder.findMany.mockResolvedValue([]);
 });
 
 describe("recordCreatorFee", () => {
@@ -174,6 +177,38 @@ describe("recordCreatorFee", () => {
     await recordCreatorFee(sweepApp_({ forkOf: { id: "parent", status: "KILLED" } }), 1_000_000_000_000_000_000n, CLAIM_TX as never, ETH_PRICE, log as never);
     expect(feeEvent.create).toHaveBeenCalledTimes(1);
     expect(feeEvent.create.mock.calls[0]![0].data.upstreamMicros).toBe(0n);
+  });
+});
+
+describe("recordCreatorFee on a legacy Robinhood Chain coin: the 25% PYRE leg", () => {
+  const WEI = 500_000_000_000_000_000n; // 0.5 ETH → $2,000; 25% = $500
+  const owed = { owedWei: 10n, settledWei: 4n, balanceUnits: 100n, minBalanceUnits: 100n };
+  const pyreLeg = () => {
+    const rows = ledgerEntry.createMany.mock.calls[0]![0].data as Array<{ account: string; deltaMicros: bigint; refType: string; refId: string }>;
+    return rows.filter((r) => r.account === "REFUND" || r.account === "PYRE_TOKEN");
+  };
+
+  it("credits REFUND under the FeeEvent while a snapshot holder is still owed, and nothing to PYRE_TOKEN", async () => {
+    refundHolder.findMany.mockResolvedValue([owed]);
+    await recordCreatorFee(sweepApp_(), WEI, CLAIM_TX as never, ETH_PRICE, log as never);
+    expect(pyreLeg()).toEqual([expect.objectContaining({ account: "REFUND", deltaMicros: 500_000_000n, refType: "FeeEvent", refId: "fee1" })]);
+    // The FeeEvent still records the leg, so the fee split conserves value whichever account took it.
+    expect(feeEvent.create.mock.calls[0]![0].data.pyreMicros).toBe(500_000_000n);
+  });
+
+  it("falls back to the PYRE_TOKEN buy-and-burn once every holder is settled or sold out", async () => {
+    // Fully settled; kept 30% of the snapshot so eligible (3 wei) ≤ settled (4); sold out entirely.
+    refundHolder.findMany.mockResolvedValue([{ ...owed, settledWei: 10n }, { ...owed, minBalanceUnits: 30n }, { ...owed, settledWei: 0n, minBalanceUnits: 0n }]);
+    await recordCreatorFee(sweepApp_(), WEI, CLAIM_TX as never, ETH_PRICE, log as never);
+    expect(pyreLeg()).toEqual([expect.objectContaining({ account: "PYRE_TOKEN", deltaMicros: 500_000_000n, refType: "FeeEvent", refId: "fee1" })]);
+  });
+
+  it("never routes a Solana coin's 25% leg to REFUND, owed holders or not", async () => {
+    refundHolder.findMany.mockResolvedValue([owed]);
+    await recordCreatorFee(sweepApp_({ chain: "solana", launchpad: "pump_fun" }), 2_000_000_000n, "solSig", 120, log as never);
+    const rows = ledgerEntry.createMany.mock.calls[0]![0].data as Array<{ account: string }>;
+    expect(rows.map((r) => r.account)).toContain("COINBURN:app1");
+    expect(rows.map((r) => r.account)).not.toContain("REFUND");
   });
 });
 

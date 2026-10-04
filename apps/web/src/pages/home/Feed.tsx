@@ -4,7 +4,7 @@ import { LAUNCH_STAKE_BY_CHAIN, type AppSort } from "@pyre/shared";
 import { flatPages, useApps, useStats } from "../../api/queries.js";
 import { CoinCard } from "../../components/CoinCard.js";
 import { IconArrowRight } from "../../components/icons.js";
-import { ETH, SOL, formatNative } from "../../lib/format.js";
+import { SOL, formatNative } from "../../lib/format.js";
 import { Button, EmptyState, Skeleton, Tabs, panelId, type TabItem } from "../../ui/index.js";
 
 const PAGE_STEP = 12;
@@ -23,7 +23,7 @@ const EMPTY_COPY: Record<AppSort, { title: string; body: string }> = {
   trending: { title: "nothing trending yet", body: "trending needs fills. the first coins to trade land here." },
   new: { title: "no coins yet", body: "the newest launches land here the second they clear intake." },
   heating: { title: "nothing heating", body: "a coin heats up as its curve climbs toward graduation." },
-  graduated: { title: "no graduates yet", body: "a curve that fills moves to its pool — uniswap v4 on Robinhood Chain, pumpswap on Solana — and shows up here." },
+  graduated: { title: "no graduates yet", body: "a pump.fun curve that fills moves to its PumpSwap pool and shows up here." },
   shipping: { title: "no agent at work", body: "once a coin's fees reach $50 the agent starts building and the coin lands here." },
 };
 
@@ -35,8 +35,8 @@ export const FeedEmpty = () => (
       nothing has launched <em>yet</em>. be first.
     </h2>
     <p className="body mx-auto mt-3 max-w-lg text-ink-2">
-      describe an app in a paragraph and stake {formatNative(LAUNCH_STAKE_BY_CHAIN.robinhood, ETH, { digits: 2 })} on Robinhood Chain or {formatNative(LAUNCH_STAKE_BY_CHAIN.solana, SOL, { digits: 0 })} on
-      Solana. the coin's trading fees pay an agent to build the app; 25% of every coin's fees buys and burns PYRE — or the coin itself on Solana.
+      describe an app in a paragraph and stake {formatNative(LAUNCH_STAKE_BY_CHAIN.solana, SOL, { digits: 0 })}. the coin launches on pump.fun; its creator fees pay an agent to build the app; 25% of every
+      coin's fees buys the coin back and burns it.
     </p>
     <div className="mt-6 flex justify-center">
       <Button variant="primary" size="lg" href="/launch" iconRight={<IconArrowRight size={16} />}>

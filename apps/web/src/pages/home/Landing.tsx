@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from "rea
 import { Link } from "react-router-dom";
 import { FEE_SPLIT_BPS, LAUNCH_STAKE_BY_CHAIN, MIN_BUILD_BUDGET_USD, MIN_BUYBACK_USD, type StatsDto } from "@pyre/shared";
 import type { Format } from "@number-flow/react";
-import { ETH, SOL, formatCount, formatEth, formatNative } from "../../lib/format.js";
+import { SOL, formatCount, formatEth, formatNative } from "../../lib/format.js";
 import { useReducedMotion } from "../../lib/motion.js";
 import { Button, NumberFlow, cx } from "../../ui/index.js";
 import { IconArrowRight } from "../../components/icons.js";
@@ -25,14 +25,14 @@ const STAGES: ReadonlyArray<Stage> = [
   {
     id: "launch",
     label: "launch",
-    copy: "describe the app. the coin launches on pons v2 (Robinhood Chain) or pump.fun (Solana) with a refundable stake.",
+    copy: "describe the app. the coin launches on pump.fun, on Solana, with a refundable 1 SOL stake.",
     value: (s) => ({ value: s.appsTotal, caption: "coins launched" }),
   },
   {
     id: "fees",
     label: "fees",
-    copy: "every trade pays a 1% fee; 70% of it belongs to the coin's creator wallet — the app.",
-    value: (s) => ({ value: Number(BigInt(s.feesTotalWei)) / 1e18, format: { maximumFractionDigits: 3 }, suffix: " ETH", caption: "fees claimed" }),
+    copy: "pump.fun pays the coin's creator wallet — the app — 0.30% of every trade on the curve and a tiered share in the PumpSwap pool.",
+    value: (s) => ({ value: Number(BigInt(s.feesTotalLamports)) / 1e9, format: { maximumFractionDigits: 3 }, suffix: " SOL", caption: "fees claimed" }),
   },
   {
     id: "agent",
@@ -47,16 +47,16 @@ const STAGES: ReadonlyArray<Stage> = [
     value: (s) => ({ value: s.appsLive, caption: "apps live" }),
   },
   {
-    id: "pyre",
-    label: "pyre",
-    copy: "25% of every coin's fees is credited to PYRE. every 10 minutes, once it clears $5, the treasury buys PYRE on the curve or the v4 pool.",
-    value: (s) => ({ value: s.pyreBurnsCount, caption: "pyre burns" }),
+    id: "buyback",
+    label: "buyback",
+    copy: "25% of every coin's fees is set aside for that coin. every 10 minutes, once it clears $5, the treasury buys the coin on its curve or PumpSwap pool.",
+    value: () => null,
   },
   {
     id: "burn",
     label: "burn",
-    copy: "the PYRE is burned — totalSupply falls — and an attestation tx hashes the fee claims that paid for it.",
-    value: (s) => ({ value: Number(BigInt(s.burnedEthWei)) / 1e18, format: { maximumFractionDigits: 3 }, suffix: " ETH", caption: "burned" }),
+    copy: "the coin is burned — supply falls — and an attestation tx hashes the fee claims that paid for it.",
+    value: () => null,
   },
 ];
 
@@ -103,7 +103,7 @@ const LoopSpine = ({ stats }: { stats: StatsDto | undefined }) => {
       <h2 id="loop-title" className="display text-36 sm:text-48">
         one loop. <em>fees</em> close it.
       </h2>
-      <p className="body mt-3 max-w-xl text-ink-2">a coin funds an agent. the agent builds an app. 25% of every coin's fees buys PYRE and burns it. every step is a transaction you can open.</p>
+      <p className="body mt-3 max-w-xl text-ink-2">a coin funds an agent. the agent builds an app. 25% of every coin's fees buys the coin back and burns it. every step is a transaction you can open.</p>
       <ol ref={ref} className="relative mt-10 grid list-none gap-y-8 p-0 sm:grid-cols-[2.5rem_1fr]">
         {/* The spine: a hairline that draws with scroll, heat rising behind it. */}
         <div className="pointer-events-none absolute left-[11px] top-2 bottom-2 hidden w-px bg-line sm:block" aria-hidden>
@@ -151,24 +151,28 @@ const LoopSpine = ({ stats }: { stats: StatsDto | undefined }) => {
 };
 
 const HOW: ReadonlyArray<{ title: string; body: string }> = [
-  { title: "launch", body: "name, ticker, image, one paragraph about the app. the coin launches on PONS v2 from its own wallet." },
-  { title: "fund", body: "trading fees claim into that wallet. 60% becomes the agent's budget; the build starts at $50." },
+  { title: "launch", body: "name, ticker, image, one paragraph about the app. the coin launches on pump.fun from its own wallet." },
+  { title: "fund", body: "creator fees claim into that wallet. 60% becomes the agent's budget; the build starts at $50." },
   { title: "ship", body: "the agent writes, tests and deploys the app. you can read every tool call as it happens." },
-  { title: "burn", body: "25% of every coin's fees swaps into PYRE and burns it. supply falls; the tx and the attestation are public." },
+  { title: "burn", body: "25% of every coin's fees buys the coin and burns it. supply falls; the tx and the attestation are public." },
 ];
 
 const pct = (bps: number) => `${bps / 100}%`;
 
 const FAQ: ReadonlyArray<{ q: string; a: ReactNode }> = [
-  { q: "is a buyback a payout?", a: "no. nothing is paid to holders. the treasury buys PYRE with the fee share and burns it — totalSupply falls. that is the whole mechanism." },
+  { q: "is a buyback a payout?", a: "no. a buyback pays nothing to holders. the treasury buys the coin with its fee share and burns it — supply falls. that is the whole mechanism." },
   {
     q: "who holds the keys?",
-    a: "sign in with google and pyre keeps a custodial wallet for you (server-signed). sign in with your own wallet and you sign your own trades. the app's wallet is derived from the platform seed and only ever launches, sweeps and claims.",
+    a: "sign in with google or your own wallet and pyre keeps a custodial Solana wallet for you (server-signed) for one-click stakes and trades. an own wallet signs its own trades on legacy Robinhood Chain coins. the app's wallet is derived from the platform seed and only ever launches, sweeps and claims.",
   },
   { q: "does the app cost money?", a: "no. every app on pyre is free to use. holding the coin unlocks holder perks the agent builds in; nobody is charged inside an app." },
   { q: "what if the fees run out?", a: "the agent builds until the budget runs out; the app goes dormant and can be relit by anyone who tops up the budget." },
-  { q: "where do the fees come from?", a: "PONS v2 charges 1% per trade on the curve and in the v4 pool. 70% of that is paid to the creator wallet, which is the app. pyre never takes a cut of trades." },
-  { q: "can i verify any of this?", a: "every fee claim and every PYRE burn is a transaction on robinhood chain. the burn ledger links each one. the attestation tx carries sha256 of the fee claims that paid for it." },
+  { q: "where do the fees come from?", a: "pump.fun pays the creator wallet, which is the app, 0.30% of every trade on the curve and a tiered share in the PumpSwap pool. the rates are pump.fun's. pyre never takes a cut of trades." },
+  { q: "can i verify any of this?", a: "every fee claim and every burn is a transaction on Solana. each coin's burn tab links each one. the attestation tx carries sha256 of the fee claims that paid for it." },
+  {
+    q: "what about the coins on robinhood chain?",
+    a: "the 7 coins launched on pons v2 keep running as legacy Robinhood Chain coins: builds, trading and fee claims are unchanged. their 25% share funds PYRE refunds until every snapshot holder is refunded, then goes back to buying and burning PYRE.",
+  },
   { q: "is this financial advice?", a: "no. coins are not investments. apps can fail. market cap is a fact we display, never a claim we make." },
 ];
 
@@ -228,23 +232,23 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
           </thead>
           <tbody className="divide-y divide-line">
             <tr>
-              <td className="px-4 py-3 text-ink">creator fees (ETH or SOL)</td>
+              <td className="px-4 py-3 text-ink">creator fees (SOL)</td>
               <td className="num px-4 py-3 text-ink">
                 {pct(FEE_SPLIT_BPS.BUILD_BUDGET)} / {pct(FEE_SPLIT_BPS.PYRE_TOKEN)} / {pct(FEE_SPLIT_BPS.LAUNCHER)}
               </td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">agent budget / buy-and-burn (PYRE on Robinhood Chain, the coin itself on Solana) / launcher</td>
+              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">agent budget / buy-and-burn of the coin itself / launcher</td>
             </tr>
             <tr>
               <td className="px-4 py-3 text-ink">launch stake</td>
               <td className="num px-4 py-3 text-ink">
-                {formatNative(LAUNCH_STAKE_BY_CHAIN.robinhood, ETH, { digits: 2 })} · {formatNative(LAUNCH_STAKE_BY_CHAIN.solana, SOL, { digits: 0 })}
+                {formatNative(LAUNCH_STAKE_BY_CHAIN.solana, SOL, { digits: 0 })}
               </td>
               <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">refunded at the first build; spam control only</td>
             </tr>
             <tr>
               <td className="px-4 py-3 text-ink">launchpad trade fee</td>
-              <td className="num px-4 py-3 text-ink">pons 1% · 70% to creator</td>
-              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">pump.fun pays the creator 0.30% on the curve and a tiered share after; the creator wallet is always the app's wallet</td>
+              <td className="num px-4 py-3 text-ink">pump.fun 0.30% · curve</td>
+              <td className="hidden px-4 py-3 text-ink-2 sm:table-cell">pump.fun pays the creator 0.30% on the curve and a tiered share in the PumpSwap pool; the creator wallet is always the app's wallet</td>
             </tr>
             <tr>
               <td className="px-4 py-3 text-ink">thresholds</td>
@@ -258,7 +262,8 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
       </div>
       {stats && (
         <p className="num mt-3 text-12 text-ink-3">
-          right now: {formatCount(stats.appsLive)} apps live · {formatEth(stats.feesTotalWei)} fees claimed · {formatEth(stats.burnedEthWei)} burned. not financial advice.
+          right now: {formatCount(stats.appsLive)} apps live · {formatNative(stats.feesTotalLamports, SOL, { digits: 2 })} fees claimed · {formatEth(stats.burnedEthWei)} of PYRE burned on Robinhood
+          Chain to date. not financial advice.
         </p>
       )}
     </section>
@@ -269,7 +274,7 @@ export const Landing = ({ stats }: { stats: StatsDto | undefined }) => (
       <h2 id="cta-title" className="display text-36 sm:text-48">
         launch a coin that <em>ships</em>.
       </h2>
-      <p className="body mx-auto mt-3 max-w-md text-ink-2">describe the app in a paragraph. the stake is 0.05 ETH or 1 SOL and comes back.</p>
+      <p className="body mx-auto mt-3 max-w-md text-ink-2">describe the app in a paragraph. it launches on pump.fun; the 1 SOL stake comes back.</p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
         <Button variant="primary" size="lg" href="/launch" iconRight={<IconArrowRight size={16} />}>
           Launch

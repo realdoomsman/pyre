@@ -39,7 +39,7 @@ const loadStats = async (): Promise<StatsDto> => {
       where: { startedAt: { gte: dayStart } },
       select: { startedAt: true, finishedAt: true },
     }),
-    // ETH burned = $PYRE's buy-and-burns: the platform's 25% share of every coin's creator fees.
+    // ETH burned = $PYRE's buy-and-burns of the PYRE_TOKEN ledger: the legacy Robinhood Chain coins' 25% fee share from before the refund program (and again once every refund holder is settled).
     db.pyreBurn.aggregate({ where: { status: "BURNED" }, _sum: { ethWei: true }, _count: true }),
     db.pyreBurn.aggregate({ where: { status: "BURNED", completedAt: { gte: since24h } }, _sum: { ethWei: true } }),
     db.pyreBurn.aggregate({ where: { status: "BURNED", completedAt: { gte: since30d } }, _sum: { ethWei: true } }),

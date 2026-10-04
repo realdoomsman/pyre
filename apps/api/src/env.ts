@@ -51,6 +51,8 @@ const schema = z.object({
   SOLANA_CLUSTER: z.enum(["mainnet-beta", "devnet"]).default("mainnet-beta"),
   PUMP_LAUNCH_ENABLED: optionalBool.transform((v) => v ?? true),
   LAUNCH_STAKE_LAMPORTS: optionalUnits.transform((v) => v ?? LAUNCH_STAKE_BY_CHAIN.solana),
+  // Base58 mint of the Solana PYRE coin (refund program); empty until it launches. The program accrues only when set.
+  PYRE_SOL_MINT: optional.pipe(z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "expected a base58 Solana mint").optional()),
   BLOCKSCOUT_URL: z.string().url().default("https://robinhoodchain.blockscout.com"),
   GITHUB_WEBHOOK_SECRET: optional,
   ANTHROPIC_API_KEY: z.string().min(1),

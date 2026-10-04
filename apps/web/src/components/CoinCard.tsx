@@ -122,7 +122,7 @@ export const CoinCard = ({ app, rank, onTrade, className }: CoinCardProps) => {
         </div>
       </Link>
 
-      <div className="flex items-center gap-2 border-t border-line px-4 py-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-line px-4 py-2">
         <Chip tone={agent.tone} dot={agent.dot} size="sm" mono>
           {agent.label}
         </Chip>

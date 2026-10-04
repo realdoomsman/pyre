@@ -121,7 +121,7 @@ export const UiGallery = () => {
   const mcapMicros = 184_320_000_000n + BigInt(tick % 5) * 1_950_000_000n - BigInt(tick % 3) * 2_100_000_000n;
   const solLamports = 12_345_678_900n + BigInt(tick) * 250_000_000n;
   // Venue picker mock.
-  const [venue, setVenue] = useState<Launchpad>("pons_v2");
+  const [venue, setVenue] = useState<Launchpad>("pump_fun");
   const [venueOn, setVenueOn] = useState(true);
 
   // Heat gauge.
@@ -293,7 +293,7 @@ export const UiGallery = () => {
             <div className="text-22 font-medium">Geist 22 medium — fees fund the build, fees fund the burn</div>
             <div className="h3">Geist 18 semibold — a card title</div>
             <p className="body max-w-2xl">
-              Geist 15 body. Launch a coin and its trading fees pay an AI agent to build a real app. A quarter of every coin's fees buys and burns PYRE. Every
+              Geist 15 body. Launch a coin on pump.fun and its creator fees pay an AI agent to build a real app. A quarter of every coin's fees buys the coin back and burns it. Every
               number on this page is real, mono and tabular.
             </p>
             <p className="text-14 text-ink-2">Geist 14 secondary — metadata and helper text.</p>
@@ -340,8 +340,8 @@ export const UiGallery = () => {
                 value={venue}
                 onChange={setVenue}
                 venues={[
-                  { chain: "robinhood", launchpad: "pons_v2", enabled: true, stakeWei: LAUNCH_STAKE_BY_CHAIN.robinhood.toString(), chainLabel: "Robinhood Chain", launchpadLabel: "pons v2", native: VENUES.pons_v2.native, tokenDecimals: 18, cluster: null },
-                  { chain: "solana", launchpad: "pump_fun", enabled: venueOn, stakeWei: LAUNCH_STAKE_BY_CHAIN.solana.toString(), chainLabel: "Solana", launchpadLabel: "pump.fun", native: VENUES.pump_fun.native, tokenDecimals: 6, cluster: "devnet" },
+                  { chain: "robinhood", launchpad: "pons_v2", enabled: false, stakeWei: LAUNCH_STAKE_BY_CHAIN.robinhood.toString(), chainLabel: "Robinhood Chain", launchpadLabel: "pons v2", native: VENUES.pons_v2.native, tokenDecimals: 18, cluster: null },
+                  { chain: "solana", launchpad: "pump_fun", enabled: venueOn, stakeWei: LAUNCH_STAKE_BY_CHAIN.solana.toString(), chainLabel: "Solana", launchpadLabel: "pump.fun", native: VENUES.pump_fun.native, tokenDecimals: 6, cluster: "mainnet-beta" },
                 ]}
               />
               <Row className="mt-3">
@@ -356,7 +356,7 @@ export const UiGallery = () => {
         <Section id="buttons" title="Button" note="Pill primary, ghost secondary, danger, icon. Three sizes. Loading keeps width.">
           <Row>
             <Button>Launch a coin</Button>
-            <Button variant="secondary">Trade on PONS</Button>
+            <Button variant="secondary">Trade on pump.fun</Button>
             <Button variant="ghost">Cancel</Button>
             <Button variant="danger">Kill app</Button>
             <Button variant="icon" label="Copy">
@@ -673,6 +673,7 @@ export const UiGallery = () => {
             open={ignition}
             ticker="SPLIT"
             name="Splitwise"
+            chainLabel="Solana"
             txHash={TX}
             explorerUrl={`https://robinhoodchain.blockscout.com/tx/${TX}`}
             ticks={ticks}

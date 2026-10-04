@@ -37,7 +37,7 @@ const store = vi.hoisted(() => {
     hash(key).set(field, value);
     return 1;
   });
-  const expire = vi.fn(async () => {
+  const expire = vi.fn(async (_key: string, _ttl: number) => {
     guard();
     return 1;
   });

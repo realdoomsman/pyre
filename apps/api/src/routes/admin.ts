@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { big, prisma, type Prisma } from "@pyre/db";
-import { GLOBAL_DAILY_COMPUTE_CEILING_USD, type OpsDto } from "@pyre/shared";
+import { GLOBAL_DAILY_COMPUTE_CEILING_USD, REFUND_LEDGER_ACCOUNT, type OpsDto } from "@pyre/shared";
 import { adapterFor, getEthPriceUsd, publicClient, solanaEnabled } from "@pyre/chain";
 import { requireAdmin } from "../lib/auth.js";
 import { auditAdmin } from "../lib/audit.js";
@@ -90,7 +90,7 @@ admin.get(
       // Latest run per reconcile kind. Small table, a handful of kinds — take a window and reduce.
       prisma.reconcileRun.findMany({ orderBy: { createdAt: "desc" }, take: 60 }),
       prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 25 }),
-      prisma.ledgerEntry.groupBy({ by: ["account"], where: { OR: [{ account: { in: ["TREASURY", "PYRE_TOKEN"] } }, { account: { startsWith: "COINBURN:" } }] }, _sum: { deltaMicros: true } }),
+      prisma.ledgerEntry.groupBy({ by: ["account"], where: { OR: [{ account: { in: ["TREASURY", "PYRE_TOKEN", REFUND_LEDGER_ACCOUNT] } }, { account: { startsWith: "COINBURN:" } }] }, _sum: { deltaMicros: true } }),
       prisma.app.aggregate({ where: { chain: "robinhood" }, _sum: { feesWei: true } }),
       prisma.app.aggregate({ where: { chain: "solana" }, _sum: { feesWei: true } }),
       prisma.feeEvent.aggregate({ where: { createdAt: { gte: since24h }, app: { chain: "robinhood" } }, _sum: { wei: true } }),
@@ -164,7 +164,7 @@ admin.get(
     }
     if (todayMicros * 10n >= ceilingMicros * 8n)
       alerts.push({ level: "warn", code: "ceiling", message: `Platform compute at $${(Number(todayMicros) / 1e6).toFixed(2)} of $${GLOBAL_DAILY_COMPUTE_CEILING_USD} daily ceiling`, href: null });
-    for (const flag of ["pause_builds", "pauseFeeSweep", "pauseBuyback"]) {
+    for (const flag of ["pause_builds", "pauseFeeSweep", "pauseBuyback", "pause_refunds"]) {
       if (settingsMap[flag] === true) alerts.push({ level: "info", code: flag, message: `${flag} is on`, href: null });
     }
     const latestReconcile: Record<string, (typeof reconcile)[number]> = {};

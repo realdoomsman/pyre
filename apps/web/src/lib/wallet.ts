@@ -102,13 +102,22 @@ export const ensureChain = async (provider: Eip1193Provider): Promise<void> => {
   if (after.toLowerCase() !== CHAIN_HEX) throw new Error(`wallet stayed on chain ${parseInt(after, 16)}; switch to ${env.chainName}`);
 };
 
-/** Request accounts and put the wallet on Robinhood Chain. Returns the checksummed primary address. */
-export const connectWallet = async (provider: Eip1193Provider): Promise<Address> => {
+/**
+ * Request accounts without touching the wallet's network. Enough for a chain-agnostic EOA
+ * `personal_sign` (the refund link), and works in wallets that cannot add Robinhood Chain.
+ */
+export const requestAccount = async (provider: Eip1193Provider): Promise<Address> => {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   const first = accounts[0];
   if (!first) throw new Error("the wallet returned no account");
-  await ensureChain(provider);
   return getAddress(first);
+};
+
+/** Request accounts and put the wallet on Robinhood Chain. Returns the checksummed primary address. */
+export const connectWallet = async (provider: Eip1193Provider): Promise<Address> => {
+  const address = await requestAccount(provider);
+  await ensureChain(provider);
+  return address;
 };
 
 /** EIP-191 `personal_sign` of a UTF-8 message (sent hex-encoded, as the RPC expects); `/v1/auth/wallet/verify` checks it with viem. */

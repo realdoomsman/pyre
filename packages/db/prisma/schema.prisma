@@ -739,7 +739,7 @@ model Report {
 /** Platform-wide treasury ledger (USD micros). Every money movement writes one row. */
 model LedgerEntry {
   id        String   @id @default(cuid())
-  account   String   // TREASURY | PYRE_TOKEN | COINBURN:<appId> | CREDITS:<appId> | LAUNCHER:<userId> | BUILD:<appId> | STAKERS:<appId> | CONTRIB:<userId>
+  account   String   // TREASURY | PYRE_TOKEN | COINBURN:<appId> | CREDITS:<appId> | LAUNCHER:<userId> | BUILD:<appId> | STAKERS:<appId> | CONTRIB:<userId> | REFUND
   deltaMicros BigInt
   refType   String   // FeeEvent | PyreBurn | CoinBurn | BuildJob | Payout | CreditFunding
   refId     String
@@ -822,5 +822,61 @@ model Upload {
   mime      String
   data      Bytes
   size      Int
+  createdAt DateTime @default(now())
+}
+
+/// A Robinhood Chain address that held PYRE at REFUND_SNAPSHOT.block. Loaded once from data/pyre-refund-snapshot.json; never inserted by request paths.
+model RefundHolder {
+  address        String   @id // checksummed 0x
+  balanceUnits   Decimal  @db.Decimal(78, 0) // PYRE base units held at the snapshot block
+  currentBalanceUnits Decimal @db.Decimal(78, 0) // PYRE balance now, tracked from Transfer logs after the snapshot (loader sets = balanceUnits)
+  minBalanceUnits Decimal  @db.Decimal(78, 0) // lowest balance at any point after the snapshot, ≤ balanceUnits (loader sets = balanceUnits)
+  boughtUnits    Decimal  @db.Decimal(78, 0) // PYRE that landed in this address in its own buy txs through the snapshot block
+  ethInWei       Decimal  @db.Decimal(78, 0)
+  ethOutWei      Decimal  @db.Decimal(78, 0)
+  owedWei        Decimal  @db.Decimal(78, 0) // max(0, min(in − out, in × min(balance, bought) / bought)), fixed
+  settledWei     Decimal  @default(0) @db.Decimal(78, 0) // ETH-equivalent allocated so far, ≤ owedWei
+  creditMicros   BigInt   @default(0) // allocated USD not yet paid
+  paidMicros     BigInt   @default(0) // lifetime USD paid in SOL
+  solWallet      String? // linked payout wallet (base58)
+  linkedAt       DateTime?
+  linkedByUserId String? // set when proven by a custodial Pyre session
+  linkPendingUntil DateTime? // a relink to a different wallet is paid only from this time (48 h cooldown); null = active now
+  payouts        RefundPayout[]
+
+  @@index([solWallet])
+}
+
+enum RefundPayoutStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  FAILED
+}
+
+model RefundPayout {
+  id          String             @id @default(cuid())
+  address     String
+  holder      RefundHolder       @relation(fields: [address], references: [address])
+  solWallet   String
+  usdMicros   BigInt
+  lamports    Decimal            @db.Decimal(78, 0)
+  solPriceUsd Float
+  status      RefundPayoutStatus @default(PENDING)
+  txSig       String?            @unique
+  error       String?
+  lastValidBlockHeight BigInt? // Solana block height after which the sent transaction's blockhash can no longer land
+  createdAt   DateTime           @default(now())
+  confirmedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([address, createdAt])
+}
+
+/// One row per pump.fun claim/distribution signature credited to the REFUND ledger account. The primary key makes the credit idempotent at the database level: a second insert of the same signature fails (P2002) and its LedgerEntry rolls back with it.
+model RefundFeeCredit {
+  signature String   @id // Solana signature of the collect/distribution transaction (= LedgerEntry.refId)
+  lamports  Decimal  @db.Decimal(78, 0) // lamports the treasury received in that transaction
+  usdMicros BigInt // USD micros credited to REFUND (the REFUND_FEE_BPS share)
   createdAt DateTime @default(now())
 }

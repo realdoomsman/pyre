@@ -18,13 +18,14 @@ export const launchesLast24h = (userId: string): Promise<number> =>
   prisma.app.count({ where: { launcherId: userId, createdAt: { gte: new Date(Date.now() - 86_400_000) }, status: { not: "FAILED" } } });
 
 /**
- * Creates a DRAFT app for the launcher on the chosen venue, assigns a unique slug + derived app
- * wallet on that chain (the PONS creator / creatorFeeRecipient, or the pump.fun creator), and
- * enqueues the intake job (moderation + spec generation). A fork launches on its parent's venue.
+ * Creates a DRAFT app for the launcher on pump.fun, assigns a unique slug + derived app wallet on
+ * Solana (the pump.fun creator), and enqueues the intake job (moderation + spec generation). Coins
+ * launch on pump.fun only: a fork of a legacy Robinhood Chain coin launches there too, and an
+ * explicit `pons_v2` is refused by `assertVenueEnabled`.
  */
 export const createLaunch = async (user: User, body: CreateLaunchBody, forkOf: App | null): Promise<App> => {
   if (!user.wallet) throw new HttpError(400, "wallet_required");
-  const launchpad = forkOf ? forkOf.launchpad : (body.launchpad ?? "pons_v2");
+  const launchpad = forkOf ? "pump_fun" : body.launchpad;
   assertVenueEnabled(launchpad);
   const venue = VENUES[launchpad];
   const tier = reputationTier(user.reputation);

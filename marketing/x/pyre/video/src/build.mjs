@@ -1,4 +1,4 @@
-// One command, whole film:  node src/build.mjs [--film=launch|venues] [--skip=capture,voice] [--only=render,mix]
+// One command, whole film:  node src/build.mjs [--film=launch|venues|solana] [--skip=capture,voice] [--only=render,mix]
 //
 //   capture  record the live site as 30 fps frame sequences   (needs network; ~2 min)
 //   voice    edge-tts per sentence → timeline.json, vo.wav, script.md, .srt

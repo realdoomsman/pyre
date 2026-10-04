@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 22 September 2026_
+_Last updated: 4 October 2026_
 
 This policy explains what Pyre collects, why we collect it, who else sees it, and how long we keep it. It covers this website, the API, and every app hosted on a Pyre domain or path. Apps built on Pyre use our login and our storage, so this one policy applies inside them too — an app cannot collect more than what is listed here, because the SDK is the only way it can store or read anything.
 
@@ -9,7 +9,7 @@ This policy explains what Pyre collects, why we collect it, who else sees it, an
 - **Account identifiers from Google Sign-In.** We use Google Sign-In to log you in. We receive your Google account id, email address, name, and avatar. If you sign in with a wallet instead, we receive the wallet address and a one-time signed message that proves you control it. **We never receive your Google password, private keys, or seed phrase.**
 - **Your custodial Pyre wallets.** When you sign in, Pyre derives and holds a Robinhood Chain wallet and a Solana wallet on your behalf and signs every on-chain transaction for you; you can deposit to them and withdraw from them. These are **custodial wallets** — we custody their private keys on our servers and never expose a private key to your browser, but we do hold them. If you instead connect your own external wallet, you keep sole control of that wallet's keys and sign your own Robinhood Chain transactions; there is no external-wallet option on Solana.
 - **Wallet addresses and on-chain data.** Public addresses, coin balances for Pyre coins, and transaction hashes or signatures. This data is already public on Robinhood Chain or Solana; we index it to compute holder tiers, vote weight, staking positions, and to verify that a stake, a top-up, or a deposit actually happened.
-- **What you submit when launching.** Your prompt, the generated spec, the app name, ticker, image, and the venue you chose. Prompts go to an AI model for moderation and spec generation and end up in the app's public repository, so treat them as public. The name, ticker, and image are written to the chain at launch and cannot be removed from it; for a Solana coin the metadata document pump.fun reads (name, ticker, description, image, website) is served publicly by Pyre.
+- **What you submit when launching.** Your prompt, the generated spec, the app name, ticker, and image. Prompts go to an AI model for moderation and spec generation and end up in the app's public repository, so treat them as public. The name, ticker, and image are written to the chain at launch and cannot be removed from it; the metadata document pump.fun reads (name, ticker, description, image, website) is served publicly by Pyre.
 - **App usage counters.** Inside a hosted app we record the app id, your user id, a first-seen and last-seen timestamp, and the key-value data the app stores for you through `pyre.kv`. Counters are how the app store shows user numbers. An app can read only the values it wrote for you; it cannot read another user's values or another app's data.
 - **Technical logs.** IP address, user agent, and request metadata, used for security, abuse detection, and rate limiting.
 - **Reports and correspondence.** What you send us when you report an app or email us, including the contact details you provide.

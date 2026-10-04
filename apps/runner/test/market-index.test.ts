@@ -16,7 +16,7 @@ interface CandleUpsertArgs {
 
 const fx = vi.hoisted(() => {
   const app = { findMany: vi.fn(), update: vi.fn(async () => ({})), updateMany: vi.fn(async () => ({ count: 1 })) };
-  const trade = { createMany: vi.fn(async () => ({ count: 0 })), findMany: vi.fn(async () => []) };
+  const trade = { createMany: vi.fn(async () => ({ count: 0 })), findMany: vi.fn(async (): Promise<unknown[]> => []) };
   const candle = { upsert: vi.fn<(args: CandleUpsertArgs) => Promise<unknown>>(async () => ({})), aggregate: vi.fn(async () => ({ _sum: { v: 0 } })) };
   const prisma = { app, trade, candle, $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({ app, trade, candle }) };
   return { app, trade, candle, prisma, getTrades: vi.fn<(launch: { phase: number }, from: bigint, to: bigint) => Promise<unknown[]>>(), readLaunch: vi.fn(), getBlockNumber: vi.fn() };

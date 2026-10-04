@@ -131,7 +131,7 @@ const env = vi.hoisted((): { ZENTRO_STATE?: string } => ({ ZENTRO_STATE: "{}" })
 const { fundCredits, ADDRESS_TTL_MS, CREDITS_FUNDING_SETTING, MAX_CREDITS_FUNDING_USD, ZENTRO_SESSION_BACKOFF_MS } = await import("../src/workers/chain/credits.js");
 const { RelayQuoteError } = await import("../src/lib/relay.js");
 const NOW = Date.parse("2026-09-21T12:00:00Z");
-const log = { child: () => log, info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+const log = { child: () => log, info: vi.fn(), warn: vi.fn(), error: vi.fn() } as never;
 
 const quoteFor = (units: bigint) => ({
   requestId: REQUEST,

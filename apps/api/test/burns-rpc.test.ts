@@ -70,8 +70,9 @@ import { publicRoutes } from "../src/routes/public.js";
 import { checkLogFilter, MAX_LOG_RANGE, rpc } from "../src/routes/rpc.js";
 
 /** Runs the handler registered for `method path` on an express router with a fake req/res. */
-const invoke = async (router: { stack: Array<{ route?: { path: string; methods: Record<string, boolean>; stack: Array<{ handle: (req: Request, res: Response, next: (e?: unknown) => void) => unknown }> } }> }, method: string, path: string, req: Partial<Request>) => {
-  const layer = router.stack.find((l) => l.route?.path === path && l.route.methods[method]);
+type RouteStack = Array<{ route?: { path: string; methods: Record<string, boolean>; stack: Array<{ handle: (req: Request, res: Response, next: (e?: unknown) => void) => unknown }> } }>;
+const invoke = async (router: { stack: unknown[] }, method: string, path: string, req: Partial<Request>) => {
+  const layer = (router.stack as RouteStack).find((l) => l.route?.path === path && l.route.methods[method]);
   if (!layer?.route) throw new Error(`no route ${method} ${path}`);
   const c = { status: 200, body: undefined as unknown, headers: {} as Record<string, string> };
   // `wrap()` returns before its promise settles, so the response object resolves the call.

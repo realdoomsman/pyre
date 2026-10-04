@@ -135,7 +135,7 @@ describe("$PYRE buy-and-burn state machine", () => {
     expect(fx.chain.burnTokens).toHaveBeenCalledWith(expect.anything(), CURVE_LAUNCH.token, 500n);
     const row = fx.rows[0]!;
     expect(row).toMatchObject({ status: "BURNED", swapTx: "0xswap", burnTx: "0xburn", attestTx: "0xattest", error: null });
-    expect(big(row.burnedUnits)).toBe(500n);
+    expect(big(row.burnedUnits as Db.Decimalish)).toBe(500n);
     expect(row.completedAt).toBeInstanceOf(Date);
     expect(fx.audit).toHaveBeenCalledWith(expect.objectContaining({ action: "PYRE_BURN", targetType: "PyreBurn", targetId: "pb_1" }));
   });
@@ -146,7 +146,7 @@ describe("$PYRE buy-and-burn state machine", () => {
 
     const row = fx.rows[0]!;
     expect(row).toMatchObject({ status: "SWAPPED", swapTx: "0xswap", burnTx: null, error: "rpc timeout" });
-    expect(big(row.tokensBought)).toBe(500n);
+    expect(big(row.tokensBought as Db.Decimalish)).toBe(500n);
     expect(fx.ledger).toHaveLength(1); // the debit is never duplicated
 
     fx.chain.totalSupply.mockReset().mockResolvedValueOnce(1_000_000n).mockResolvedValueOnce(999_500n);

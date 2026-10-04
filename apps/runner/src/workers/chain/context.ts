@@ -15,4 +15,5 @@ export const CHAIN_QUEUES = {
   holders: "holders",
   market: "market",
   credits: "credits",
+  refunds: "refunds",
 } as const;

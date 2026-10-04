@@ -68,8 +68,10 @@ const tradable = (launch: LaunchRecord): boolean => launch.phase === LAUNCH_PHAS
 const totalSupply = (token: Address): Promise<bigint> => publicClient().readContract({ address: token, abi: tokenAbi, functionName: "totalSupply" });
 
 /**
- * $PYRE's buy-and-burn. The `PYRE_TOKEN` ledger account accrues 25% of every coin's creator fees;
- * once it clears the buyback minimum the treasury buys $PYRE on its curve/pool and burns it. One
+ * $PYRE's buy-and-burn. The `PYRE_TOKEN` ledger account holds the 25% PYRE leg of the legacy
+ * Robinhood Chain coins' creator fees that is not routed to PYRE refunds (fees from before the
+ * refund program, and every fee once all snapshot holders are settled; `recordCreatorFee`); once
+ * it clears the buyback minimum the treasury buys $PYRE on its curve/pool and burns it. One
  * `PyreBurn` row walks PENDING → SWAPPING → SWAPPED → BURNED with every irreversible step
  * persisted before the next, so a crash between the buy and the burn resumes at the burn instead
  * of stranding bought $PYRE in the treasury (where it is indistinguishable from staked custody).

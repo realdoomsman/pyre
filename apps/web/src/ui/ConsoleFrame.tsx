@@ -99,10 +99,10 @@ export const ConsoleFrame = ({ title, session, status, rows, height = 320, toolb
         {rows.length === 0 && <p className="num py-8 text-center text-12 text-ink-3">Waiting for the agent…</p>}
         <ol className="num m-0 list-none space-y-0.5 p-0 text-12 leading-5">
           {rows.map((r) => (
-            <li key={r.id} className="grid grid-cols-[auto_6ch_1fr] gap-x-3">
+            <li key={r.id} className="grid grid-cols-[auto_6ch_minmax(0,1fr)] gap-x-3">
               <span className="text-ink-3">{stamp(r.at)}</span>
               <span className={cx("uppercase tracking-[0.04em]", KIND_COLOR[r.kind])}>{r.kind}</span>
-              <span className={cx("whitespace-pre-wrap break-words", r.kind === "error" ? "text-danger" : "text-ink-2")}>{r.text}</span>
+              <span className={cx("whitespace-pre-wrap [overflow-wrap:anywhere]", r.kind === "error" ? "text-danger" : "text-ink-2")}>{r.text}</span>
             </li>
           ))}
           {status === "live" && (

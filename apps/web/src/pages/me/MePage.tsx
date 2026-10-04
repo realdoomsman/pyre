@@ -95,8 +95,8 @@ export const MePage = () => {
             <div className="eyebrow mb-2">External wallet</div>
             <h2 className="h3 mb-1">Sign in with your own wallet</h2>
             <p className="small text-ink-2">
-              Prove the address with one signed message. You sign every Robinhood Chain transaction yourself, in your wallet, on chain 4663. Pyre never holds a key for you. You still get
-              custodial balances for one-click stakes and trades — and they are the only way to hold Solana coins here.
+              Prove the address with one signed message. You sign your own trades on legacy Robinhood Chain coins, in your wallet, on chain 4663. Pyre never holds a key for you. You
+              still get custodial balances for one-click stakes and trades — and they are the only way to stake a launch or hold Solana coins here.
             </p>
           </Card>
         </div>
@@ -161,7 +161,7 @@ export const MePage = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setDeposit("robinhood")}>
+          <Button variant="secondary" onClick={() => setDeposit(data.solWallet ? "solana" : "robinhood")}>
             Deposit
           </Button>
           <Button variant="secondary" onClick={() => setWithdraw(true)} disabled={ethWei === 0n && usdgUnits === 0n && solLamports === 0n}>
@@ -185,7 +185,7 @@ export const MePage = () => {
             <div>
               <div className="eyebrow">ETH</div>
               <div className="num mt-1 text-22 text-ink">{formatNative(ethWei, ETH, { unit: false })}</div>
-              <div className="small text-ink-3">≈ {formatUsd(nativeUsdMicros(ethWei, ETH, data.balances.ethPriceUsd))} · gas, stakes, coin buys</div>
+              <div className="small text-ink-3">≈ {formatUsd(nativeUsdMicros(ethWei, ETH, data.balances.ethPriceUsd))} · legacy Robinhood Chain coins, launcher payouts</div>
             </div>
             <Chip size="sm" mono>
               chain 4663

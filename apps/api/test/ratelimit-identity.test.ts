@@ -61,4 +61,12 @@ describe("callerIdentities", () => {
     ]);
     expect(await callerIdentities(request({ path: "/auth/wallet/verify", body: { address: "nope" } }))).toEqual(["ip:203.0.113.7"]);
   });
+
+  it("keys refund linking by IP + claimed address, never the bare address, so one party cannot exhaust a holder's budget", async () => {
+    const body = { address: "0xAbC1111111111111111111111111111111111111" };
+    const victim = await callerIdentities(request({ path: "/refund/link/challenge", body, ip: "198.51.100.1" }));
+    const attacker = await callerIdentities(request({ path: "/refund/link/challenge", body }));
+    expect(attacker).toEqual(["ip:203.0.113.7", "w:0xabc1111111111111111111111111111111111111@ip:203.0.113.7"]);
+    expect(victim.filter((id) => attacker.includes(id))).toEqual([]);
+  });
 });

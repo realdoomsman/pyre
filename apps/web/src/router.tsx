@@ -17,6 +17,7 @@ const AppStore = lazy(async () => ({ default: (await import("./pages/apps/AppSto
 const Burns = lazy(async () => ({ default: (await import("./pages/burns/Burns.js")).Burns }));
 const MePage = lazy(async () => ({ default: (await import("./pages/me/MePage.js")).MePage }));
 const PyrePage = lazy(async () => ({ default: (await import("./pages/pyre/PyrePage.js")).PyrePage }));
+const RefundPage = lazy(async () => ({ default: (await import("./pages/refund/RefundPage.js")).RefundPage }));
 const Governance = lazy(async () => ({ default: (await import("./pages/governance/Governance.js")).Governance }));
 const OpsPage = lazy(async () => ({ default: (await import("./pages/ops/OpsPage.js")).OpsPage }));
 const Status = lazy(async () => ({ default: (await import("./pages/status/Status.js")).Status }));
@@ -117,6 +118,7 @@ export const router = createBrowserRouter([
       { path: "burns", element: page(<Burns />, "list") },
       { path: "me", element: page(<MePage />, "list", true) },
       { path: "pyre", element: page(<PyrePage />, "detail") },
+      { path: "refund", element: page(<RefundPage />, "detail") },
       { path: "governance", element: page(<Governance />, "list") },
       { path: "ops", element: page(<OpsPage />, "list", true) },
       { path: "status", element: page(<Status />, "short") },

@@ -41,7 +41,7 @@ const AttestationCell = ({ row }: { row: BurnLedgerRowDto }) => {
   );
 };
 
-/** `/burns` — every $PYRE buy-and-burn, newest first. */
+/** `/burns` — every Robinhood Chain $PYRE buy-and-burn, newest first. pump.fun coins' own burns live on each coin page. */
 export const Burns = () => {
   useEffect(() => {
     document.title = "PYRE burns — Pyre";
@@ -102,12 +102,17 @@ export const Burns = () => {
             PYRE <em>burns</em>
           </h1>
           <p className="body mt-2 max-w-xl text-ink-2">
-            25% of every coin's creator fees buys{" "}
+            The burn history of{" "}
             <Link to="/pyre" className="text-ink underline underline-offset-2 hover:text-accent">
               $PYRE
             </Link>{" "}
-            on the curve or the pool, and the tokens are destroyed for good.
+            on Robinhood Chain: legacy coins' 25% fee share bought it on the curve or the pool and destroyed it for good. That share now funds{" "}
+            <Link to="/refund" className="text-ink underline underline-offset-2 hover:text-accent">
+              PYRE refunds
+            </Link>{" "}
+            until every snapshot holder is refunded, then comes back here; PYRE already accrued keeps burning.
           </p>
+          <p className="small mt-2 max-w-xl text-ink-3">Coins on pump.fun burn themselves: every buyback and burn is on that coin's page, under Burns.</p>
         </div>
         {totals ? (
           <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
@@ -188,7 +193,7 @@ export const Burns = () => {
         {burns.isPending ? (
           <Skeleton lines={10} />
         ) : empty ? (
-          <EmptyState className="min-h-[50svh]" title="No burns yet" body="The first burn fires once the PYRE_TOKEN ledger clears $5 of fee share. It will appear here with its swap, burn and attestation transactions." />
+          <EmptyState className="min-h-[50svh]" title="No burns yet" body="A burn fires once the PYRE_TOKEN ledger clears $5 of fee share. It will appear here with its swap, burn and attestation transactions." />
         ) : rows.length === 0 ? (
           <EmptyState title="Nothing in this range" body="Widen the dates." />
         ) : (

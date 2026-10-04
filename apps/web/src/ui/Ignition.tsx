@@ -20,6 +20,8 @@ export interface IgnitionProps {
   open: boolean;
   ticker: string;
   name?: string;
+  /** Where the coin is igniting, e.g. "Solana". */
+  chainLabel: string;
   txHash: string;
   explorerUrl: string;
   /** Confirmation ticks as they arrive — one per block at ~100ms. */
@@ -37,7 +39,7 @@ export interface IgnitionProps {
  * stream in at the chain's block cadence. No flame drawn — the heat is the
  * type itself.
  */
-export const Ignition = ({ open, ticker, name, txHash, explorerUrl, ticks, status = "pending", action, onClose }: IgnitionProps) => {
+export const Ignition = ({ open, ticker, name, chainLabel, txHash, explorerUrl, ticks, status = "pending", action, onClose }: IgnitionProps) => {
   const reduced = useReducedMotion();
   const panel = useRef<HTMLDivElement>(null);
   const log = useRef<HTMLOListElement>(null);
@@ -72,7 +74,7 @@ export const Ignition = ({ open, ticker, name, txHash, explorerUrl, ticks, statu
             style={{ background: "radial-gradient(60% 70% at 50% 100%, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent 70%)" }}
           />
           <div className="relative flex w-full max-w-md flex-col items-center gap-6">
-            <div className="eyebrow">{status === "confirmed" ? "Ignited on Robinhood Chain" : "Igniting on Robinhood Chain"}</div>
+            <div className="eyebrow">{status === "confirmed" ? `Ignited on ${chainLabel}` : `Igniting on ${chainLabel}`}</div>
             <h1
               key={status}
               className={cx("display text-64 sm:text-88", reduced ? "text-accent" : "animate-cool-text")}

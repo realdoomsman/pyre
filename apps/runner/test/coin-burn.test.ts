@@ -33,7 +33,7 @@ const fx = vi.hoisted(() => {
   const coinBurn = {
     findFirst: vi.fn(async ({ where }: { where: { appId: string; status: string } }) => rows.find((r) => r.appId === where.appId && r.status === where.status) ?? null),
     create: vi.fn(async ({ data }: { data: Partial<Row> }) => {
-      const row: Row = { id: `cb${++seq}`, status: "PENDING", tokensBought: 0n, tokensBurned: 0n, burnedUnits: null, swapTx: null, burnTx: null, attestTx: null, error: null, createdAt: new Date(), completedAt: null, ...(data as Row) };
+      const row = { id: `cb${++seq}`, status: "PENDING", tokensBought: 0n, tokensBurned: 0n, burnedUnits: null, swapTx: null, burnTx: null, attestTx: null, error: null, createdAt: new Date(), completedAt: null, ...data } as Row;
       row.nativeWei = big(row.nativeWei);
       rows.push(row);
       return row;
@@ -92,7 +92,7 @@ const adapter = (over: Record<string, unknown> = {}) => {
     nativeBalance: vi.fn(async () => 5n * SOL),
     readLaunch: vi.fn(async () => ({ exists: true, token: MINT, curve: "c", pool: null, phase: state.phase, progress: 0.1, raisedNative: 0n, graduationNative: 85n * SOL, priceNative: 1e-7, totalSupplyUnits: state.supply, circulatingUnits: 0n, burnedUnits: 10n ** 15n - state.supply })),
     quoteBuy: vi.fn(async (_t: string, spend: bigint) => ({ native: spend, tokenUnits: spend * 10n, priceNative: 1e-7, feeBps: 125, impact: 0.01 })),
-    buy: vi.fn(async (_acc: unknown, _t: string, spend: bigint) => {
+    buy: vi.fn(async (_acc: unknown, _t: string, spend: bigint, _minOut?: bigint) => {
       state.held += spend * 10n;
       return { hash: "swapSig", block: 1, tokenUnits: spend * 10n, spentNative: spend };
     }),

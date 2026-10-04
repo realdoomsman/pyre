@@ -12,7 +12,7 @@ import type { WorkerContext } from "../lib/queues.js";
 
 const IntakeJob = z.object({ appId: z.string() });
 
-const MODERATION_SYSTEM = `You are the content moderator for Pyre, a public launchpad on Robinhood Chain where anyone can fund an AI-built web app by launching a coin. Classify the launch request. Disallow: scams and rug pulls, phishing or credential harvesting, impersonation of real brands/people/projects, real-money gambling, illegal goods/services, sexual content, hate or harassment, malware, market manipulation tooling, anything targeting minors. Allow ordinary tools, games, content apps, utilities, AI assistants and API products. Choose category OK when allowed. Keep the reason under 300 characters.`;
+const MODERATION_SYSTEM = `You are the content moderator for Pyre, a public launchpad where anyone can fund an AI-built web app by launching a coin on pump.fun. Classify the launch request. Disallow: scams and rug pulls, phishing or credential harvesting, impersonation of real brands/people/projects, real-money gambling, illegal goods/services, sexual content, hate or harassment, malware, market manipulation tooling, anything targeting minors. Allow ordinary tools, games, content apps, utilities, AI assistants and API products. Choose category OK when allowed. Keep the reason under 300 characters.`;
 
 const INTAKE_SYSTEM = `You are the product lead for Pyre. Turn a launcher's short pitch into a concrete, buildable spec for a small web app (Vite + React static site with optional server functions) that an autonomous coding agent will build in one session with about $50 of compute and later iterate on.
 

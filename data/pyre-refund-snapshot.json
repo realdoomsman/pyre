@@ -1,0 +1,6291 @@
+{
+  "chainId": 4663,
+  "token": "0xc8488bE2e4f430420A364E64f4D8af428b74D903",
+  "block": 79819827,
+  "blockHash": "0x141e47824b2a808e47e0e4d5262f7c7b3eb0b4f77c6d0b1113b7aa11874df0d8",
+  "blockTime": "2026-10-04T09:12:28Z",
+  "method": "balance = sum of PYRE Transfer logs through the block; ETH in/out and PYRE bought attributed to tx.from: PONS curve CurveBuy.quoteIn/tokensOut minus CurveBuyRefunded, CurveSell.quoteOut, Uniswap v4 Swap on the PYRE pool (buy = -amount0 ETH / +amount1 PYRE, sell = +amount0); owedWei = max(0, min(in - out, in * min(balance, bought) / bought)); holders with balance > 0 only.",
+  "generatedAt": "2026-10-04T10:12:16.375Z",
+  "holders": [
+    {
+      "address": "0x2b23d75C77595d7Bbe4FDc2E2e2B8061687d6259",
+      "balanceUnits": "9335902251162502904581759",
+      "boughtUnits": "9335902251162502904581759",
+      "ethInWei": "2413816120927573811",
+      "ethOutWei": "0",
+      "owedWei": "2413816120927573811"
+    },
+    {
+      "address": "0x8f693DB94b84ced3C37EbbD46B9fE225800c10c2",
+      "balanceUnits": "5629686659978548396646639",
+      "boughtUnits": "5629686659978548396646639",
+      "ethInWei": "1449043214126789027",
+      "ethOutWei": "0",
+      "owedWei": "1449043214126789027"
+    },
+    {
+      "address": "0x16354Ec44309c0EBd0530883Cb96674Ff267695d",
+      "balanceUnits": "5388346970516275992948064",
+      "boughtUnits": "5388346970516275992948064",
+      "ethInWei": "1194567948100263211",
+      "ethOutWei": "0",
+      "owedWei": "1194567948100263211"
+    },
+    {
+      "address": "0xb03c772dbfDe57629Eb697f866105535766326E4",
+      "balanceUnits": "6538393174234847128115621",
+      "boughtUnits": "6538393174234847128115621",
+      "ethInWei": "594000000000000000",
+      "ethOutWei": "0",
+      "owedWei": "594000000000000000"
+    },
+    {
+      "address": "0x12faBC2bBc0264a52BED10cBb243440AB19B04DA",
+      "balanceUnits": "38391718325463426971794805",
+      "boughtUnits": "79891973551843004028044447",
+      "ethInWei": "3115181820000000000",
+      "ethOutWei": "2639895321851939746",
+      "owedWei": "475286498148060254"
+    },
+    {
+      "address": "0x790C0397Ea5823C588A4179AD671613a4A1B9945",
+      "balanceUnits": "25543459259042390161155350",
+      "boughtUnits": "25543459259042390161155350",
+      "ethInWei": "447626467750000000",
+      "ethOutWei": "0",
+      "owedWei": "447626467750000000"
+    },
+    {
+      "address": "0x5A8494d8Df8AbfF6EE78E6CC08bDfe49F8483c3a",
+      "balanceUnits": "2864800845651091442866702",
+      "boughtUnits": "2864800845651091442866702",
+      "ethInWei": "446616970596392203",
+      "ethOutWei": "0",
+      "owedWei": "446616970596392203"
+    },
+    {
+      "address": "0xEd4B5459d9a1b095325893fFf0f143707Dd35620",
+      "balanceUnits": "1026037191863146138245471",
+      "boughtUnits": "1026037191863146138245471",
+      "ethInWei": "278880000000000000",
+      "ethOutWei": "0",
+      "owedWei": "278880000000000000"
+    },
+    {
+      "address": "0x5e53a90a00aa9AD6382D036a92f686a69fB68f44",
+      "balanceUnits": "2176524498127992672101457",
+      "boughtUnits": "2176524498127992672101457",
+      "ethInWei": "240405589632947603",
+      "ethOutWei": "0",
+      "owedWei": "240405589632947603"
+    },
+    {
+      "address": "0xF6f2c1675b21f6cbCE1f7B3fF10Fd30C0522ca2e",
+      "balanceUnits": "2596012479304971283201307",
+      "boughtUnits": "2596012479304971283201307",
+      "ethInWei": "232080765000000000",
+      "ethOutWei": "0",
+      "owedWei": "232080765000000000"
+    },
+    {
+      "address": "0x4F67f52147c6BC03563772Fa3D7AF3adFfb92110",
+      "balanceUnits": "9131834010982164301422155",
+      "boughtUnits": "9131834010982164301422155",
+      "ethInWei": "198000000000000000",
+      "ethOutWei": "0",
+      "owedWei": "198000000000000000"
+    },
+    {
+      "address": "0x03F050d9BeE7D235767fC01ABea1A1919eB7469b",
+      "balanceUnits": "1093061663736252394647634",
+      "boughtUnits": "1093061663736252394647634",
+      "ethInWei": "182935476253584107",
+      "ethOutWei": "0",
+      "owedWei": "182935476253584107"
+    },
+    {
+      "address": "0xF17D7ce079aE6dbBb848321eD2a55E57942E849c",
+      "balanceUnits": "1374896723932725267867297",
+      "boughtUnits": "1374896723932725267867297",
+      "ethInWei": "178965171029122632",
+      "ethOutWei": "0",
+      "owedWei": "178965171029122632"
+    },
+    {
+      "address": "0x4123Ffc81579e38dfFf74b75D8BdF21C41E62237",
+      "balanceUnits": "973881168548481185622369",
+      "boughtUnits": "973881168548481185622369",
+      "ethInWei": "169575000000000000",
+      "ethOutWei": "0",
+      "owedWei": "169575000000000000"
+    },
+    {
+      "address": "0x13Ec7754e892D95E4fe924A22231421d25975974",
+      "balanceUnits": "28262509773335967590805179",
+      "boughtUnits": "28262509773335967590805179",
+      "ethInWei": "169277500000000000",
+      "ethOutWei": "0",
+      "owedWei": "169277500000000000"
+    },
+    {
+      "address": "0xB6563E1f43d4ff25796c70d548c8a395c94E19de",
+      "balanceUnits": "4113560032107470774593096",
+      "boughtUnits": "7094463532957635749753311",
+      "ethInWei": "297000000000000000",
+      "ethOutWei": "129278215776444075",
+      "owedWei": "167721784223555925"
+    },
+    {
+      "address": "0x97FE879049168B689e8Cce5439Ca37D02AFF4F1E",
+      "balanceUnits": "5028200716518118895973374",
+      "boughtUnits": "5430146058967966704925572",
+      "ethInWei": "166134275283321668",
+      "ethOutWei": "12712642107315759",
+      "owedWei": "153421633176005909"
+    },
+    {
+      "address": "0xeb3F33aFaDaEd970b8a87437CA6fc787776d1F5F",
+      "balanceUnits": "18711878731948715318329475",
+      "boughtUnits": "18711878731948715318329475",
+      "ethInWei": "145900563646468523",
+      "ethOutWei": "0",
+      "owedWei": "145900563646468523"
+    },
+    {
+      "address": "0xDE6a40E451c194F5d5812bbef409ff118106BF80",
+      "balanceUnits": "8231248494551355612332002",
+      "boughtUnits": "9741237940840290570803908",
+      "ethInWei": "227897202320328674",
+      "ethOutWei": "87470698657226035",
+      "owedWei": "140426503663102639"
+    },
+    {
+      "address": "0x5d515f591463B76F027d8b1263cd096EbdC98cb3",
+      "balanceUnits": "1113676648701398132173126",
+      "boughtUnits": "1113676648701398132173126",
+      "ethInWei": "119547429481501730",
+      "ethOutWei": "0",
+      "owedWei": "119547429481501730"
+    },
+    {
+      "address": "0x631ab8EB40588543dF900263F864b6376d56A587",
+      "balanceUnits": "934868798743711607060102",
+      "boughtUnits": "934868798743711607060102",
+      "ethInWei": "119400000000000000",
+      "ethOutWei": "0",
+      "owedWei": "119400000000000000"
+    },
+    {
+      "address": "0xc7b365d0D5C63951AefdB27Aa3Cec7906084b01e",
+      "balanceUnits": "1407046546612185136643025",
+      "boughtUnits": "1762741885795741171341499",
+      "ethInWei": "236843054371016493",
+      "ethOutWei": "119084040039343280",
+      "owedWei": "117759014331673213"
+    },
+    {
+      "address": "0x4860f15788aE8c93bfC5d3E59c876Ae769CfeF1f",
+      "balanceUnits": "1240340979864559452443729",
+      "boughtUnits": "2240340979864559452443729",
+      "ethInWei": "200000000000000000",
+      "ethOutWei": "0",
+      "owedWei": "110727874998701730"
+    },
+    {
+      "address": "0x2403d531b331591508fBCc12E865Ae7fe3d0846D",
+      "balanceUnits": "821643384690780038120770",
+      "boughtUnits": "821643384690780038120770",
+      "ethInWei": "99000000000000000",
+      "ethOutWei": "0",
+      "owedWei": "99000000000000000"
+    },
+    {
+      "address": "0x5B508beBD372197F7c3A4d04d379D3869D98Be34",
+      "balanceUnits": "1000000000000000584859213",
+      "boughtUnits": "3951954143433700584859213",
+      "ethInWei": "380390928250765126",
+      "ethOutWei": "70387882704627324",
+      "owedWei": "96253882116217658"
+    },
+    {
+      "address": "0x1c7FBC9e93801197DE88eb02b5Ba7E9e694E07b4",
+      "balanceUnits": "12788557586854927895805084",
+      "boughtUnits": "12788557586854927895805084",
+      "ethInWei": "80946962470418512",
+      "ethOutWei": "0",
+      "owedWei": "80946962470418512"
+    },
+    {
+      "address": "0xd5d59E8a47d5174903F1C748ca5302964Edd708D",
+      "balanceUnits": "10100611194904211447488531",
+      "boughtUnits": "73724020132825095234938283",
+      "ethInWei": "518760000000000000",
+      "ethOutWei": "325823392268424888",
+      "owedWei": "71073078408206990"
+    },
+    {
+      "address": "0x360336aE8f82A6c6551Fd029B3E5db2B6CC07a88",
+      "balanceUnits": "23109882142790565799525501",
+      "boughtUnits": "1607357663164410276657190",
+      "ethInWei": "69057205933457357",
+      "ethOutWei": "0",
+      "owedWei": "69057205933457357"
+    },
+    {
+      "address": "0x1180bA09802952aAbd1B6b182478B883c4822456",
+      "balanceUnits": "671345141561048885914335",
+      "boughtUnits": "671345141561048885914335",
+      "ethInWei": "64445864546581043",
+      "ethOutWei": "0",
+      "owedWei": "64445864546581043"
+    },
+    {
+      "address": "0xf23C507316F062F36F1279dAfcE151c854F30044",
+      "balanceUnits": "651148890237743977662998",
+      "boughtUnits": "651148890237743977662998",
+      "ethInWei": "63585389949403920",
+      "ethOutWei": "0",
+      "owedWei": "63585389949403920"
+    },
+    {
+      "address": "0x3b36D08fF29E57550f70126A542C730f8c9bF27b",
+      "balanceUnits": "9385527998987386953136727",
+      "boughtUnits": "9385527998987386953136727",
+      "ethInWei": "56217500000000000",
+      "ethOutWei": "0",
+      "owedWei": "56217500000000000"
+    },
+    {
+      "address": "0x143a7f6EcC30474622372d8136Fef57Cf0b711Bd",
+      "balanceUnits": "448818904580037875406761",
+      "boughtUnits": "448818904580037875406761",
+      "ethInWei": "50000000000000000",
+      "ethOutWei": "0",
+      "owedWei": "50000000000000000"
+    },
+    {
+      "address": "0x85d689A5435F04daCA865e47E3C593001451dc8B",
+      "balanceUnits": "223718072501693315815518",
+      "boughtUnits": "223718072501693315815518",
+      "ethInWei": "49979007826701637",
+      "ethOutWei": "0",
+      "owedWei": "49979007826701637"
+    },
+    {
+      "address": "0x4Df931275cB793A5b1D8d0E2d81E5264B648915F",
+      "balanceUnits": "328711513843833052116308",
+      "boughtUnits": "328711513843833052116308",
+      "ethInWei": "49750000000000000",
+      "ethOutWei": "0",
+      "owedWei": "49750000000000000"
+    },
+    {
+      "address": "0x770044F898e91B15c14012BF4DD36562d438972d",
+      "balanceUnits": "1068399923196016000962361",
+      "boughtUnits": "1068399923196016000962361",
+      "ethInWei": "49500000000000000",
+      "ethOutWei": "0",
+      "owedWei": "49500000000000000"
+    },
+    {
+      "address": "0xe14bEaC92713f34b9b3F414eEEf3B4a43C9a1839",
+      "balanceUnits": "226943767851332801346954",
+      "boughtUnits": "226943767851332801346954",
+      "ethInWei": "47025000000000000",
+      "ethOutWei": "0",
+      "owedWei": "47025000000000000"
+    },
+    {
+      "address": "0x57395735Aef03F8A7ABA488664f1bCc17C07Ba35",
+      "balanceUnits": "10015553687773144940927424",
+      "boughtUnits": "10015553687773144940927424",
+      "ethInWei": "46765000000000000",
+      "ethOutWei": "0",
+      "owedWei": "46765000000000000"
+    },
+    {
+      "address": "0xd30f560e997b25Ef7f3fc55Be4ECa6789f639449",
+      "balanceUnits": "509123700338314808280204",
+      "boughtUnits": "509123700338314808280204",
+      "ethInWei": "44841892602410505",
+      "ethOutWei": "0",
+      "owedWei": "44841892602410505"
+    },
+    {
+      "address": "0x4DfFdEb07c33A22e4145e7A80113cEc37AaBe66f",
+      "balanceUnits": "361608138844645841150953",
+      "boughtUnits": "361608138844645841150953",
+      "ethInWei": "44245171725807470",
+      "ethOutWei": "0",
+      "owedWei": "44245171725807470"
+    },
+    {
+      "address": "0x0ba480B0dB1a47438AFDE2f650f7EDB4775Caca8",
+      "balanceUnits": "296513345791323912641168",
+      "boughtUnits": "296513345791323912641168",
+      "ethInWei": "43824000000000000",
+      "ethOutWei": "0",
+      "owedWei": "43824000000000000"
+    },
+    {
+      "address": "0x4977C2780e682390a52b42dBbb467633bD097d3B",
+      "balanceUnits": "420524186946817105608063",
+      "boughtUnits": "420524186946817105608063",
+      "ethInWei": "43282500000000000",
+      "ethOutWei": "0",
+      "owedWei": "43282500000000000"
+    },
+    {
+      "address": "0xFFFe171c0E40425c2b77d2DfC594A32C81111A8b",
+      "balanceUnits": "2248126722005198566948437",
+      "boughtUnits": "2248126722005198566948437",
+      "ethInWei": "42896050856163192",
+      "ethOutWei": "0",
+      "owedWei": "42896050856163192"
+    },
+    {
+      "address": "0x4c6AF43AA4E8f20E7BbAf24F413eA9f166dC2B0B",
+      "balanceUnits": "921173246863528284600153",
+      "boughtUnits": "921173246863528284600153",
+      "ethInWei": "41336487878036498",
+      "ethOutWei": "0",
+      "owedWei": "41336487878036498"
+    },
+    {
+      "address": "0x3157933c0a340A9D5532cFA5b19e1D995e9B75a3",
+      "balanceUnits": "424280710704044739917773",
+      "boughtUnits": "424280710704044739917773",
+      "ethInWei": "40000000000000000",
+      "ethOutWei": "0",
+      "owedWei": "40000000000000000"
+    },
+    {
+      "address": "0x9576D10Df6e1c7260082416dF1A5834a4B9D4Fcb",
+      "balanceUnits": "540692186707942106932047",
+      "boughtUnits": "540692186707942106932047",
+      "ethInWei": "38103267422966380",
+      "ethOutWei": "0",
+      "owedWei": "38103267422966380"
+    },
+    {
+      "address": "0x3f92741A716E5d6C09c56d6359B876B5338cbb12",
+      "balanceUnits": "357055599684107457722782",
+      "boughtUnits": "714111199368214915445564",
+      "ethInWei": "72586253854844395",
+      "ethOutWei": "41159539158896172",
+      "owedWei": "31426714695948223"
+    },
+    {
+      "address": "0x2f55F32d5405B42Bd0E8086F279f0947feF2A546",
+      "balanceUnits": "231461522659043328790811",
+      "boughtUnits": "190575428762995072707828",
+      "ethInWei": "29115431584757051",
+      "ethOutWei": "0",
+      "owedWei": "29115431584757051"
+    },
+    {
+      "address": "0x7AAffc552766c660D964Cba1cd192Ed7f9dDBFDF",
+      "balanceUnits": "4433082023700163814091668",
+      "boughtUnits": "4433082023700163814091668",
+      "ethInWei": "28900000000000000",
+      "ethOutWei": "0",
+      "owedWei": "28900000000000000"
+    },
+    {
+      "address": "0x7722A1435ADc945daB35810bB38355f35f152576",
+      "balanceUnits": "2568212259599236575665792",
+      "boughtUnits": "3097792513088304539973519",
+      "ethInWei": "94801648393873166",
+      "ethOutWei": "69185524110388449",
+      "owedWei": "25616124283484717"
+    },
+    {
+      "address": "0x749Fe1885440bA5ec7381C9fdE06FD05B83C4c5C",
+      "balanceUnits": "1128929252884981107473748",
+      "boughtUnits": "1365716531117068691927360",
+      "ethInWei": "27416314931727468",
+      "ethOutWei": "0",
+      "owedWei": "22662887376356527"
+    },
+    {
+      "address": "0xEBB52b2Cb676AcFF52fDdA750c2dB3dbB1C89CA8",
+      "balanceUnits": "236824936687881741027091",
+      "boughtUnits": "236824936687881741027091",
+      "ethInWei": "21652554616980481",
+      "ethOutWei": "0",
+      "owedWei": "21652554616980481"
+    },
+    {
+      "address": "0x9281D411eD31F7F3645Bfea953Eb91Be50650661",
+      "balanceUnits": "289537780203064918708401",
+      "boughtUnits": "289537780203064918708401",
+      "ethInWei": "21620279784483961",
+      "ethOutWei": "0",
+      "owedWei": "21620279784483961"
+    },
+    {
+      "address": "0xE69AB34bDFeDC946e9cD9A821D642E80AeFB6F06",
+      "balanceUnits": "191212082864065130614931",
+      "boughtUnits": "191212082864065130614931",
+      "ethInWei": "20905500000000000",
+      "ethOutWei": "0",
+      "owedWei": "20905500000000000"
+    },
+    {
+      "address": "0x96B11D86C8cb4c427499A915f6188F487b2B9cE8",
+      "balanceUnits": "3105412212639095379474022",
+      "boughtUnits": "1395557875089169303945701",
+      "ethInWei": "20304001384927917",
+      "ethOutWei": "0",
+      "owedWei": "20304001384927917"
+    },
+    {
+      "address": "0xD1e859622F51813dF3386cCe52D304182c45D2B2",
+      "balanceUnits": "959345493521666672656060",
+      "boughtUnits": "959345493521666672656060",
+      "ethInWei": "20179260509828344",
+      "ethOutWei": "0",
+      "owedWei": "20179260509828344"
+    },
+    {
+      "address": "0xC3b9193510811Bdc89aa214b234fC4c3Ef2b0709",
+      "balanceUnits": "641758164986995384812945",
+      "boughtUnits": "641758164986995384812945",
+      "ethInWei": "19920000000000000",
+      "ethOutWei": "0",
+      "owedWei": "19920000000000000"
+    },
+    {
+      "address": "0x6518F9B4CFce31d88CFA9494521ccB2658ecD193",
+      "balanceUnits": "668967989429904767442192",
+      "boughtUnits": "668967989429904767442192",
+      "ethInWei": "19800000000000000",
+      "ethOutWei": "0",
+      "owedWei": "19800000000000000"
+    },
+    {
+      "address": "0xf0b36e3bbe6122cA9E7ABcD19C6BA9674bDd5864",
+      "balanceUnits": "1460188238048411829932582",
+      "boughtUnits": "1460188238048411829932582",
+      "ethInWei": "19800000000000000",
+      "ethOutWei": "0",
+      "owedWei": "19800000000000000"
+    },
+    {
+      "address": "0xf93A6CbC32E8d54BD94F9b577b6b6Cabfa7AC1d6",
+      "balanceUnits": "128120829272854245727666",
+      "boughtUnits": "128120829272854245727666",
+      "ethInWei": "19756779396373144",
+      "ethOutWei": "0",
+      "owedWei": "19756779396373144"
+    },
+    {
+      "address": "0x7F7B66d92be6881516A68c4c421b2377158223D8",
+      "balanceUnits": "212176010403341768824089",
+      "boughtUnits": "212176010403341768824089",
+      "ethInWei": "19467624350004431",
+      "ethOutWei": "0",
+      "owedWei": "19467624350004431"
+    },
+    {
+      "address": "0xAA29F5984f06fE1Bb78e788176E2Cac15517b30F",
+      "balanceUnits": "423029033320592615743355",
+      "boughtUnits": "423029033320592615743355",
+      "ethInWei": "18531127143780473",
+      "ethOutWei": "0",
+      "owedWei": "18531127143780473"
+    },
+    {
+      "address": "0xF4993E021839dd14Ea23431FEA5B5Ab4dFbfF2f8",
+      "balanceUnits": "80435264818917677012170",
+      "boughtUnits": "80435264818917677012170",
+      "ethInWei": "17642585623740394",
+      "ethOutWei": "0",
+      "owedWei": "17642585623740394"
+    },
+    {
+      "address": "0x00B62f7B95F507518A38988857d3DD5F3F7A8C69",
+      "balanceUnits": "104373174515616066286655",
+      "boughtUnits": "104373174515616066286655",
+      "ethInWei": "17357210589623107",
+      "ethOutWei": "0",
+      "owedWei": "17357210589623107"
+    },
+    {
+      "address": "0x3508B9ed92fe095c78c7A56BFA4d0919B10BdE6F",
+      "balanceUnits": "299585087659605057285018",
+      "boughtUnits": "299585087659605057285018",
+      "ethInWei": "17325000000000000",
+      "ethOutWei": "0",
+      "owedWei": "17325000000000000"
+    },
+    {
+      "address": "0x9E9224024D062dc39B04Bfb05c70044D3c5B62d2",
+      "balanceUnits": "343977623641207407693121",
+      "boughtUnits": "343977623641207407693121",
+      "ethInWei": "15438000000000000",
+      "ethOutWei": "0",
+      "owedWei": "15438000000000000"
+    },
+    {
+      "address": "0x0bF45781d6c8015D2752cEF6036494e8Fe592B6C",
+      "balanceUnits": "515131022202179730299405",
+      "boughtUnits": "515131022202179730299405",
+      "ethInWei": "14928750000000000",
+      "ethOutWei": "0",
+      "owedWei": "14928750000000000"
+    },
+    {
+      "address": "0x36954dc87121d6297dCF5d7f7385FcB0f30f4583",
+      "balanceUnits": "952565592134311394266620",
+      "boughtUnits": "952565592134311394266620",
+      "ethInWei": "14843660976069918",
+      "ethOutWei": "0",
+      "owedWei": "14843660976069918"
+    },
+    {
+      "address": "0xC56A624d115dc02637670ca1436f376c91590A6e",
+      "balanceUnits": "86303361488902105785673",
+      "boughtUnits": "86303361488902105785673",
+      "ethInWei": "14626380564159912",
+      "ethOutWei": "0",
+      "owedWei": "14626380564159912"
+    },
+    {
+      "address": "0xCf8B1406cFC9749518b908B19D81c45607ccF162",
+      "balanceUnits": "62457095914291931708187",
+      "boughtUnits": "62457095914291931708187",
+      "ethInWei": "13755000000000000",
+      "ethOutWei": "0",
+      "owedWei": "13755000000000000"
+    },
+    {
+      "address": "0xA562882fd3614D598D04D2e4B91da01eF8A5b34A",
+      "balanceUnits": "2150691965772696585990830",
+      "boughtUnits": "2150691965772696585990830",
+      "ethInWei": "13482250000000000",
+      "ethOutWei": "0",
+      "owedWei": "13482250000000000"
+    },
+    {
+      "address": "0x2957d38E4e697F9977e50e98352552C248cABa4C",
+      "balanceUnits": "156047314560797770093345",
+      "boughtUnits": "156047314560797770093345",
+      "ethInWei": "13385736172779975",
+      "ethOutWei": "0",
+      "owedWei": "13385736172779975"
+    },
+    {
+      "address": "0x13aafCdd311176C66D6dC1CEA670a2368FDEf15c",
+      "balanceUnits": "140285712265927495834608",
+      "boughtUnits": "140285712265927495834608",
+      "ethInWei": "12900000000000000",
+      "ethOutWei": "0",
+      "owedWei": "12900000000000000"
+    },
+    {
+      "address": "0x98Abc8DA1C28Baf997C4fF9aD954E6C9F6211303",
+      "balanceUnits": "1289290151787111369690674",
+      "boughtUnits": "3538437200787358902204440",
+      "ethInWei": "35000000000000000",
+      "ethOutWei": "19834630364567364",
+      "owedWei": "12752848998565759"
+    },
+    {
+      "address": "0x98E4c468502515D33AE5DB28844fD4aE2560385A",
+      "balanceUnits": "46385494172989546698177",
+      "boughtUnits": "46385494172989546698177",
+      "ethInWei": "10172342700000000",
+      "ethOutWei": "0",
+      "owedWei": "10172342700000000"
+    },
+    {
+      "address": "0x9c03E95345E41eAd960953B8E1df7B479Bf03619",
+      "balanceUnits": "91126377321871754401400",
+      "boughtUnits": "91126377321871754401400",
+      "ethInWei": "10025730000000000",
+      "ethOutWei": "0",
+      "owedWei": "10025730000000000"
+    },
+    {
+      "address": "0xC0a54C26a5980F9D042A03C50BB5F43102a37d7D",
+      "balanceUnits": "341323084133915465168805",
+      "boughtUnits": "341323084133915465168805",
+      "ethInWei": "9960000000000000",
+      "ethOutWei": "0",
+      "owedWei": "9960000000000000"
+    },
+    {
+      "address": "0xC40FC6d40105b89D2F6e9B479Fd5Ef5C29613718",
+      "balanceUnits": "50413429672007478847221",
+      "boughtUnits": "50413429672007478847221",
+      "ethInWei": "9950000000000000",
+      "ethOutWei": "0",
+      "owedWei": "9950000000000000"
+    },
+    {
+      "address": "0x087d8FaDeEA388D9AA77B7f76e77813D2eB08468",
+      "balanceUnits": "580731478619499344676923",
+      "boughtUnits": "580731478619499344676923",
+      "ethInWei": "9920000000000000",
+      "ethOutWei": "0",
+      "owedWei": "9920000000000000"
+    },
+    {
+      "address": "0x2f7CB9f4480e14E3EEC498a648a0Ea633251c67E",
+      "balanceUnits": "145585833326868305519306",
+      "boughtUnits": "145585833326868305519306",
+      "ethInWei": "9900000000000000",
+      "ethOutWei": "0",
+      "owedWei": "9900000000000000"
+    },
+    {
+      "address": "0x87EE28803Aa046aB95C54A06fFbdEB4e5909fE49",
+      "balanceUnits": "89907272403336470542275",
+      "boughtUnits": "89907272403336470542275",
+      "ethInWei": "9900000000000000",
+      "ethOutWei": "0",
+      "owedWei": "9900000000000000"
+    },
+    {
+      "address": "0x89ab95c6Bf96366a1eB9432Ffb2c1636b425D409",
+      "balanceUnits": "35655236764589988018537",
+      "boughtUnits": "35655236764589988018537",
+      "ethInWei": "9900000000000000",
+      "ethOutWei": "0",
+      "owedWei": "9900000000000000"
+    },
+    {
+      "address": "0xf4044C8dAF8E9e37EBf363B5e5251e3f939E404d",
+      "balanceUnits": "79646270971592650763959",
+      "boughtUnits": "79646270971592650763959",
+      "ethInWei": "9900000000000000",
+      "ethOutWei": "0",
+      "owedWei": "9900000000000000"
+    },
+    {
+      "address": "0xB6141B4F3E33dE74c44A1781d63740D888E096CC",
+      "balanceUnits": "37827873154865855091219",
+      "boughtUnits": "37827873154865855091219",
+      "ethInWei": "9103490382546537",
+      "ethOutWei": "0",
+      "owedWei": "9103490382546537"
+    },
+    {
+      "address": "0x0d3bed6E57C034776cFc71f70e56d3A51f3673Ec",
+      "balanceUnits": "103355296345989335619655",
+      "boughtUnits": "103355296345989335619655",
+      "ethInWei": "7960000000000000",
+      "ethOutWei": "0",
+      "owedWei": "7960000000000000"
+    },
+    {
+      "address": "0x33c1D85b17bc9B9C1ec7927D4FBc323B75540832",
+      "balanceUnits": "519033281466299788155855",
+      "boughtUnits": "495826908789665246803124",
+      "ethInWei": "7652670872224671",
+      "ethOutWei": "0",
+      "owedWei": "7652670872224671"
+    },
+    {
+      "address": "0x3067a5F66b3a07B70Ef866275c1aA9813c069738",
+      "balanceUnits": "69158688206744479963545",
+      "boughtUnits": "69158688206744479963545",
+      "ethInWei": "7309161960829779",
+      "ethOutWei": "0",
+      "owedWei": "7309161960829779"
+    },
+    {
+      "address": "0x0777Dd6D4F259B8018e716cC81c180D4aB279cd6",
+      "balanceUnits": "132059108721812729648112",
+      "boughtUnits": "220928739705905968496",
+      "ethInWei": "7296093889587515",
+      "ethOutWei": "0",
+      "owedWei": "7296093889587515"
+    },
+    {
+      "address": "0x33aE01750854BA170c4Ce9f471E6081Bf304df97",
+      "balanceUnits": "414897071268387807036770",
+      "boughtUnits": "414897071268387807036770",
+      "ethInWei": "7226761435691772",
+      "ethOutWei": "0",
+      "owedWei": "7226761435691772"
+    },
+    {
+      "address": "0x909F6cc58BfA9be5115B8d98c45E7533A189C173",
+      "balanceUnits": "101605490210422931347249",
+      "boughtUnits": "101605490210422931347249",
+      "ethInWei": "7204234921214555",
+      "ethOutWei": "0",
+      "owedWei": "7204234921214555"
+    },
+    {
+      "address": "0x78CdA886a95f2A781c736461A9C3E88f8c76A21b",
+      "balanceUnits": "1268863335929980933645446",
+      "boughtUnits": "1268863335929980933645446",
+      "ethInWei": "7056913380000000",
+      "ethOutWei": "0",
+      "owedWei": "7056913380000000"
+    },
+    {
+      "address": "0x4040e902D76B96f42735962330D7655e3EC9b1CA",
+      "balanceUnits": "49061599706024332847844",
+      "boughtUnits": "49061599706024332847844",
+      "ethInWei": "6965000000000000",
+      "ethOutWei": "0",
+      "owedWei": "6965000000000000"
+    },
+    {
+      "address": "0x0607E0064156196d1C844A839D06eD734311c203",
+      "balanceUnits": "166486996825648310843495",
+      "boughtUnits": "166486996825648310843495",
+      "ethInWei": "6832391350725258",
+      "ethOutWei": "0",
+      "owedWei": "6832391350725258"
+    },
+    {
+      "address": "0x745fA729AA4cdcd1EaDA4E7aaFCEcaA50385dEb6",
+      "balanceUnits": "28340158863709605323911",
+      "boughtUnits": "28340158863709605323911",
+      "ethInWei": "6189219033274339",
+      "ethOutWei": "0",
+      "owedWei": "6189219033274339"
+    },
+    {
+      "address": "0x156CA4369F5614a5D5F697797365d7CA7F80a5bB",
+      "balanceUnits": "104450632891001924643660",
+      "boughtUnits": "4665562614445281924643660",
+      "ethInWei": "274908136278624758",
+      "ethOutWei": "67541484744786565",
+      "owedWei": "6154526515684151"
+    },
+    {
+      "address": "0xd1e5e9cea09E6286F336F66125E1ACec3562Ec00",
+      "balanceUnits": "36739762843403833682206",
+      "boughtUnits": "32852128063195721035447",
+      "ethInWei": "5956226100000000",
+      "ethOutWei": "0",
+      "owedWei": "5956226100000000"
+    },
+    {
+      "address": "0xef16dbF7E8E0763cf5d98c9017657eC1CBFD29D2",
+      "balanceUnits": "21365590623813304571977",
+      "boughtUnits": "21365590623813304571977",
+      "ethInWei": "5494500000000000",
+      "ethOutWei": "0",
+      "owedWei": "5494500000000000"
+    },
+    {
+      "address": "0x661031aC1A379C4E9003A33E05aaa10ea9ec0444",
+      "balanceUnits": "200000000000000000903513",
+      "boughtUnits": "1215774379492302390903513",
+      "ethInWei": "31875946425695000",
+      "ethOutWei": "5102397308190662",
+      "owedWei": "5243727284170297"
+    },
+    {
+      "address": "0x436e8Db013E2Bd6e527fD4069BD286eCDAe0970e",
+      "balanceUnits": "20427410483819724866977",
+      "boughtUnits": "40854820967639449733954",
+      "ethInWei": "9970000000000000",
+      "ethOutWei": "1822732618156625",
+      "owedWei": "4985000000000000"
+    },
+    {
+      "address": "0x586538f02EAd7bbea6cc682B8568760B95158556",
+      "balanceUnits": "54424709469794676601825",
+      "boughtUnits": "54424709469794676601825",
+      "ethInWei": "4980000000000000",
+      "ethOutWei": "0",
+      "owedWei": "4980000000000000"
+    },
+    {
+      "address": "0xd07e47efc207F5823F4b8D3010AD00ff833416B8",
+      "balanceUnits": "19611314973609700762475",
+      "boughtUnits": "19611314973609700762475",
+      "ethInWei": "4970000000000000",
+      "ethOutWei": "0",
+      "owedWei": "4970000000000000"
+    },
+    {
+      "address": "0xf20ac37C5421A4ee42F76d064cddf9FFCd1479e6",
+      "balanceUnits": "269482766475928241797372",
+      "boughtUnits": "269482766475928241797372",
+      "ethInWei": "4950000000000000",
+      "ethOutWei": "0",
+      "owedWei": "4950000000000000"
+    },
+    {
+      "address": "0x5b03Bc4d579D59c44d31488E28e047A40d7bb805",
+      "balanceUnits": "21857134820699341898873",
+      "boughtUnits": "21857134820699341898873",
+      "ethInWei": "4033774800000000",
+      "ethOutWei": "0",
+      "owedWei": "4033774800000000"
+    },
+    {
+      "address": "0xd113337ca758792961f4f183464dCDefDc89EB69",
+      "balanceUnits": "71887963507301954904509",
+      "boughtUnits": "71887963507301954904509",
+      "ethInWei": "3984000000000000",
+      "ethOutWei": "0",
+      "owedWei": "3984000000000000"
+    },
+    {
+      "address": "0x369198F352B225899F5342e5AFAd16FF2A7fA438",
+      "balanceUnits": "25693510324058595689251",
+      "boughtUnits": "25693510324058595689251",
+      "ethInWei": "3960000000000000",
+      "ethOutWei": "0",
+      "owedWei": "3960000000000000"
+    },
+    {
+      "address": "0x89e5DCDC6c529E9222Fc2d797CcaB426924260EE",
+      "balanceUnits": "19393512407388761311721",
+      "boughtUnits": "19393512407388761311721",
+      "ethInWei": "3960000000000000",
+      "ethOutWei": "0",
+      "owedWei": "3960000000000000"
+    },
+    {
+      "address": "0xB6EbDc03a16b0178868B71fE1dd2d4BB0b577bc7",
+      "balanceUnits": "34554833216193865970262",
+      "boughtUnits": "34554833216193865970262",
+      "ethInWei": "3700000000000000",
+      "ethOutWei": "0",
+      "owedWei": "3700000000000000"
+    },
+    {
+      "address": "0x95b36C4B154dd68E09f4FE111Ce10716Ef6FeD4C",
+      "balanceUnits": "41813569807946060340712",
+      "boughtUnits": "41813569807946060340712",
+      "ethInWei": "3620078332994271",
+      "ethOutWei": "0",
+      "owedWei": "3620078332994271"
+    },
+    {
+      "address": "0x166e81c9411a7977716CF370FD7642Ac5466Fbc4",
+      "balanceUnits": "113454931957870511347605",
+      "boughtUnits": "113454931957870511347605",
+      "ethInWei": "3618299810107842",
+      "ethOutWei": "0",
+      "owedWei": "3618299810107842"
+    },
+    {
+      "address": "0x82585464EB2bB50212AC178Fc57ccEfCfEaF5B2A",
+      "balanceUnits": "610772211805849259730452",
+      "boughtUnits": "610772211805849259730452",
+      "ethInWei": "3400000000000000",
+      "ethOutWei": "0",
+      "owedWei": "3400000000000000"
+    },
+    {
+      "address": "0xf08082E00eB9122f366c623E2DC515318a81C8c8",
+      "balanceUnits": "34560640167897409510176",
+      "boughtUnits": "34560640167897409510176",
+      "ethInWei": "3272940000000000",
+      "ethOutWei": "0",
+      "owedWei": "3272940000000000"
+    },
+    {
+      "address": "0x1d86f8e29F8Ff2753f32D3c47c8BeF532De3BE24",
+      "balanceUnits": "24188898862389803233785",
+      "boughtUnits": "78747969631155879627180",
+      "ethInWei": "9863252209479568",
+      "ethOutWei": "0",
+      "owedWei": "3029680781191235"
+    },
+    {
+      "address": "0x9127eDE37Ca680E457A39341e017838b0fa3AC9C",
+      "balanceUnits": "198476547038438544113025",
+      "boughtUnits": "198476547038438544113025",
+      "ethInWei": "2991000000000000",
+      "ethOutWei": "0",
+      "owedWei": "2991000000000000"
+    },
+    {
+      "address": "0xb3DBe216521Ef57679A767F012DE1F1a408Fbd01",
+      "balanceUnits": "258761336981411892064935",
+      "boughtUnits": "258761336981411892064935",
+      "ethInWei": "2988000000000000",
+      "ethOutWei": "0",
+      "owedWei": "2988000000000000"
+    },
+    {
+      "address": "0xF9240F278f3A623C74536Ba02418a70a167c96c8",
+      "balanceUnits": "34448230568533039531058",
+      "boughtUnits": "34448230568533039531058",
+      "ethInWei": "2970297029702970",
+      "ethOutWei": "0",
+      "owedWei": "2970297029702970"
+    },
+    {
+      "address": "0x5BcEe91A4D0c8aEC150070826a0CBC1C0E0800bE",
+      "balanceUnits": "98765721461876025807874",
+      "boughtUnits": "98765721461876025807874",
+      "ethInWei": "2586977059303455",
+      "ethOutWei": "0",
+      "owedWei": "2586977059303455"
+    },
+    {
+      "address": "0x630697Feb577C8b3256892E59b94BF44d2364144",
+      "balanceUnits": "2998338557891438515041210",
+      "boughtUnits": "1442301287329902958339092",
+      "ethInWei": "9900047500000000",
+      "ethOutWei": "7341374550843243",
+      "owedWei": "2558672949156757"
+    },
+    {
+      "address": "0x64320eA6347963A78B8bc481351151aA254747Da",
+      "balanceUnits": "150051225442800441996199",
+      "boughtUnits": "426907116126747974881684",
+      "ethInWei": "8164879336032588",
+      "ethOutWei": "5798293016657877",
+      "owedWei": "2366586319374711"
+    },
+    {
+      "address": "0x128F05ED469C018aB7Aa4b050b86323bE24EAB34",
+      "balanceUnits": "8042123851200413498828",
+      "boughtUnits": "8042123851200413498828",
+      "ethInWei": "2228857407520000",
+      "ethOutWei": "0",
+      "owedWei": "2228857407520000"
+    },
+    {
+      "address": "0xEa754714Ec5E4AEc6e1eA21Df56a5D5A29eBb5c4",
+      "balanceUnits": "7691771343669534686542",
+      "boughtUnits": "7691771343669534686542",
+      "ethInWei": "2009427041629784",
+      "ethOutWei": "0",
+      "owedWei": "2009427041629784"
+    },
+    {
+      "address": "0x04252d96604d3BB2d7A025aBf655346d51704119",
+      "balanceUnits": "28357320952371424667584",
+      "boughtUnits": "28357320952371424667584",
+      "ethInWei": "2000000000000000",
+      "ethOutWei": "0",
+      "owedWei": "2000000000000000"
+    },
+    {
+      "address": "0xafc9428730Bc08446191b012CBF6fbfA3Bd247FE",
+      "balanceUnits": "273203322841344589692928",
+      "boughtUnits": "273203322841344589692928",
+      "ethInWei": "1995000000000000",
+      "ethOutWei": "0",
+      "owedWei": "1995000000000000"
+    },
+    {
+      "address": "0x0683e57560BEff28C5d126d72C8db9069034DA40",
+      "balanceUnits": "20181733792616197010137",
+      "boughtUnits": "20181733792616197010137",
+      "ethInWei": "1992000000000000",
+      "ethOutWei": "0",
+      "owedWei": "1992000000000000"
+    },
+    {
+      "address": "0x1a45D7a1B5AdA9346fAE2b932D41a3E6A71B31A5",
+      "balanceUnits": "10364442304784652565573",
+      "boughtUnits": "10364442304784652565573",
+      "ethInWei": "1980000000000000",
+      "ethOutWei": "0",
+      "owedWei": "1980000000000000"
+    },
+    {
+      "address": "0xF5aA679771A7bAd2752edA4C8dC3d33F5205547C",
+      "balanceUnits": "28292403912392286733463",
+      "boughtUnits": "28292403912392286733463",
+      "ethInWei": "1919563950000000",
+      "ethOutWei": "0",
+      "owedWei": "1919563950000000"
+    },
+    {
+      "address": "0xC86CF7C0E84D320549aD21a9376c57DD3EE7eF5A",
+      "balanceUnits": "6755306991490636055945",
+      "boughtUnits": "6755306991490636055945",
+      "ethInWei": "1914204603752410",
+      "ethOutWei": "0",
+      "owedWei": "1914204603752410"
+    },
+    {
+      "address": "0x97e7eefB32211a3aFaebC648106631b5e272c6B5",
+      "balanceUnits": "57300363809132787499203",
+      "boughtUnits": "57300363809132787499203",
+      "ethInWei": "1904466683214213",
+      "ethOutWei": "0",
+      "owedWei": "1904466683214213"
+    },
+    {
+      "address": "0xD6Ca19B301ae5c7fF692e363C970EEB8eee92Cb6",
+      "balanceUnits": "69314393160340291321653",
+      "boughtUnits": "69314393160340291321653",
+      "ethInWei": "1884807828823075",
+      "ethOutWei": "0",
+      "owedWei": "1884807828823075"
+    },
+    {
+      "address": "0x0B5e5Ddef1333465980af404a2a3bD3C8cab0fD6",
+      "balanceUnits": "11327345590376395184980",
+      "boughtUnits": "11327345590376395184980",
+      "ethInWei": "1810500905250453",
+      "ethOutWei": "0",
+      "owedWei": "1810500905250453"
+    },
+    {
+      "address": "0x6bD44E3E5EDfbc8347129e3B57217Ddf972dc27d",
+      "balanceUnits": "38433490764648532116117",
+      "boughtUnits": "18361482239119095356079",
+      "ethInWei": "1804527869755220",
+      "ethOutWei": "0",
+      "owedWei": "1804527869755220"
+    },
+    {
+      "address": "0x13Ea3636CA24fd3536fd85A4D3754C5BDAFabD7F",
+      "balanceUnits": "48249524442149167169895",
+      "boughtUnits": "48249524442149167169895",
+      "ethInWei": "1726461000000000",
+      "ethOutWei": "0",
+      "owedWei": "1726461000000000"
+    },
+    {
+      "address": "0x26Ba0Ebf96B92891A4504b64136335399A75A10B",
+      "balanceUnits": "47793295739112706772992",
+      "boughtUnits": "25341980982556634018968",
+      "ethInWei": "2144362769367767",
+      "ethOutWei": "435131211188883",
+      "owedWei": "1709231558178884"
+    },
+    {
+      "address": "0x12087048f58261b7e26D25068d4b769F61E057eB",
+      "balanceUnits": "43276725710638818193801",
+      "boughtUnits": "16952334419004121236733",
+      "ethInWei": "1691500000000000",
+      "ethOutWei": "0",
+      "owedWei": "1691500000000000"
+    },
+    {
+      "address": "0xf5d5A0d46E598E0Dda3C3d4F62F640675F3cC763",
+      "balanceUnits": "131806061652187742753152",
+      "boughtUnits": "131806061652187742753152",
+      "ethInWei": "1670284835822152",
+      "ethOutWei": "0",
+      "owedWei": "1670284835822152"
+    },
+    {
+      "address": "0x7a285680108195BBa0aFc2ACFa8653f75f071292",
+      "balanceUnits": "125833627607959631758787",
+      "boughtUnits": "125833627607959631758787",
+      "ethInWei": "1622950819672132",
+      "ethOutWei": "0",
+      "owedWei": "1622950819672132"
+    },
+    {
+      "address": "0x7F4aa94dc35021228252800183c9a60760f4a42f",
+      "balanceUnits": "126335327234922990731298",
+      "boughtUnits": "126335327234922990731298",
+      "ethInWei": "1622950819672132",
+      "ethOutWei": "0",
+      "owedWei": "1622950819672132"
+    },
+    {
+      "address": "0x8502ceEED9206c1819ba27baCBEf8f89368b6999",
+      "balanceUnits": "11269765700722051338377",
+      "boughtUnits": "11269765700722051338377",
+      "ethInWei": "1311354000000000",
+      "ethOutWei": "0",
+      "owedWei": "1311354000000000"
+    },
+    {
+      "address": "0x41D2Cc51472D587CE30dC66a79c1c821782bf78e",
+      "balanceUnits": "10416877928032251229618",
+      "boughtUnits": "10416877928032251229618",
+      "ethInWei": "1293500000000000",
+      "ethOutWei": "0",
+      "owedWei": "1293500000000000"
+    },
+    {
+      "address": "0x84Da72c45FdD3075336753e3ABbBA7AfcAB175fc",
+      "balanceUnits": "14277723552023068994681",
+      "boughtUnits": "14277723552023068994681",
+      "ethInWei": "1161029754720000",
+      "ethOutWei": "0",
+      "owedWei": "1161029754720000"
+    },
+    {
+      "address": "0x3E38c31760e15e5dd01A6744588BE9556d2301cc",
+      "balanceUnits": "32934066878988981615573",
+      "boughtUnits": "12576175355196385355028",
+      "ethInWei": "1080957197274143",
+      "ethOutWei": "0",
+      "owedWei": "1080957197274143"
+    },
+    {
+      "address": "0x6fB8A48A14a9adFC059ee8692102039DeBB5Bc7b",
+      "balanceUnits": "10167856454669777265951",
+      "boughtUnits": "10167856454669777265951",
+      "ethInWei": "1077333762500000",
+      "ethOutWei": "0",
+      "owedWei": "1077333762500000"
+    },
+    {
+      "address": "0x3bD1B7c79b0425E9e80A4edcEc236B730048E603",
+      "balanceUnits": "5352342556709348261717",
+      "boughtUnits": "5352342556709348261717",
+      "ethInWei": "990000000000000",
+      "ethOutWei": "0",
+      "owedWei": "990000000000000"
+    },
+    {
+      "address": "0x5fAac13A3721ab07dE944BA7d363CbFb8d551B5c",
+      "balanceUnits": "9937885149731656159007",
+      "boughtUnits": "9937885149731656159007",
+      "ethInWei": "990000000000000",
+      "ethOutWei": "0",
+      "owedWei": "990000000000000"
+    },
+    {
+      "address": "0x83684330598Ee9A6CC68031c8F0235740a4c64bD",
+      "balanceUnits": "16787970276675778561906",
+      "boughtUnits": "16787970276675778561906",
+      "ethInWei": "990000000000000",
+      "ethOutWei": "0",
+      "owedWei": "990000000000000"
+    },
+    {
+      "address": "0x67B37425BeA2DAdC49bcC913a8275229Dd37fD33",
+      "balanceUnits": "221968187225289231922550",
+      "boughtUnits": "221968187225289231922550",
+      "ethInWei": "920430491817793",
+      "ethOutWei": "0",
+      "owedWei": "920430491817793"
+    },
+    {
+      "address": "0x4042a2476A7D37C854bF560462024B92484A815D",
+      "balanceUnits": "4818844159527147704276",
+      "boughtUnits": "4818844159527147704276",
+      "ethInWei": "917643737404954",
+      "ethOutWei": "0",
+      "owedWei": "917643737404954"
+    },
+    {
+      "address": "0x7DF615cE3D0553B8DB792ed5E71976e1111f9FC3",
+      "balanceUnits": "7540582207655653732110",
+      "boughtUnits": "7540582207655653732110",
+      "ethInWei": "796000000000000",
+      "ethOutWei": "0",
+      "owedWei": "796000000000000"
+    },
+    {
+      "address": "0xba0C3a479cDB9da82786ca4Bd00C597FA5616530",
+      "balanceUnits": "10650931400563056792287",
+      "boughtUnits": "10650931400563056792287",
+      "ethInWei": "793000000000000",
+      "ethOutWei": "0",
+      "owedWei": "793000000000000"
+    },
+    {
+      "address": "0x11D22d5800D7A4a46504f5a3962dD8e9174F257C",
+      "balanceUnits": "106236390889779806020591",
+      "boughtUnits": "47306717012028322455473",
+      "ethInWei": "744841751514767",
+      "ethOutWei": "0",
+      "owedWei": "744841751514767"
+    },
+    {
+      "address": "0xf9165dab12838408dF72570d8cC75792F14eFb58",
+      "balanceUnits": "2918648359444323308432",
+      "boughtUnits": "2918648359444323308432",
+      "ethInWei": "742500000000000",
+      "ethOutWei": "0",
+      "owedWei": "742500000000000"
+    },
+    {
+      "address": "0x39B9AC70A976BB691F98EDB7f0fb1f3142b8f207",
+      "balanceUnits": "12650684467078614190406",
+      "boughtUnits": "18251272138970232293985",
+      "ethInWei": "1088767924869106",
+      "ethOutWei": "350103403870964",
+      "owedWei": "738664520998142"
+    },
+    {
+      "address": "0x3198Cfff125F8221b1b30B750cC477A113871966",
+      "balanceUnits": "4505979918828338820337",
+      "boughtUnits": "4505979918828338820337",
+      "ethInWei": "731758130730000",
+      "ethOutWei": "0",
+      "owedWei": "731758130730000"
+    },
+    {
+      "address": "0x06931482d2459bF0c48DcBb44563774BEa414bDA",
+      "balanceUnits": "7878624218607367183955",
+      "boughtUnits": "7878624218607367183955",
+      "ethInWei": "731038093969534",
+      "ethOutWei": "0",
+      "owedWei": "731038093969534"
+    },
+    {
+      "address": "0x19BB294144222e0eeb3F8235f6Ebd31a43be41A5",
+      "balanceUnits": "6740306772177823780840",
+      "boughtUnits": "6740306772177823780840",
+      "ethInWei": "722906366000000",
+      "ethOutWei": "0",
+      "owedWei": "722906366000000"
+    },
+    {
+      "address": "0x264ff3B353C2D53c28C613b35800592A14d90A19",
+      "balanceUnits": "102189233045461844266273",
+      "boughtUnits": "94014330075359142754383",
+      "ethInWei": "716642309655258",
+      "ethOutWei": "0",
+      "owedWei": "716642309655258"
+    },
+    {
+      "address": "0xFEeFDeAbb8b42E1c04b5564c7151243621D45f38",
+      "balanceUnits": "4711787996563945543240",
+      "boughtUnits": "85038697996563945543240",
+      "ethInWei": "12870000000000000",
+      "ethOutWei": "7929028759033348",
+      "owedWei": "713095484108049"
+    },
+    {
+      "address": "0xF0A8b4b6DA8baf380A37d26015640B69f7c29138",
+      "balanceUnits": "4187298620683792977042",
+      "boughtUnits": "4187298620683792977042",
+      "ethInWei": "696500000000000",
+      "ethOutWei": "0",
+      "owedWei": "696500000000000"
+    },
+    {
+      "address": "0x487d32f75c38553437970e43d536f3f37cAe6611",
+      "balanceUnits": "12593158127871278923536",
+      "boughtUnits": "12593158127871278923536",
+      "ethInWei": "645014700000000",
+      "ethOutWei": "0",
+      "owedWei": "645014700000000"
+    },
+    {
+      "address": "0xc1551478C518095aB204ba2dfFFD0f615881B895",
+      "balanceUnits": "6217834921063967001963",
+      "boughtUnits": "6217834921063967001963",
+      "ethInWei": "597000000000000",
+      "ethOutWei": "0",
+      "owedWei": "597000000000000"
+    },
+    {
+      "address": "0x4a2346676BcDECFC6eB1F2CF80531D8444137703",
+      "balanceUnits": "4859405773915646103768",
+      "boughtUnits": "4859405773915646103768",
+      "ethInWei": "594000000000000",
+      "ethOutWei": "0",
+      "owedWei": "594000000000000"
+    },
+    {
+      "address": "0x28258DEED50e33C88386cb7d39E58Aff5E3868e8",
+      "balanceUnits": "110245904855567738758705",
+      "boughtUnits": "110245904855567738758705",
+      "ethInWei": "541456625818905",
+      "ethOutWei": "0",
+      "owedWei": "541456625818905"
+    },
+    {
+      "address": "0xE095A34e199131e185272811A081225cA6311aeD",
+      "balanceUnits": "4582550605770340004432",
+      "boughtUnits": "22427238897215109609945",
+      "ethInWei": "2602123816160160",
+      "ethOutWei": "2072748747212929",
+      "owedWei": "529375068947231"
+    },
+    {
+      "address": "0xbfDBC540C80F09b28162b7979462281BaaAfd8AD",
+      "balanceUnits": "6929112994709543162952",
+      "boughtUnits": "6929112994709543162952",
+      "ethInWei": "500000000000000",
+      "ethOutWei": "0",
+      "owedWei": "500000000000000"
+    },
+    {
+      "address": "0x0fe75635F2DfA65bDb41FfE2465cD2303F6b3d5d",
+      "balanceUnits": "31451853989894077062722",
+      "boughtUnits": "31451853989894077062722",
+      "ethInWei": "495000000000000",
+      "ethOutWei": "0",
+      "owedWei": "495000000000000"
+    },
+    {
+      "address": "0x4AB3735690693Ed97537324823dfc97BD74025DA",
+      "balanceUnits": "8262366631622260606248",
+      "boughtUnits": "8262366631622260606248",
+      "ethInWei": "495000000000000",
+      "ethOutWei": "0",
+      "owedWei": "495000000000000"
+    },
+    {
+      "address": "0x64005cC2fBDFEe234d120d90b5a08311C15a14CB",
+      "balanceUnits": "3999451946878815433082",
+      "boughtUnits": "3999451946878815433082",
+      "ethInWei": "495000000000000",
+      "ethOutWei": "0",
+      "owedWei": "495000000000000"
+    },
+    {
+      "address": "0x7618A8686dCebF36569Ac23F9557097081f2aE69",
+      "balanceUnits": "3383416874240197558591",
+      "boughtUnits": "3383416874240197558591",
+      "ethInWei": "495000000000000",
+      "ethOutWei": "0",
+      "owedWei": "495000000000000"
+    },
+    {
+      "address": "0xE80ed7a49798608d960e953fA4C844BE7fE96Ee3",
+      "balanceUnits": "10458229281517982803436",
+      "boughtUnits": "10458229281517982803436",
+      "ethInWei": "494460940175811",
+      "ethOutWei": "0",
+      "owedWei": "494460940175811"
+    },
+    {
+      "address": "0x925C3ac8aFb2b28C2b50Bd68b83e90eC16E9282b",
+      "balanceUnits": "127098276515432502287424",
+      "boughtUnits": "98919586021969305279546",
+      "ethInWei": "7245569184053146",
+      "ethOutWei": "6764711053475252",
+      "owedWei": "480858130577894"
+    },
+    {
+      "address": "0x923ce6Efd39c7c5582d99717256Ce81DdD430956",
+      "balanceUnits": "4240012080905312478822",
+      "boughtUnits": "4240012080905312478822",
+      "ethInWei": "454371853490940",
+      "ethOutWei": "0",
+      "owedWei": "454371853490940"
+    },
+    {
+      "address": "0xFA0B5CD36c6870eF47AA1FDf577b849a1b43E9c2",
+      "balanceUnits": "23179927362705023221841",
+      "boughtUnits": "23179927362705023221841",
+      "ethInWei": "450000000000000",
+      "ethOutWei": "0",
+      "owedWei": "450000000000000"
+    },
+    {
+      "address": "0x16e308fB1F0FB662DEd0441ff253D5663c3B0Df6",
+      "balanceUnits": "2815792074059012701908",
+      "boughtUnits": "2815792074059012701908",
+      "ethInWei": "408010683483547",
+      "ethOutWei": "0",
+      "owedWei": "408010683483547"
+    },
+    {
+      "address": "0xA8b330382fef63CD46fc958CF6cb52173e4F992e",
+      "balanceUnits": "3005225077308139252947",
+      "boughtUnits": "3005225077308139252947",
+      "ethInWei": "400000000000000",
+      "ethOutWei": "0",
+      "owedWei": "400000000000000"
+    },
+    {
+      "address": "0x1B4236AC7EF811E987C6317D0aA1A2f411072F9a",
+      "balanceUnits": "1392862622940160504807",
+      "boughtUnits": "1392862622940160504807",
+      "ethInWei": "396000000000000",
+      "ethOutWei": "0",
+      "owedWei": "396000000000000"
+    },
+    {
+      "address": "0x67147a0EC967B2365195163c6e91FCE2e180fc0D",
+      "balanceUnits": "13463910595856387803886",
+      "boughtUnits": "13463910595856387803886",
+      "ethInWei": "392686394566329",
+      "ethOutWei": "0",
+      "owedWei": "392686394566329"
+    },
+    {
+      "address": "0xbCd2b7bE383bCcd0bF631809b7508d418dA0a619",
+      "balanceUnits": "6190284127864865867190",
+      "boughtUnits": "6190284127864865867190",
+      "ethInWei": "366376862568375",
+      "ethOutWei": "0",
+      "owedWei": "366376862568375"
+    },
+    {
+      "address": "0x4Fb500f07D6188d3b8BC1F8625DAaccA66E79d43",
+      "balanceUnits": "4485180642721647266840",
+      "boughtUnits": "4485180642721647266840",
+      "ethInWei": "361899435532294",
+      "ethOutWei": "0",
+      "owedWei": "361899435532294"
+    },
+    {
+      "address": "0x9F5F71E662305a470Bc74ccb3f153792c4B00457",
+      "balanceUnits": "2832026139843849660153",
+      "boughtUnits": "2832026139843849660153",
+      "ethInWei": "360024874445871",
+      "ethOutWei": "0",
+      "owedWei": "360024874445871"
+    },
+    {
+      "address": "0x48Eaec2c91da0BeA0FCf2795942d321371338A52",
+      "balanceUnits": "1899987127592043010418",
+      "boughtUnits": "1899987127592043010418",
+      "ethInWei": "343880160793846",
+      "ethOutWei": "0",
+      "owedWei": "343880160793846"
+    },
+    {
+      "address": "0xFb86a9630050468F75df53428BE585AD4E02c763",
+      "balanceUnits": "3517845070720236966997",
+      "boughtUnits": "15301933964796777995547",
+      "ethInWei": "1523430687719397",
+      "ethOutWei": "1194821367095556",
+      "owedWei": "328609320623841"
+    },
+    {
+      "address": "0x6A3A454bAA536AB754f242c8818ccc5A4C82C490",
+      "balanceUnits": "5745444755607370273430",
+      "boughtUnits": "5745444755607370273430",
+      "ethInWei": "298500000000000",
+      "ethOutWei": "0",
+      "owedWei": "298500000000000"
+    },
+    {
+      "address": "0x2771CE9448AEfEc5239582469FD7B72797c5C80C",
+      "balanceUnits": "2353805909847099520050",
+      "boughtUnits": "2353805909847099520050",
+      "ethInWei": "282201900000000",
+      "ethOutWei": "0",
+      "owedWei": "282201900000000"
+    },
+    {
+      "address": "0x937E3A06D76141e7fed8f5bf4a5807ef0d25f00a",
+      "balanceUnits": "5891263104948650830589",
+      "boughtUnits": "21891263104948650831049",
+      "ethInWei": "1002000000000000",
+      "ethOutWei": "0",
+      "owedWei": "269653039336233"
+    },
+    {
+      "address": "0x9C5Aa060a2d48C827dE273d95D64b9EC55Dd65f6",
+      "balanceUnits": "960100301332047733760",
+      "boughtUnits": "24002507533301193293392",
+      "ethInWei": "5255000000000000",
+      "ethOutWei": "3616035788542999",
+      "owedWei": "210200000000000"
+    },
+    {
+      "address": "0x082652417FB7edA61ED43795206044de533f3BFB",
+      "balanceUnits": "39948317403482415833776",
+      "boughtUnits": "37973037303025118140219",
+      "ethInWei": "179100000000000",
+      "ethOutWei": "0",
+      "owedWei": "179100000000000"
+    },
+    {
+      "address": "0xEFA1f6Aa9fCF36c373f6De371E827baF9A35B371",
+      "balanceUnits": "478963613837107765260",
+      "boughtUnits": "478963613837107765260",
+      "ethInWei": "100000000000000",
+      "ethOutWei": "0",
+      "owedWei": "100000000000000"
+    },
+    {
+      "address": "0x9d2d3cC3E001C2b467d280c3a4B8346aA8020Ed8",
+      "balanceUnits": "454569069236373720523",
+      "boughtUnits": "454569069236373720523",
+      "ethInWei": "99000000000000",
+      "ethOutWei": "0",
+      "owedWei": "99000000000000"
+    },
+    {
+      "address": "0x8A15c56E87673eb05f2bC2d9F7246Af90eA3DAf6",
+      "balanceUnits": "1507785027023617686253",
+      "boughtUnits": "1507785027023617686253",
+      "ethInWei": "69300000000000",
+      "ethOutWei": "0",
+      "owedWei": "69300000000000"
+    },
+    {
+      "address": "0x8F489B4296f5611bE706204576ab0cb42d6A2B28",
+      "balanceUnits": "295349560335754718559",
+      "boughtUnits": "295349560335754718559",
+      "ethInWei": "31611150000000",
+      "ethOutWei": "0",
+      "owedWei": "31611150000000"
+    },
+    {
+      "address": "0xf410Fb22dF1FC6b39392aD6e8b125ffA5017b938",
+      "balanceUnits": "118408922751322279017",
+      "boughtUnits": "23681784550263374611784",
+      "ethInWei": "2670117301960090",
+      "ethOutWei": "0",
+      "owedWei": "13350586509801"
+    },
+    {
+      "address": "0xa24eA42868f898C740838CAffc1804f21B16D8cA",
+      "balanceUnits": "411747664574151844721037",
+      "boughtUnits": "1669672996521552860410",
+      "ethInWei": "8659314742721",
+      "ethOutWei": "0",
+      "owedWei": "8659314742721"
+    },
+    {
+      "address": "0x2c2c266d69E9A4F4A038cBB1b3D6d3Ab44A9895B",
+      "balanceUnits": "33663757656061768502",
+      "boughtUnits": "1587077674168886061768502",
+      "ethInWei": "123838743791074605",
+      "ethOutWei": "116410918314580161",
+      "owedWei": "2626763344520"
+    },
+    {
+      "address": "0x07FCD075994238C9b6018BB9D34Acc88B82028Da",
+      "balanceUnits": "5590991282115215097",
+      "boughtUnits": "5590991282115215097856",
+      "ethInWei": "1384934846391488",
+      "ethOutWei": "259758720889716",
+      "owedWei": "1384934846391"
+    },
+    {
+      "address": "0xA8c7ca2Df4bC424D3516A1101b2B5d38D46D4063",
+      "balanceUnits": "1928545830667397654",
+      "boughtUnits": "2612899928545830667397654",
+      "ethInWei": "145405777454865298",
+      "ethOutWei": "113547961737844044",
+      "owedWei": "107322022861"
+    },
+    {
+      "address": "0x2459a1569e7245DE908E85481bDD35b66893cc51",
+      "balanceUnits": "10233551263664008019",
+      "boughtUnits": "15221439516885257860901",
+      "ethInWei": "111142840327096",
+      "ethOutWei": "0",
+      "owedWei": "74722627437"
+    },
+    {
+      "address": "0x032F58A5f38aac0FA421BC5B2CE65024f19d82fD",
+      "balanceUnits": "206529959129655813",
+      "boughtUnits": "970296206529959129655813",
+      "ethInWei": "148333077383493494",
+      "ethOutWei": "30037969921610741",
+      "owedWei": "31573064187"
+    },
+    {
+      "address": "0xE6fcaE26250b154AFD39161a6F2c6160CecE71F1",
+      "balanceUnits": "105840666690687865",
+      "boughtUnits": "755994706897237191902893",
+      "ethInWei": "5555239860367864",
+      "ethOutWei": "0",
+      "owedWei": "777743924"
+    },
+    {
+      "address": "0xa55Fc24e9d5C1f654562D49C3c6f2a538079c216",
+      "balanceUnits": "175907688106",
+      "boughtUnits": "3095442591175907688106",
+      "ethInWei": "44399929020321",
+      "ethOutWei": "22575842753311",
+      "owedWei": "2523"
+    },
+    {
+      "address": "0x9ceb873F7bBA9F9105eBFcf98F5Af49605207387",
+      "balanceUnits": "7316841420",
+      "boughtUnits": "8191332903004398777802",
+      "ethInWei": "1983928490100000",
+      "ethOutWei": "1798682158886525",
+      "owedWei": "1772"
+    },
+    {
+      "address": "0xEff30055EC3F55E43bFca2206D080084462a4713",
+      "balanceUnits": "6642631307",
+      "boughtUnits": "20872777938486642631307",
+      "ethInWei": "3639528932959552",
+      "ethOutWei": "0",
+      "owedWei": "1158"
+    },
+    {
+      "address": "0x17b419ddDC46621E25afa6b76e9befb03E3721aB",
+      "balanceUnits": "9592290364",
+      "boughtUnits": "50953823525381389544439",
+      "ethInWei": "6118662960956551",
+      "ethOutWei": "5826797154928082",
+      "owedWei": "1151"
+    },
+    {
+      "address": "0xA256e4E0921D8a3E78A8f91F1D2FCd84A55Ed777",
+      "balanceUnits": "5085368782",
+      "boughtUnits": "266884840249284467591254",
+      "ethInWei": "59184881504254725",
+      "ethOutWei": "12331467018949978",
+      "owedWei": "1127"
+    },
+    {
+      "address": "0xDE4901d77a5213979C2758235361102147bda239",
+      "balanceUnits": "8317893620",
+      "boughtUnits": "175819918450188872495719",
+      "ethInWei": "22011210900000000",
+      "ethOutWei": "9019639611142099",
+      "owedWei": "1041"
+    },
+    {
+      "address": "0x8bAd493b9D001A14b6892E1517086b5e87A9E733",
+      "balanceUnits": "4529894842",
+      "boughtUnits": "11585845981054529894842",
+      "ethInWei": "2546481434658000",
+      "ethOutWei": "0",
+      "owedWei": "995"
+    },
+    {
+      "address": "0x67d11cc4aAa6E867EEc81175fc88F3559215f011",
+      "balanceUnits": "5915857053",
+      "boughtUnits": "38179455208215915857053",
+      "ethInWei": "5471983942583586",
+      "ethOutWei": "3854896774249791",
+      "owedWei": "847"
+    },
+    {
+      "address": "0x198a0a2fa5B012e4646E7240dDFb16529967d72b",
+      "balanceUnits": "8040667261",
+      "boughtUnits": "18999598676548040667261",
+      "ethInWei": "1990000000000000",
+      "ethOutWei": "0",
+      "owedWei": "842"
+    },
+    {
+      "address": "0x29e84bB4feBA3C586f2632b9D2Be6bd21cf3cA0D",
+      "balanceUnits": "8985361770",
+      "boughtUnits": "16150432936880002128430089",
+      "ethInWei": "1433086089175938509",
+      "ethOutWei": "927057379033322398",
+      "owedWei": "797"
+    },
+    {
+      "address": "0x7FD1D9Ea13Ba33bBC98525daF8797Da7Ffe95518",
+      "balanceUnits": "9898364845",
+      "boughtUnits": "2089597903035099386794",
+      "ethInWei": "160241880850576",
+      "ethOutWei": "0",
+      "owedWei": "759"
+    },
+    {
+      "address": "0x15224E5a379887EAc533BFa22b8bB7ee32C53dDe",
+      "balanceUnits": "2729258677",
+      "boughtUnits": "1325317691163912729258677",
+      "ethInWei": "338300000000000000",
+      "ethOutWei": "48198691977484269",
+      "owedWei": "696"
+    },
+    {
+      "address": "0xf165ccebfD10D00bbA527424D7B5d6c3eDE04c58",
+      "balanceUnits": "8392573847",
+      "boughtUnits": "1301762967768053392573847",
+      "ethInWei": "107895901377639167",
+      "ethOutWei": "88528228846004462",
+      "owedWei": "695"
+    },
+    {
+      "address": "0x69944A855A4240bA8a7FF27Fa325f9fAF3f49Fa5",
+      "balanceUnits": "5931338738",
+      "boughtUnits": "124797516349105931338738",
+      "ethInWei": "12935000000000000",
+      "ethOutWei": "0",
+      "owedWei": "614"
+    },
+    {
+      "address": "0xc852Ebcc50C16191080a3a0BcE290220daB48DA4",
+      "balanceUnits": "8322479500",
+      "boughtUnits": "188539101691336395728306",
+      "ethInWei": "12935000000000000",
+      "ethOutWei": "4359151670010966",
+      "owedWei": "570"
+    },
+    {
+      "address": "0x522A1ec4156fE47306a5956E914b2F9BdEc7C003",
+      "balanceUnits": "4043340288",
+      "boughtUnits": "75403999028804043340288",
+      "ethInWei": "10103043437500000",
+      "ethOutWei": "9151731598182047",
+      "owedWei": "541"
+    },
+    {
+      "address": "0xcf6095c6f5C78B41A145FfD8d1d58Fe2240a9430",
+      "balanceUnits": "6387381327",
+      "boughtUnits": "14293851617196387381327",
+      "ethInWei": "1124160950000000",
+      "ethOutWei": "0",
+      "owedWei": "502"
+    },
+    {
+      "address": "0xaFf10b72CAcd51DE781Dd935289c9Eb8f49b45Be",
+      "balanceUnits": "2050397879",
+      "boughtUnits": "5155350731522050397879",
+      "ethInWei": "1225588762500000",
+      "ethOutWei": "0",
+      "owedWei": "487"
+    },
+    {
+      "address": "0x65fC2D143Fd072CFb4b8E5e753ab7d5bcf773Bc5",
+      "balanceUnits": "2417898268",
+      "boughtUnits": "16965030270517417898268",
+      "ethInWei": "3294359208930267",
+      "ethOutWei": "2443293272938962",
+      "owedWei": "469"
+    },
+    {
+      "address": "0xB30864d6b3e564A51ac99f19ECE5736894aaBE20",
+      "balanceUnits": "2631638958",
+      "boughtUnits": "4043898587722631638958",
+      "ethInWei": "412191187500000",
+      "ethOutWei": "0",
+      "owedWei": "268"
+    },
+    {
+      "address": "0x04571D24c790942E5C7E488e73D4fb0A148F3850",
+      "balanceUnits": "6752371331",
+      "boughtUnits": "1103865798794096330627073",
+      "ethInWei": "41768766700000000",
+      "ethOutWei": "35198803347405950",
+      "owedWei": "255"
+    },
+    {
+      "address": "0x6f956eaEFeE8A6756f7F58b4416B13fc1c81e933",
+      "balanceUnits": "1329829344",
+      "boughtUnits": "1039594609676253388269663",
+      "ethInWei": "178831800000000000",
+      "ethOutWei": "0",
+      "owedWei": "228"
+    },
+    {
+      "address": "0xe0761B5aed08ff60D242BA8Cc76Bdb9fDB687DC5",
+      "balanceUnits": "1572934906",
+      "boughtUnits": "709024071756801572934906",
+      "ethInWei": "85716342112500000",
+      "ethOutWei": "73973031184958402",
+      "owedWei": "190"
+    },
+    {
+      "address": "0xdE8056295181D919FfFc68E9375D83De4952dFCb",
+      "balanceUnits": "2569991068",
+      "boughtUnits": "7652165710113612569991068",
+      "ethInWei": "471962653375000000",
+      "ethOutWei": "309635492500950583",
+      "owedWei": "158"
+    },
+    {
+      "address": "0x9664AEeF3d918CeBF8bCB159f2c9689557332fa0",
+      "balanceUnits": "7120627559",
+      "boughtUnits": "676028763009937120627559",
+      "ethInWei": "13930000000000000",
+      "ethOutWei": "13691173128856457",
+      "owedWei": "146"
+    },
+    {
+      "address": "0x30d7a2a1564C53030223CE0FB32f1a7F0452a1f1",
+      "balanceUnits": "711980442",
+      "boughtUnits": "10497630081396720711980442",
+      "ethInWei": "1850000745000000000",
+      "ethOutWei": "515366107970216078",
+      "owedWei": "125"
+    },
+    {
+      "address": "0x13b3166ad3c9b31496DAf64E1D601cBa1ECae245",
+      "balanceUnits": "674312936",
+      "boughtUnits": "2857149145556665693345",
+      "ethInWei": "495000000000000",
+      "ethOutWei": "172899397272427",
+      "owedWei": "116"
+    },
+    {
+      "address": "0x198c5C93259BEacd55862B8bEA0474a78441f995",
+      "balanceUnits": "5149847495",
+      "boughtUnits": "34083330567045149847495",
+      "ethInWei": "497500000000000",
+      "ethOutWei": "0",
+      "owedWei": "75"
+    },
+    {
+      "address": "0x21d0A70a41c38f54478e76a1B573E25327C8B127",
+      "balanceUnits": "3520554494",
+      "boughtUnits": "191937286857713520554494",
+      "ethInWei": "2576350430810735",
+      "ethOutWei": "1141066151524433",
+      "owedWei": "47"
+    },
+    {
+      "address": "0x04D334c8B54aa1B07F06A09Ffe292cFab3E68238",
+      "balanceUnits": "395788078",
+      "boughtUnits": "3251390419161143254205",
+      "ethInWei": "100000000000000",
+      "ethOutWei": "0",
+      "owedWei": "12"
+    },
+    {
+      "address": "0xC207Df8DC9Ee5113c6374c70c2A29bB87e94CfdF",
+      "balanceUnits": "72003496",
+      "boughtUnits": "5502620645183322810888958",
+      "ethInWei": "430975073425164865",
+      "ethOutWei": "158160327824739046",
+      "owedWei": "5"
+    },
+    {
+      "address": "0x73AcFb04CFb099aA8e344D08fb9ddbcD1e9C93E8",
+      "balanceUnits": "557187511",
+      "boughtUnits": "15576887131618301303793371",
+      "ethInWei": "87251627850961993",
+      "ethOutWei": "77519801357534971",
+      "owedWei": "3"
+    },
+    {
+      "address": "0x6D14b50122985338215dE20E40A02a26F82F50aA",
+      "balanceUnits": "36163962",
+      "boughtUnits": "2038616541156248852170",
+      "ethInWei": "129350000000000",
+      "ethOutWei": "0",
+      "owedWei": "2"
+    },
+    {
+      "address": "0x0000000000483326682634675C919731e910d296",
+      "balanceUnits": "1078156213500518401",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x00000000009726632680FB29d3F7A9734E3010E2",
+      "balanceUnits": "3315391330652426905469",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x00000000Cf1cD5867BE5D90B99A6EBd683BC031c",
+      "balanceUnits": "478260701525114518922258",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x00aD278490a899D9E530A1baE2a3956b1aBE4568",
+      "balanceUnits": "2889824322",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x00f3B0cAA1B3848004c375E814FCFF96E387C03c",
+      "balanceUnits": "14413709778602441357158",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x011C4f036d68d0A6d0B55b31b37E0DFf04E1C41A",
+      "balanceUnits": "2630993342520869065",
+      "boughtUnits": "30528145104572520869065",
+      "ethInWei": "3669799551584396",
+      "ethOutWei": "8183116252849361",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x017daCf1Ae4e547C068eAAcF7ea8CCb3183b7a89",
+      "balanceUnits": "153704262860644561696",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x029E092Ec2e559904ECfd37d35600018EcD4dC26",
+      "balanceUnits": "503688822074157850273",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x03828A731038d8F44FfaD6716884094631df11e3",
+      "balanceUnits": "3853072009649724713940",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x04ec161Ef7eD7bbE0a9f7Ce7Ca8abe21bb7034D3",
+      "balanceUnits": "563161015688069937418",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x04fD5FC7FbdDA318A5eE182869CefdAf59E96f87",
+      "balanceUnits": "72792181077242861351",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x05036487D03474CDb34347982d05F4e05795172B",
+      "balanceUnits": "53190290721742991871846",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x05b9D9Fe95Cd808F20C0B81E6eb442F3ad23e7C1",
+      "balanceUnits": "775838",
+      "boughtUnits": "65188679030399440775838",
+      "ethInWei": "1797479119739753",
+      "ethOutWei": "9091839915459986",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x05d3CF1eC277C2594a5e5a376887Fe496376eB86",
+      "balanceUnits": "1682358739864109953184",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x05d5019b4019e6Cc75407c5115ba590D816343aA",
+      "balanceUnits": "330559096914399942662893",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x05e558123775620826902Dc30caa043C89E7cD82",
+      "balanceUnits": "583749234130890200801336",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x05FF0724C3d07F079FfD069Bfc38fC105370AF79",
+      "balanceUnits": "6921010718454140399969",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0766C47E5970463A248D1B23688FCddF3F7B56c2",
+      "balanceUnits": "24800578181062241624012",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x07964f135f276412b3182a3B2407b8dd45000000",
+      "balanceUnits": "9972319033652391040734",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x091c2Ef53862658C84F2032deB5cAAE88eEd1FD7",
+      "balanceUnits": "7713295684",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "7884278481040000",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0A029f5B3A5553868BF402C8f8ca1F63C1EcE5A9",
+      "balanceUnits": "3952062700886700634017",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0a47f7e62e39f28126C213adDF99E6277901C3fD",
+      "balanceUnits": "10963756772307793779117",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0a7346ca5B3390f984C5dfA4614c9817bA0e6744",
+      "balanceUnits": "16227336832192816241193",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0A86CDba7CA5CC24E57f30254BdA41825AEf4cb1",
+      "balanceUnits": "41840045686847825072",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0b362fe357713eE5439dF7194c680196A755270b",
+      "balanceUnits": "8115550620992810617372",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0b54bE5CB3682469d092e89c431Df9472538D64D",
+      "balanceUnits": "39180926624855514534024",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0Be8C04b10a4531bD265858A9f0105E3f7d13d2F",
+      "balanceUnits": "15419363596793976686794553",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0C3220f3FCE10fEbAFA037513d6edfCC26F43965",
+      "balanceUnits": "7393722775284210858401",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0D232C546F797aA14B4E9196888Ed9391cB7B226",
+      "balanceUnits": "12584297710182263868090",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0D864DB5D480b559D85C99FE0e316F3502FeA62c",
+      "balanceUnits": "14000000000000000452091",
+      "boughtUnits": "19317746380333268452091",
+      "ethInWei": "996000000000000",
+      "ethOutWei": "1206309326324673",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0e331a293BB22e93e2e5E417d84d755ae185dA02",
+      "balanceUnits": "13504045025022985248150",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0e482636EFC943fFb61b122EcA66E7c1b2C8FD15",
+      "balanceUnits": "29061834230021567203237",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0e6cd9451E0bf9eD46D6a0699f1135C6cab90374",
+      "balanceUnits": "12962850452305565587163",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0e867974275Cd31C25015C2753C9d75F9f355379",
+      "balanceUnits": "1",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0E9429D32BFbf5553181c5096914BF9904D1aaa0",
+      "balanceUnits": "42700706297981915249150",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0EC4A9Fa81091c4375fbbdf21F556F5471B09E3d",
+      "balanceUnits": "2524110296",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x0F07c1e4D5f64a64e5BA9B71676ACD51738e061D",
+      "balanceUnits": "14733647220656310858272",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x10344237Ded118bB01Da1F95475EBeA25c763FF9",
+      "balanceUnits": "27179047920356306792553",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x103a45D5E599Fba4fb4975Da6D58eb8a87c4cddC",
+      "balanceUnits": "69956414",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1073BD93cd9f1cc15CA9Aa66A0101AE4a9acb84F",
+      "balanceUnits": "2225672825376387",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x10F0940994347e5583126452C81603Ef724DED62",
+      "balanceUnits": "8846023575",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x10fb2ABe5C7D93F75a5410dde6384bF5b2EBcb7F",
+      "balanceUnits": "26492275459849775114721",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1111110f0f73C0b2eF09eC012Eae758b3E03A902",
+      "balanceUnits": "676173435161207853897481",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1111115Af63bfBcc151e5753e2EA1a29C79D2F01",
+      "balanceUnits": "8743809279454205000188",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x11111193880697e1C891f932501b4a2aA17A7b03",
+      "balanceUnits": "13899521502113620048942",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x117057DbF86abf3D0b6b214b7cEddf7e37Ca5592",
+      "balanceUnits": "17791347865780149151332",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x11d5b784E02dCA998094DcB537d85391Fea989D4",
+      "balanceUnits": "1243874798",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x11F58bE68c5F665D9D1312b73AaBFFcc9B8f2D9c",
+      "balanceUnits": "88793596502036498266984",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x12d7E5Bac9425C1A8a40bCf23981Ea7b431428bD",
+      "balanceUnits": "5493889981157790060",
+      "boughtUnits": "26055429177683460677788",
+      "ethInWei": "3941980507210623",
+      "ethOutWei": "5080300384512586",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x138b1F6adCc814D3FBE33f94610bf9A53e2095f9",
+      "balanceUnits": "5000925776554282871788",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x13a4E97b85e2f02d69B675C59b82BA4932A068D2",
+      "balanceUnits": "6570507570",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x13cA69A1396003C0d729056dA024881A2d689d33",
+      "balanceUnits": "2075956863747803434405",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x13ec8feF815fEC7674CE44A48Cb4aA2e40Cd64EA",
+      "balanceUnits": "31673456165571487775057",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x13EDc3fCeaaF920D85673F46632FAfcd7CEF8a46",
+      "balanceUnits": "83380009387450539455",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x13efb126Dc4a950Fddce7aC30DCA050534082113",
+      "balanceUnits": "26751510799915501902620",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x14548bfFd3965F9De6a7AAAaA7248d73872acc33",
+      "balanceUnits": "7448864",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x147CF09E7373B8FDA6f12021F1b0f98D6da1A566",
+      "balanceUnits": "1205200090412057130859",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x15451Bf6C7CAD61A28E7D53983A3C468b68A2f96",
+      "balanceUnits": "112543962025852913698",
+      "boughtUnits": "264191773826330327711392",
+      "ethInWei": "10890000000000000",
+      "ethOutWei": "19789131431413739",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x15bE77C8437625B72C0A623b7Ef7B146a39C62d0",
+      "balanceUnits": "10320295511004913237475",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x165f7956e7DE0C86A1cDa5A24Ac1968530229513",
+      "balanceUnits": "42444613164679927437245",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x16be7f24ebCB721Fb598e9eF4EAd3ce6592bd200",
+      "balanceUnits": "64239181268781187719",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x16CC0990C79490B3E6C2eF4A78196f4b42EE3616",
+      "balanceUnits": "26913370748658723898983",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x171f3198D736a1c3C04ef545f1F3856A7A8DF584",
+      "balanceUnits": "5255555336924142766792112",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x174BCc075A40d43aB130384244D841CB93A90005",
+      "balanceUnits": "91516075239035405669",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x17b5938AdFae5709371e32Ba0D25257e9935FD89",
+      "balanceUnits": "3999999999999999999995",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x181B935A05b0481939f637BAEE75725B85A866E6",
+      "balanceUnits": "740232379418429339189336",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x18673E83f739E1AEB412A5dcF8384D925Be2c384",
+      "balanceUnits": "18591491413850749763029",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x18b841Eb7F643211AB5C2e5Abf31047047E2fEdf",
+      "balanceUnits": "35115391364048528134",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x18c09159c4C410384FE1B5ce1F70E96c5d48D0FC",
+      "balanceUnits": "362508497955648527",
+      "boughtUnits": "1076497977642529841068041",
+      "ethInWei": "78843406119810357",
+      "ethOutWei": "79218012633321130",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x18D6dfB36CA3dFDe7700b60FA8FF7E3172942047",
+      "balanceUnits": "56176375256550691704616",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x19148d149152Fde6Ac405B665701Ec2D4E49E330",
+      "balanceUnits": "31116176799907514730363",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1963F15C02fd1D642Ac112695e858CE06fB041B5",
+      "balanceUnits": "4900228266",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1a363c73b513FF2F3F7148610a53A32067c2969B",
+      "balanceUnits": "8326704603336200821",
+      "boughtUnits": "29137436738766750726",
+      "ethInWei": "419484844662444",
+      "ethOutWei": "1226768475753430",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1a440AB7b1e20ca1fd4E47729c0f0C0c04dE16fD",
+      "balanceUnits": "238589635263887050102773",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1a6789eaba85c64605F00A18f844b725BC681d18",
+      "balanceUnits": "925602962381775306537423",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1ADd9cc99CA2A80Ae8971Bd6F38E826E30797397",
+      "balanceUnits": "3527896596444902019413",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1D3D99722E03199c300697E9F56FB98F4019ac0c",
+      "balanceUnits": "22330023472471353971727",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1E16875f96909fb8328Cb746EAa20075DbB05438",
+      "balanceUnits": "2521330526",
+      "boughtUnits": "29769846068149943279608",
+      "ethInWei": "1825138450000000",
+      "ethOutWei": "2269520490928443",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1e71cf7C378691e650bE7821Df4Ac72ce39D593d",
+      "balanceUnits": "3162306060969385964235",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1EC6b3D86B103f9F6e5272953aCEe47C2642DC2D",
+      "balanceUnits": "102652633804390570058996",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1F335C88f9406f49a62A6527CaD5FA42C00Ca963",
+      "balanceUnits": "3228323996194944522949",
+      "boughtUnits": "92737153265127012665292",
+      "ethInWei": "5096817000000000",
+      "ethOutWei": "6210800179469637",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1f405eb733405cfb1367d382357B1D4bBe9F53BE",
+      "balanceUnits": "146835917140985902236",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1FbaD27fe369951b6Da5218b1FFF71812a827aAd",
+      "balanceUnits": "154321425686337196195069",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x1FDc1d7eF56F632983eb38Eb35F9820c5a3E67A3",
+      "balanceUnits": "32939110449683020951028",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x207dc663e73D990c6451F7093F78A8Eaf8ec8f9e",
+      "balanceUnits": "84375000000000000000000",
+      "boughtUnits": "562601374099413189061971",
+      "ethInWei": "9900000000000000",
+      "ethOutWei": "46513061633188269",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x208f299Ecd4362c0676CCA3dE94fEf0D4D024754",
+      "balanceUnits": "42037749008212788808402",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x20F6ee51340aDEed01A59B0e65cB3703f3dc860c",
+      "balanceUnits": "20100160466708557023695",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x21d0efBD231A14737E954BC9ad86e699dcC413Ea",
+      "balanceUnits": "7357601406876252383358",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x21Eab2CC3e028156F08fd7DeC1fDb170bdA9452d",
+      "balanceUnits": "2142842977",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x23c1DEf9f9939A34F326eD990EEF41465F48cE19",
+      "balanceUnits": "306174673704024460406110",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x24142245F06232C4a8DF6f5F10a19549E0C0085A",
+      "balanceUnits": "154672866280119003310955",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2472ABC8f7CB2295DdA0aF0Fa57df85790BE58E8",
+      "balanceUnits": "64274109958500026573354",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x248fBf59b9CFB98940d430bb176F744a68a23B6a",
+      "balanceUnits": "8099468223332321159752",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x26495F5183aBB5DF72E20C8C1Ca4971C15827524",
+      "balanceUnits": "2251775067122040018656",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x266311A44E70363B3D168bcB38cF38cBF2CCc51f",
+      "balanceUnits": "5166454595938288141625",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x267444D099b10fB5Ed7c3Cc7B7c767AdcA574952",
+      "balanceUnits": "165801863702306041597474716",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x27987f2eb48933a638509a1d81A8c4508c7CB9d8",
+      "balanceUnits": "8432121677",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "18896290086257858",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x27DD25fC54a6Fc642C71b70974F8D5F85861F567",
+      "balanceUnits": "44709255364585921",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x27fC401dacbc42Ae18bad282b1d757eF00A330DA",
+      "balanceUnits": "1573741022416149919958",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x28220088b02CBE2Ec4D56cA811132481765092Af",
+      "balanceUnits": "5990872545",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x28c14d5d39752f65F645681c1e22cb9993F075e5",
+      "balanceUnits": "522255716186649738",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x29895890f1DD65f28F2232f9bd9aF37FCFD65678",
+      "balanceUnits": "7191120228878688962691",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2a12b540fE7a9f035CD517dff32Ff06E9F1e431B",
+      "balanceUnits": "101130268263969749025043",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2A4077b2698Cd78DFb7426dC40e77e16C3A30575",
+      "balanceUnits": "10329302832245520866369",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2afc2D8CBaaaF4a949d21C44317E6A0bc746bBe3",
+      "balanceUnits": "7932126822",
+      "boughtUnits": "38160361226927932126822",
+      "ethInWei": "3609302800000000",
+      "ethOutWei": "4457673844049007",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2B776Ad0A9bbD46C04dC7ebE925c04e64dD4a618",
+      "balanceUnits": "25970634761302286134386",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2BB582D0380291D6E4cDAD1dd32a43aDF140C9a2",
+      "balanceUnits": "10573442490740633070221",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2C2089F76901E8E83B27284548C237F5392E6b37",
+      "balanceUnits": "2948287594344412155495",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2Ca37ff95caF25366eF16fc2E655b78a165D125F",
+      "balanceUnits": "1",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2cffEd5d56eB6a17662756ca0FdF350e732C9818",
+      "balanceUnits": "148261233734980285154636",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2d7AD46C8C2128b37F7BBf1D70F81DB34D1176Ba",
+      "balanceUnits": "17831820",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "21211320450378501",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2DAa0a6522F5C589A93cD05367FB154f5A552899",
+      "balanceUnits": "4383506475856710967405",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2e5C86af16Bd303A90aFaf77aC6432f708447B5f",
+      "balanceUnits": "16594371507964860018659",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2EaC7F972A05e886d4E2627A295CB5B40a4E77B1",
+      "balanceUnits": "899381567",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2ed0c280559072D4EAf6F8b71Bc277f8DE406A7C",
+      "balanceUnits": "9855794",
+      "boughtUnits": "86112020868413759855794",
+      "ethInWei": "2263427576504795",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x2F998f987c1f4aC52B2a83301A6f4D33c7d31BcB",
+      "balanceUnits": "8076723",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x30Dc3e0c7026dCb80354C06cc03F68Fa4960bcA3",
+      "balanceUnits": "9042722733",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x317866659860E1a9ADe6f0C3F2912CE095A78d89",
+      "balanceUnits": "469880164467345711101",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x323726b40AA38A0ab202F61bbA0daD821B170195",
+      "balanceUnits": "2915641531993589399129933",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3237c7Fab31F95A9139101280Ba53419Ec50d50E",
+      "balanceUnits": "397158",
+      "boughtUnits": "6322606330937641397158",
+      "ethInWei": "719099999999999",
+      "ethOutWei": "690326550462403",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x337A132b5568fA03606516E7A060e94F3F23283B",
+      "balanceUnits": "1000000000000000819510",
+      "boughtUnits": "3846148284022461819510",
+      "ethInWei": "597000000000000",
+      "ethOutWei": "770680986697125",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x33f9149BC3A0731535e21Ea7aC0CDa27ee2B51a3",
+      "balanceUnits": "11272596279683411028273",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3454A5C9ec71a72119E3B659F01D6d19Ce60db05",
+      "balanceUnits": "3837457708",
+      "boughtUnits": "2019037609128643837457708",
+      "ethInWei": "90659432369956159",
+      "ethOutWei": "215757160109845205",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x35Ae26595a25655caec072Ee6b03Be881C57E60e",
+      "balanceUnits": "4128838705803558630529",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x35B87559f3E76379F0e76Ef4f47323c3271Fb64F",
+      "balanceUnits": "2164720375401332659405",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x35df33F1c3DBB90e0dc140995Ae7028c1d979281",
+      "balanceUnits": "42147786388257854856910",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x36388A41c4185B71c811b4A0982da6E247a62F0B",
+      "balanceUnits": "3192633018173555986923",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x37400dC1d31caf5b30EF188679B7b2BFE91788A7",
+      "balanceUnits": "719671686028105790660698",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x378eC26Fe042504A9950a46C648303Cd80587a62",
+      "balanceUnits": "24338742410361742618520",
+      "boughtUnits": "63574390334407935041404",
+      "ethInWei": "1813147074862179",
+      "ethOutWei": "2342240151435734",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x37982845629B86c34b4aA208780cA7fcaA77f1e2",
+      "balanceUnits": "146955624409164885260593",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x37bCecfcd9406a36115025a6a1e131c586813393",
+      "balanceUnits": "613627217852869215872",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x385728D609fDEF5B39dE6C3aCc4E1EEE74f1759d",
+      "balanceUnits": "659979434415620125141715",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x389c5C8F6c24FB9322CF21e0F2bEa861F923d73C",
+      "balanceUnits": "104011847041736324546486",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3a4c58026B53E14f3078e59861bdC884Bd03648E",
+      "balanceUnits": "3999999999999999999995",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3b392b72565E974857d2Be190b8fc8d26562F626",
+      "balanceUnits": "7068702049929202304311",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3b80Ce0c78C26cCFc69248b7B013b64725Bec651",
+      "balanceUnits": "7733441356611725564149",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3B9c5f154f8494A19B91d8Bb7880756ef9fd3432",
+      "balanceUnits": "30131016712212623740217",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3BD8aaf8356658FF3591f0C19e862569c057534c",
+      "balanceUnits": "1386332180514087885652",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3bdB21Ea8793AcBF0cE18954865b7572694d037f",
+      "balanceUnits": "46689432",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3C0398B936e408572CFe224b413bD13338Ec17EC",
+      "balanceUnits": "28750601400097890820884",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3cEB7e96C3a0e6530BE978414D9e1C0fAd71432C",
+      "balanceUnits": "12112356772787868574229",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3D0D7eA5F90b1bae9D8326f38D5A16F99cF8adbB",
+      "balanceUnits": "6015394674",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3F7C22bf4270e190be56540152568f7c6ecc262E",
+      "balanceUnits": "3401286836533131116134",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3Fa1442F4532eAf86D374d725eD250F22ACD6607",
+      "balanceUnits": "4974204",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x3FCa4bfA27759c84Ce168e7A5281C8c82070002A",
+      "balanceUnits": "441437139566864145540036",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x40132E775E14EF3a946FA5624468715456FA0bE4",
+      "balanceUnits": "236991301209062455",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x402303bDD3eF100bCBAD7339c849A20C45890b9f",
+      "balanceUnits": "19284680411148116240274",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x40463100EC5373BB2EC046790533b488980711D4",
+      "balanceUnits": "1687948301",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x40C448dB9f57edc78eD8BfE147478309b078Cf62",
+      "balanceUnits": "6796801191823256039643868",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x41da87BC5ED417Ed9C26401E6Ed432C5C0308A02",
+      "balanceUnits": "6494971146",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x41ef89287561F03D69e23E559940DD5D20B8E743",
+      "balanceUnits": "3514763674497773304",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x421f745eBc67023Eeac7482D2360A8EA84012102",
+      "balanceUnits": "4897378579685214299889",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x42Db789DD29B2878E7b719B491c071CE0397b4e1",
+      "balanceUnits": "7157783251433891836",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x439ef2918b6bEaBAEE7247946384dE8701979543",
+      "balanceUnits": "5323562864420078344261",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x44611ede38fd1bC23B0576B686b7C62923E5A089",
+      "balanceUnits": "734815385156931404825079",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x446e6FdEC8CEF7E0bEFe31f83189d3A32f02c65f",
+      "balanceUnits": "2737710543537270530606",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x44f2B2667A7ae529682e96d98a74144BFB148d72",
+      "balanceUnits": "4742268635789620310750",
+      "boughtUnits": "34742268635789620310750",
+      "ethInWei": "2988000000000000",
+      "ethOutWei": "4319104461564498",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4501120E233a7C639d5052C80F2dA950B3cDb526",
+      "balanceUnits": "354024126129136428973",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "3271975668951748",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x45CE132E2B8F186A040203aCC24ec6a706e5003f",
+      "balanceUnits": "10061145263525020865566",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x464C2f1D2Af7EcD59f01AA37437FD9c998B6179A",
+      "balanceUnits": "36262145034421467753518",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x47ae3F23E00ff39F54b717E568b22ae4F613Dc67",
+      "balanceUnits": "127061021492590555698",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x47CC9e6A3F096637F310F35C323845964c037E5d",
+      "balanceUnits": "167337825588570924858769",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x47d1D72B06cC61f968d26840d3449aa666026217",
+      "balanceUnits": "417578950712691900599895",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "10166830547648494",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x485AC39AE571C225D0B4b84343e72dB07B76122e",
+      "balanceUnits": "16655338418918133658334",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x48A097DF16c7844a33B1c3d11aB353457846e13F",
+      "balanceUnits": "25900837280477653177896",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x48b51287FB5281EA0913100809C3b7f1649C7996",
+      "balanceUnits": "18695377339401206545843",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x49108d04820a85F68482822Ac2756be4074ADB23",
+      "balanceUnits": "358221611422",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x495B5d2c9Ba825508eBF8C4Ad62c86E10Da60db4",
+      "balanceUnits": "418584214278626600644139",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x497eC217aBDcf758f0876b8d3729C09AcB299a6F",
+      "balanceUnits": "4444392993784978881825",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x49E26B93f669419e9040672894f0711df6088285",
+      "balanceUnits": "586391958095976264386016",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4aB78A85A41c2408f8AbeB2c83d77ED32bFC929F",
+      "balanceUnits": "211674979531946447463556",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4aE1dDF3Ad70f68d93190a85C8065533Df81567b",
+      "balanceUnits": "4879180723040239823422",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4ae6F3EC7b50e7b01a5b2B3a0B2688a65BB350a5",
+      "balanceUnits": "2016901089689766803861",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4B0ca5c12effAb1Ee9329EFDADbBD1C03D2198E1",
+      "balanceUnits": "115239348",
+      "boughtUnits": "3239581327524877569416605",
+      "ethInWei": "59400000000000000",
+      "ethOutWei": "95805101769431655",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4b73F9E8484Eb3787fdb2Ab1eF7AdF0e32600cB6",
+      "balanceUnits": "31447482037911371576950",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4c11202EFf8f30cA4901Ce6f7Cf6c942f0B9C2A5",
+      "balanceUnits": "18173205498572622512",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "1237442190472514",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4c5a23E9F2Ec5B261A89511df378048b5E80097B",
+      "balanceUnits": "10258640692683554434053",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4D2ab99E8F021CaA1ba5D7A44fb8F4d9239af944",
+      "balanceUnits": "2893090439330854262266",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4d65A95fFD7EFaF61c906cC706cb02C11df03fE2",
+      "balanceUnits": "5499471084",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4Da8CB8bf4884FdcB3ec9718D5c7634EC80D4E7D",
+      "balanceUnits": "2893774540068690640508",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4dEA97D16905517B8512568aA7aB15a00aE5cBBB",
+      "balanceUnits": "1429305307724279086676427",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x4F8c7D34363D2714A79D33153391602E0EE38223",
+      "balanceUnits": "117080593037671771201758",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x50F944502a0F1A2424289aCEa0Ab2d3d44314ECC",
+      "balanceUnits": "4938470777",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x510498f189e6F6FA0e2846bBb0d36b45EC87F7ed",
+      "balanceUnits": "12236803312102801242828",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x536F8872A5dd373F8a542393525B8EAe4133684e",
+      "balanceUnits": "9548927152903362770327",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5430713450C1D2846615039d418850b3ceeB1585",
+      "balanceUnits": "4697970513382498155445",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x544387a59cb77042E797aCFA44fCe50edd8644E4",
+      "balanceUnits": "33932673995060220320",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5467c79F4c894EE7a1058D7264E348C3C3cA1de1",
+      "balanceUnits": "8216820569606338385198",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x548181cF70A1237ADd5BF93572cEE75e6d2dcF29",
+      "balanceUnits": "7465146732320650529256",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x54A17983a8B98EF125133385E754bd292cC533DD",
+      "balanceUnits": "2136000178248329725319",
+      "boughtUnits": "10680000891241648626592",
+      "ethInWei": "990000000000000",
+      "ethOutWei": "1229926885882446",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x54ee0D3c1d7976D8bfE9297446B4FED77499Ac9C",
+      "balanceUnits": "113600103161701490779255",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x54f00aa796fcC3874030E2F5F921C1C62648Ecc0",
+      "balanceUnits": "4541732486577903734632",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x55948E9082aBC82C208541e1f195C2186d6F7EDB",
+      "balanceUnits": "76585616",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "5515938454747770",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x55f93c52aa734B1c46E5B0A7C778FF89a0b944FF",
+      "balanceUnits": "9883759620",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x572Ef7799102B50e221131E95A48B24cbb5e45dd",
+      "balanceUnits": "2774549197003644511614945",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x57325a37abc005D97F0de5E9ed7994076996AdDC",
+      "balanceUnits": "17215502642795642280288286",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x577E7530B5C0aD14643bbf238030438fb607352f",
+      "balanceUnits": "1168673527023273551992",
+      "boughtUnits": "128966138236312840429221",
+      "ethInWei": "6282460800000000",
+      "ethOutWei": "6898165023921689",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x57b124940A92f2ab69d5ecd868F5FABd5e6dF54A",
+      "balanceUnits": "20230842582768635388",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x57d6FAB6AfAFA7015294fb23b915bB55110D6f8d",
+      "balanceUnits": "2565174678206103904620",
+      "boughtUnits": "117834635368410716227711",
+      "ethInWei": "4224429000000000",
+      "ethOutWei": "10260544387402631",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x589ff929014D8D2dc7c12efe8098eB65B4Ab400b",
+      "balanceUnits": "675450040884743420182283",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x590D452Ae6a106b1b57b04aDe7B842ea45E987F4",
+      "balanceUnits": "4238759135",
+      "boughtUnits": "30769432442838453495570",
+      "ethInWei": "2985000000000000",
+      "ethOutWei": "3222271186774733",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5928c857a61958106debAeb9a55754FC0d9310ce",
+      "balanceUnits": "8980816722",
+      "boughtUnits": "479725117267368725004518",
+      "ethInWei": "35664282500000000",
+      "ethOutWei": "41043496784588805",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x595CF8Fd8363Ba02E63709Cf2329a2B097791aA9",
+      "balanceUnits": "6576186887697248378465",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x595FEEED89C5F2209E197Dc550f75825c9B66840",
+      "balanceUnits": "3051219369",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5a111A05287307c36d2b5FD749b2A9a790F940Ca",
+      "balanceUnits": "809680387331614409758369",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5A2DB969C831E398d24F0E0462EAf4B9A6E7f152",
+      "balanceUnits": "281983351999372633534646",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5AaFc1f252d544f744d17a4E734afd6efC47edE4",
+      "balanceUnits": "54048074732038087039433",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5B08B52F7bb05CD991d78AD8d33E978F68b07A88",
+      "balanceUnits": "79000000006556692009",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "5606099352284286",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5b1A822970C8cD49b75a8c1CF5B309824d86DEcc",
+      "balanceUnits": "2359122681",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5B7b4d18d10EA77e4F84dfFc7e03a20f018E9C1b",
+      "balanceUnits": "41522873603534586220983",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5D4Ef5b81baE84F510C26236b5b260fB61cA9fa4",
+      "balanceUnits": "3357019951",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5Dcf19ad12558125187C88e57D4da895a4d4b3c9",
+      "balanceUnits": "21419995470880307265606",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5e671a86BEBDf21672977cA2C7f9E256667A11b7",
+      "balanceUnits": "11217618974634845017863",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5EBD2694aa6fe62A203eD69770BB706fd1506ad8",
+      "balanceUnits": "41067223",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "837314655471702",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x5ef22deB46Bb26C62b1EFe7CfB5d8Aa7BA7a87fA",
+      "balanceUnits": "17081064604266504770056",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x603Bb18fb1666310Ad098E52D8d6A85baeCca46d",
+      "balanceUnits": "6191971218",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x606c941778fC456ad6BC57F0e60d959728AdF573",
+      "balanceUnits": "1000000000000000000000000",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x608D76203eE2b20FcFeDF9fA3Bc8Ad36C473B881",
+      "balanceUnits": "146835917140985902233",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x60d752a961De38889CA2eE8d5CA8e98315186B95",
+      "balanceUnits": "180932989617844797832276",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x60D95C0C1e16228809F834a38f820cEBf7A4d600",
+      "balanceUnits": "21812772433454827250523",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x61ACf010Af89BB56B5441ca11BeA3D91965c1a32",
+      "balanceUnits": "5686309688685349281513",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x625034cE7017CB567C7f187412dd79185c6cB95d",
+      "balanceUnits": "3999999999999999999995",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x625A85a9AE8a17d9F6A0Fa9c4A81c89D944F7eBe",
+      "balanceUnits": "11863559056698918208812",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x62b0D0b6604aF70bad07439D9A6C5F9A0B60CC71",
+      "balanceUnits": "19370851",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "27289065497646477",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x62FC80823e766e4Cc7ccE3ca745d6Bb39fbcF4cA",
+      "balanceUnits": "54150390",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x632E2A05B7eABe0b56cbF1a008F3E59D4F5C0251",
+      "balanceUnits": "31791707937786397496637",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x636D3380a2742b090670A1A3160f6C30637b3D78",
+      "balanceUnits": "10",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x63dA78343C9E9714292fb8E1f4cDDF28dfFb93d4",
+      "balanceUnits": "6541221405885617617977",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x65181B338A9A6E2ea37F4e0BFC2aE0aa0a1Da733",
+      "balanceUnits": "6669845466936872271872",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x66F45fb2b1853288Ce2604Ce42f70b7D30AbaB33",
+      "balanceUnits": "590243649718355282916990",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x67a2310BB099c1adE0e1984eeD1173EE3dB8BE73",
+      "balanceUnits": "1345077009",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "745967768375180",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x67D8eef0f61Ca0Cb1dC283F44Cd4024031D174C3",
+      "balanceUnits": "566206946140867400000000",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x68D046Dd6708f6b71172AB49F32De3C6B1b4A577",
+      "balanceUnits": "3439040842221390822720",
+      "boughtUnits": "17078326836631326550647",
+      "ethInWei": "995000000000000",
+      "ethOutWei": "2595155471845871",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x694502F3068C95EC18639E85e8612284504c2D88",
+      "balanceUnits": "12223761918880185334863",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x69fb2b66CC28EcB7231E3b24f65DA38a25bb8B64",
+      "balanceUnits": "1803026",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6A000F20005980200259B80c5102003040001068",
+      "balanceUnits": "1",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6A58e1A8e3d8Fb6C9b19483Dbe5fc50AA7b5dA27",
+      "balanceUnits": "349836917779300987105",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6B269dBb88668B22E9C60252Ed9c12D74A93155c",
+      "balanceUnits": "1761116666291213606751",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6Bb9Da5cB740D27E1C92a4C164F305A90AbA2f21",
+      "balanceUnits": "507290266667574325568",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "2523587951118274",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6c946700cf1c4597969607e5d237bC02963C15fB",
+      "balanceUnits": "1769669651148463177626",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6cDeC55843eD588c0B92523D8968B1c4d3b3bD48",
+      "balanceUnits": "764000387549473886981",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6d42b3ad79144Cd5Ab42A0174611Af37901981cC",
+      "balanceUnits": "34738191571678190172424",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6DA432f6f7Ec0EAb9F6b619A7099bEC60140c4e9",
+      "balanceUnits": "4",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6E0792B34DFBDa55333fC0B3b5966b3856b20004",
+      "balanceUnits": "52256930523716481536",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "5919074943086285",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6E28168eF3C45f9b919f78cab0d7Eb5587805e18",
+      "balanceUnits": "100870905161962145680926",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6e32182741B672b5F3B5532402De5264d7f8676B",
+      "balanceUnits": "269630559406449137568",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6E5047392592a2fcBA47924241B79Dc1553074D8",
+      "balanceUnits": "10327323",
+      "boughtUnits": "70763230779840010327323",
+      "ethInWei": "7632684800000000",
+      "ethOutWei": "9273015321338464",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6E87077A18b097c0556673BF65521c870378Ec5e",
+      "balanceUnits": "5844504890309286157500",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6f3DE1eEC9745ba47475f6C03014d1fd2b9184EB",
+      "balanceUnits": "51085046148601949968202",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6f4483479190F5DD5B07A8631f2251fe7283BED1",
+      "balanceUnits": "206120579294084921393215",
+      "boughtUnits": "539418025890230088008692",
+      "ethInWei": "20479759013198293",
+      "ethOutWei": "24409704938223147",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6f596002b47c4de6B7b20736993720B6eBEF8381",
+      "balanceUnits": "184077929805197196951670",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x6Ff2aFa42633387A9a503782308907ca0a699C91",
+      "balanceUnits": "11311891690448739313616",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7098A69a0C34A110BBD75A7d403403D8c8DE06b5",
+      "balanceUnits": "166493578267196816003904",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7282249282902e1f99c2CB0A04230091bd30FE3A",
+      "balanceUnits": "17798024037947943676701",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x729E5BD358d9F9A053FC273effAfaBA4e9E16589",
+      "balanceUnits": "212535240062126557255",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x73155f5b6e361003DAA7B41EB3EeF6C1EcbC1A35",
+      "balanceUnits": "9336048443477200049599",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x735a8C9C984A9B08676566d9C2072F1c9dEEa808",
+      "balanceUnits": "8938132560353909750461",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x73691cee20db22f55A6fd0d5948aB00e0Fb973b1",
+      "balanceUnits": "27967517519069302803526",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x73BE73bc427e9219B1cbF51E7dF73095A345d231",
+      "balanceUnits": "21598271104277181390897",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7459B83741FC8f1c25eF8B302D4Bdc11eD14b11d",
+      "balanceUnits": "5837510349",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "33420955591967115",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x74fD0F55c933d3eaF8bC75E5533703eBb9f7319e",
+      "balanceUnits": "1295249",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "5295237470136999",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7613e21a396D9C05c5B00A2B481073efd536A7A4",
+      "balanceUnits": "78096416876597284491796",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x76942f2b0E01d4a09C86f59946852a609B1F4B3f",
+      "balanceUnits": "29539649388358254957514",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x76c09f96fB244D23D9cF5F2Cd5164805a4CB592E",
+      "balanceUnits": "38286743025040313222502",
+      "boughtUnits": "109390694357258037778577",
+      "ethInWei": "9900000000000000",
+      "ethOutWei": "10442469930916783",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x773b522680761199384d2Cba1d2593127235B884",
+      "balanceUnits": "6746559006849599048912240",
+      "boughtUnits": "8746559006849599048912240",
+      "ethInWei": "37012209690227566",
+      "ethOutWei": "49593250091337167",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7742d627F572e7Ea407Bb92F5Df441449f25E4E2",
+      "balanceUnits": "13571642083744497948010",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7769Dda9A29FE19ccf49b64867d071DdC8C3Fe28",
+      "balanceUnits": "4932693467466101656876",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x77e4A4E41EEd4d163e79E89152f6466D1F7c6AF7",
+      "balanceUnits": "18709489592278488025744",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x77f7822D8dcA53e0B7Cf78a9291b270e3dAB9820",
+      "balanceUnits": "34825024965849634755471",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x780A8d51F3d32D54C7f2fBC6EAE9fd4ca43552fd",
+      "balanceUnits": "203678694764510151693285",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x790B6E771491DdDcA8A1615f21727c1dC226EeC3",
+      "balanceUnits": "76483643318978545047382",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x793e42BD6311c5270F3a7a3C93863C036a66F8da",
+      "balanceUnits": "1534693352772510",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x799DA68d1c9C90375da10f3C0E7132c9C341aDC2",
+      "balanceUnits": "811181485552909622712579",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7A74aF2265d03406b9bBBE196EC612ce97eEF442",
+      "balanceUnits": "6285557908632897342",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7a8cf4F3e415cB9A756573b87295E2201a68Ed2A",
+      "balanceUnits": "3664245777874047",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7A97484F57D98a62B0195D79b9600624744dE59C",
+      "balanceUnits": "1592822125284361592929326",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7AAc4772c67c8a777A0CE663Da2F87851897F399",
+      "balanceUnits": "166378258317876835936286",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7b5F47d7081d2177e4cC43fafA5e64801a43A96B",
+      "balanceUnits": "56942257124299068410449",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7c9435d3c8092Aa8A0E57c01a907D1654C6B246B",
+      "balanceUnits": "1075966591463342946910",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7dD7C357D2a828D2195cF761097794Dc7002F446",
+      "balanceUnits": "10818992045824353149093",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7DFdBc6267F59424976E9616235b9492381d3e1f",
+      "balanceUnits": "711077879688632971012349",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7Eb49052e022F0F930D73f5062354a20689eCF53",
+      "balanceUnits": "3430702901735397748802",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7f097b224a61B98Fe37990affBA4131c5fA41c5F",
+      "balanceUnits": "11999804830705217616104",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x7fC8Fd8bB3192E2d62A3d8D97d9A7924D4BaE58B",
+      "balanceUnits": "3544634097214549253568",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8100752A9459F56E535Bd0F45F9EFbcA6f5008Ca",
+      "balanceUnits": "9896242547605041165877",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8258e1879E3382EC3D5DAc099fbB0785153143B3",
+      "balanceUnits": "64252746470539708565295",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x827B8c740B98F32834851d1dD708D297b2a20730",
+      "balanceUnits": "2294728155234092",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x82A8F206478aF4AfB153733E61c5287903D5f7eA",
+      "balanceUnits": "133035441821332036426121",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8333b8D8aA30419f87d460b4e9bfCfB7D87C0813",
+      "balanceUnits": "4307352941174914822501",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+      "balanceUnits": "419888794006459600960305752",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x839fE2e53f8a25C4CF70835df5FF62eb3918154d",
+      "balanceUnits": "72234609875911328177213",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x83a851d89f4A671487fF265613875ee74fff3B41",
+      "balanceUnits": "14080038144764477753034",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x83Ae4ff8CB8aD4fDC64dE30263e4689AAB450a45",
+      "balanceUnits": "2672272217",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x83e1f4E3C562Fb412A80533CCf878ABD7a55D2fa",
+      "balanceUnits": "107263426438665991596141",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x83E25Ba44BB1B774564113fbc4D768A3aAdB49E3",
+      "balanceUnits": "7562379414",
+      "boughtUnits": "139236567161396828495",
+      "ethInWei": "9834812140609298",
+      "ethOutWei": "41142955623405160",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x83F371dF523eA7f634E10f27eb19016a199927cA",
+      "balanceUnits": "20549596",
+      "boughtUnits": "65898674269665441373786",
+      "ethInWei": "8820971821999168",
+      "ethOutWei": "14200403669399111",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x845261900877FE280478D04deB798f36ce7e2c07",
+      "balanceUnits": "53364484977174081635068",
+      "boughtUnits": "142305293272464217693514",
+      "ethInWei": "3641162673617865",
+      "ethOutWei": "21734331133494623",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x845826305B1cb3bc8F29d22E72b36eC4B84Ec99B",
+      "balanceUnits": "8877079711258487674125",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x85Dc3150d9558ebBBFcbB153aF6Bd29c307A3a79",
+      "balanceUnits": "11390248292341713587",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x86d049C2fcE699E49fc1A56fa9163B8d45082835",
+      "balanceUnits": "4582540067823826310093",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x86E3b685989946E044223ae1257E3Ee8d45FAEcC",
+      "balanceUnits": "10966248960891664021508",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8797a8d52A1EA15A4b8982B5A1138Ec5FCe4d144",
+      "balanceUnits": "11256084604915897815178",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x87D3A9e05DA12519c84633D8033F70cf0e7dE18F",
+      "balanceUnits": "11174948332581010502877",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x888E7d38664Be7871c7852C53e51e9318b49b253",
+      "balanceUnits": "56649346859971582790139",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x88d8B671656C3Fc56FCeb726540972Fc0d432187",
+      "balanceUnits": "37034768439400714974260",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8901CFc3ABd889Ff69eaE16608825E59e4F1Bf9F",
+      "balanceUnits": "226864341103195525053124",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8919a917f981f7428c3bE25dd031D084ACB639Fa",
+      "balanceUnits": "19388650051101282180707",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x89e2898815c4F2Bbf5Db5e06e02d84AeFf00b3E9",
+      "balanceUnits": "177277683924346980551801",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8A585cB855573a297dECab0308a1A33ed428b361",
+      "balanceUnits": "18421036620023170520924",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8A8Cd9812b954141C82d15F1DF6529eB700B698c",
+      "balanceUnits": "6000831326126235020824265",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8b1fb4937bAB5D02248a0825bF2564863237b00F",
+      "balanceUnits": "341337213823969939576",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8B78EC078Ee067aF069AbD22b5F0d0C7e3DA9C97",
+      "balanceUnits": "5479592952093371564004",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8C5Dc2F1F9d7c33a83e4107Af9Ea3c73eb6869A1",
+      "balanceUnits": "2960629104004209886845",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8CB9e66A4416218529dB3Bd78b5f248D9efd79c8",
+      "balanceUnits": "1053561167532917275679023",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8E2A9D954e7c88a00d3571EeaB3d5E733a309426",
+      "balanceUnits": "277536949020176046534",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "993968153957345",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8E2b7197ACE338f802C7915E2CE48ce124CeFa4b",
+      "balanceUnits": "5421228755248017639985",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8E357410CCb1A6CD80a8802fA40Cc3Dc14923deE",
+      "balanceUnits": "7880393073",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8E6fD69A77e88ee20Ba4B4fBd59DfCDA3EC0E98A",
+      "balanceUnits": "1",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8EA63A3c9e839527c0160530B5a39816f43A7A8D",
+      "balanceUnits": "26076435926101874828808",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x8F10B468b06c6FD214B65F87778827F7D113f996",
+      "balanceUnits": "1",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x90036a253142C6E183277e59882558fc00082412",
+      "balanceUnits": "479302539336471935788141",
+      "boughtUnits": "753102836952807115483002",
+      "ethInWei": "29700000000000000",
+      "ethOutWei": "37409515061335040",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x90766BCbcEC789160824fD37024F2AaA6FCB2847",
+      "balanceUnits": "36671667333450640934660",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x908112eA8bDDF051BFbCD2EF34aF2b47DD5e96d4",
+      "balanceUnits": "9992798190",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x90e72297293c2E8A42302311B0eB68C5643089AA",
+      "balanceUnits": "311970894695419286",
+      "boughtUnits": "103156065547256103438508",
+      "ethInWei": "799230605759525",
+      "ethOutWei": "2479249807737356",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x91e21Fc66c57Ed3041d7c1458aEd60Fd088486D5",
+      "balanceUnits": "253790631456206207860396",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x92118eE8723A33a44c0Ff4fC8ebB28a1c6C2f07B",
+      "balanceUnits": "39871364106997914813400",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x92a8863ad3623Ad30Ca10a3922A255fff085DD19",
+      "balanceUnits": "852157477188767378393",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x92EAAAD527a5386C1e3B9c41AbE99E591817aBe8",
+      "balanceUnits": "5921740142820083206776",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x93DC163086Fc8fCcA03FFB88fC47Eb3665926caA",
+      "balanceUnits": "14180477220554826225719",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x93FC293EC1e1D8Fc3442127B84682bD9C0f792A8",
+      "balanceUnits": "5471892282946184638603",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x946a0749EcE1eed1D21336FbDe157017018c22c0",
+      "balanceUnits": "9106443510",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x94da917459D13d475Fa1a889db7F4B4497d9d1dE",
+      "balanceUnits": "25416474442813014450249",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x95919D80235B2bb7B4f6aF8e71694c7E4e14fA01",
+      "balanceUnits": "991019213034052001667638",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x969E224835294Cb1DcFE3828cD23a67A79C2c62d",
+      "balanceUnits": "90443236194198729140936",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x970885Ffb1604Da0Ce0E9E9A475ed2E8Eab4b4CA",
+      "balanceUnits": "30789355617107788297266",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x980FF76119D303e5F1457805c2CC84f760E958F8",
+      "balanceUnits": "7751995012709198234654",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x98E1013ED016F1bf51832B4f48eE8A6365088fC0",
+      "balanceUnits": "33329408277217853085976",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x99046378AF6a7c745FFf5958CcC1A982dACcEEFc",
+      "balanceUnits": "4533405924",
+      "boughtUnits": "40923352948064533405924",
+      "ethInWei": "9569329852894722",
+      "ethOutWei": "10592127013176774",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9AcC544A1EfB5CD419C51B289a8000596b6EFdB0",
+      "balanceUnits": "7599462414",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "89693584523284",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9Ae33B844E05BCEad5F6B2Cd753dFc73ccb47556",
+      "balanceUnits": "1",
+      "boughtUnits": "20114710633839307264200342",
+      "ethInWei": "99000000000000000",
+      "ethOutWei": "958321604276543462",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9c28FeEf63578fd7AC27A630FE0e8397eD5bAe10",
+      "balanceUnits": "84582276977067086797093",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9Ccb9E33329eDE2B42a12729a79771F83bA1bA16",
+      "balanceUnits": "3290530410533258274859",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9E3A30d7CF59674D718B45bEF3B180B847083A63",
+      "balanceUnits": "1743130390756822028470741",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9e63d09676708FfCcfE1D3157A59fEf03F6B8b99",
+      "balanceUnits": "643233087646088934324",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9F7CD1b5Ef8282f1d8E9a2542F648C94D59Fe135",
+      "balanceUnits": "1250883896",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0x9FCcC35ea4Be973e3e0805c2d3bDAcE8f6f5CdFB",
+      "balanceUnits": "12375900684746674128531",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa1f3Bcc04EaF6c2FD0F8E2178907e49415D6a625",
+      "balanceUnits": "3661489376",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA1F6A967089EBbAE504eC19d2f046D51E5a713f2",
+      "balanceUnits": "15839048130415642754483",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa20eC8086f79BC5A00831BDA0dd9c5FDBdD32AFD",
+      "balanceUnits": "4178334914",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "21120095256794626",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA366D2b5BB68db6e4b2bcfF19fd70Ff7EB799af4",
+      "balanceUnits": "993929981649516464458",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA38689eB1C3efaefB7dD0F7239760428A1A368D4",
+      "balanceUnits": "15427153979893175497938",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA3C828CcCC68eEa62BbfEe5abbfDc0FfB1c4B247",
+      "balanceUnits": "13393753307586615716958",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa41e08a269E33C0Db0Ddaa660B5427a1c1d88b20",
+      "balanceUnits": "4937593150",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA4d9D7068d84bbDF2E3Caf1bBF2e1135BCD41984",
+      "balanceUnits": "75942262884026177066971",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA53E7569a07Bbe288e73fCED6C63Ee081053180B",
+      "balanceUnits": "40939592868907630845",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa56d7aa268115206269A23Ccf24aD36A939218fC",
+      "balanceUnits": "5627491868224401175203",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA5FeD72c967d2c0628F52a4c2C358C32EF1943f9",
+      "balanceUnits": "24136577195473055538192",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa62F37Ff410349dd0e73cddb621C7E432D1e09c9",
+      "balanceUnits": "9007090084",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA655903cf9d43e71eB952853B7b10d65d16C62E3",
+      "balanceUnits": "999999999999999999995",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa65fe4413aB56567dA21394394417217d34087ef",
+      "balanceUnits": "21061350372864192750107",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa7a34b98FCF4d8D26452876c7bA6F4C7dd569D64",
+      "balanceUnits": "26478101437237832594558",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA7be39AcB8125bCb5A1B372De0ED0A40ecEc871a",
+      "balanceUnits": "75000003038348998346751",
+      "boughtUnits": "404221694051131997795667",
+      "ethInWei": "70000000000000000",
+      "ethOutWei": "77194301454644880",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA81C87cFD4D0ce36AAe9c1BdA543bA0AE55a085A",
+      "balanceUnits": "17682843372022339356889",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa87daD0AA25397b84d76E26a8a9b50a1919318A1",
+      "balanceUnits": "49052336637455331311028",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xa8e803D2857fCb90E779e02803ec355BC4c3D8e7",
+      "balanceUnits": "7158282658576616329949",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA992b86dfE4d586c67541cB760ba7a6fbE940634",
+      "balanceUnits": "6527391463165937274975",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xA9f784C46651b87b058D46F6A039D17770EA296b",
+      "balanceUnits": "38439875481612548333806",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAaCc135694A5d6206eae5B97a63F4f65E9BA0211",
+      "balanceUnits": "5898429764",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAAdc1B9af6D7FC069543Fc0a65f69cB6bB0aCC51",
+      "balanceUnits": "12977744593577247611902",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAAe5Dd6FB7bA86b47fc8594B41c936951A09E1C9",
+      "balanceUnits": "7328988867259054824043392",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAbEcB4d986580E280E3dE8Fd8227289Ed0b4fF34",
+      "balanceUnits": "58799218303191448813568",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xaBF34B878073cA264c46d3081e398aC20328Df99",
+      "balanceUnits": "63480654780741784499307",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAC75C59f96c502854a65DcD6d398F1A2ff09041E",
+      "balanceUnits": "2492643237136485411115",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAC90C01a9Db518F68D3E4B5fE0e16Ba8989DE780",
+      "balanceUnits": "65885001832544558084466",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xACFCc956442B1dAe935475ecBf5992e338864966",
+      "balanceUnits": "43556335227569374663813",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xaD01C20d5886137e056775af56915de824c8fCe5",
+      "balanceUnits": "1492785462191443298106",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "706729948484855",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xad0Bc58f9430B9051974861d2E435EE1235b0aa2",
+      "balanceUnits": "2291014761479589072807",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xADAb6D091eb3aC2b78f00093c81fF4c57D1445B1",
+      "balanceUnits": "3438478910173555843199",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xaDBF7DE171D907E901879eedfabA38EdD0892116",
+      "balanceUnits": "154659165201314681467",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xadCe2e6e734AC35E14723D0AA01621f8e3112F9e",
+      "balanceUnits": "21401121760472821035182",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xaE3c9b22A230c83C2b60d600e4f7d1529450A491",
+      "balanceUnits": "2893459321591302126553945",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xae4145103A19A8Bf0F26Ec98D61F6D4b047Bb4Bc",
+      "balanceUnits": "4121683619139279679088",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAFC9e94A4F6E975536792Ba00926D890D4078EA0",
+      "balanceUnits": "5187756397922459593504",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "44126103455298837",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xAfD405C9BC4C26D6a142911F21293De2A5618baF",
+      "balanceUnits": "7235428072",
+      "boughtUnits": "7222152434556967688638",
+      "ethInWei": "86186900000000",
+      "ethOutWei": "88637978844144",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb06Fb97C78feDc139A568982F4F2AbDb33B43183",
+      "balanceUnits": "37112762278827692140156",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB0E4897d927Fa8e171fc6D065C9725A85b8d5A74",
+      "balanceUnits": "29324974964381441941845",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB1dACE0365476884c3342E62db4aEd73d7402cBA",
+      "balanceUnits": "4105637472529460725962",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB2bf7953A41A463B6dbc79c1D35cf2fD846cE9C2",
+      "balanceUnits": "2152704667935074189007",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB41c3Df1CA598bf008EAE986F960e9214Ec80B90",
+      "balanceUnits": "1180380258",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb435635aC10C1161B8CF9c8EF60231413D5350E6",
+      "balanceUnits": "12344680",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB4a11beA1FBBd133a36EE436D01498da12AB72a4",
+      "balanceUnits": "31499221246319879678479",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb4c7701B94DB115bcA009E04e6f747954Fb235B9",
+      "balanceUnits": "1772104297382489679065",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB4EA7C20497b4EBBf240309CC9B61AcEA9c561C4",
+      "balanceUnits": "376217667151583577871193",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb5345Db5B94152c91f67cE715186760765472D2E",
+      "balanceUnits": "48952508977719203688469",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB590e281e107a833Cd931324e0dbDf13db9f5f3A",
+      "balanceUnits": "33298899941435131851007",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB65ce2A21D897D8A619A4e8831952df4b01D9488",
+      "balanceUnits": "253063188898866722846282",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB666Fd9B55572a3cF6d42b16Fb550787670a000f",
+      "balanceUnits": "2369676020789415485672",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb686D1d7Ac8D1da5a37367c7FdAD168F269901F1",
+      "balanceUnits": "21876495510252227115442",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xB715414e39dC1fD4F1287b83524D8330eE102E59",
+      "balanceUnits": "33168571793237359767091",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb837c86126AFD947F9eB20253810bB4b9a906109",
+      "balanceUnits": "6220634740474061371947",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb86f91F08A17D32E84e1D748a086c238D8EBF915",
+      "balanceUnits": "10344361043573754580",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb8F06861dE758F5046Ffb1743Aed58b8fD308dA9",
+      "balanceUnits": "677849554135008791730002",
+      "boughtUnits": "1617849554135008791730002",
+      "ethInWei": "44577649103968537",
+      "ethOutWei": "46042878796128412",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb9295d7c1485193D436982108a9Ca67e0DC5d9b6",
+      "balanceUnits": "70241949835019622538",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xb9AD784ebEA784715b2B7E2A48DF953837CCf3Ea",
+      "balanceUnits": "11851300713377520274638",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xbb33Fd0EBfc2B9693EA353E239F0DC6BD29850D0",
+      "balanceUnits": "2916118366234518868689",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xbC392aEf7aF4C0F2817f7167fd9F12a3865fAeF8",
+      "balanceUnits": "16724498714280145028672",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xbe38e7Cc3180b4654F99637AAAdFd571c5924E89",
+      "balanceUnits": "28086586552002161697",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xbF273Feb1B5f0D363e5BEf6FD62565494Cd9E72B",
+      "balanceUnits": "1097595863145242530802",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xBf73D1818F7b0Bdb51BD046f22aea654262E21B8",
+      "balanceUnits": "23758907120418869122454",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xBFa9dB7B8aEbc4c54A9e7454783c94Cf8405F6Ee",
+      "balanceUnits": "915828504404026164846",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC06ebbefD94032B85424D51906e2A335EFAe264B",
+      "balanceUnits": "19957938714120160986225",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC0733313F0727fC46EE872184d292E6c3f94AFb5",
+      "balanceUnits": "326125666378261537858067",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc08316e1479Db2205eb6fE6216ace3ca3e37209c",
+      "balanceUnits": "43999450392072238824035",
+      "boughtUnits": "87998900784137238824035",
+      "ethInWei": "10117743715741946",
+      "ethOutWei": "10634655219491732",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc0EeD61a9d4823B91A692eAc9658d3CdE5a64858",
+      "balanceUnits": "2392583891450861879945",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC1a4aCC1BED06c60EDF030a70F5A6139FE11Bd24",
+      "balanceUnits": "64193787118907550284091",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc1F2e6F50FA24b3f1F9cB9B1E025D87a4476B393",
+      "balanceUnits": "6655369395822192866993",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC212EE5f1F963430aa10659D33B209346dEE4B92",
+      "balanceUnits": "23668342082661159760354",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc328b80C726Cdd5A0e9227Ae10577Af458963CA5",
+      "balanceUnits": "90",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC36b51A393243bb349FC04b9d2662BA54cA8e220",
+      "balanceUnits": "4412995218691874415078",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC3E06F24163d352BF35A12021F0A6E6840AC29D0",
+      "balanceUnits": "18020703856215065961312",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc52Ce092956C9B7589FCE91C27ADb320f643057C",
+      "balanceUnits": "9124168871441185",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC5f5CD52B5eC841A0b719E59266669722f27cebb",
+      "balanceUnits": "10160579249239773584895",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc61132f8432Ce4Bc2C1eAe61F12426C8D61DeA95",
+      "balanceUnits": "9679609199560072837684",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc63d333302e4bAC46b0ae7bC589435C3526Ebd17",
+      "balanceUnits": "6802493873",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc6cDEFe39B9a68fF0eb4dADA4e70413A14ACDac2",
+      "balanceUnits": "13039958941952940225397",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc72fE6607445a8621413F19bbBF0441B99880Ff8",
+      "balanceUnits": "39082325090332443859652",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc82dd617B81f2D5a1738BBa3D7c2350d80bB8ba3",
+      "balanceUnits": "1460347248672189026446",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc8488bE2e4f430420A364E64f4D8af428b74D903",
+      "balanceUnits": "128753767111673845802573",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC8C2e4434764E0F78cbc4e48a4c21D117DbA94d2",
+      "balanceUnits": "839682798030114702095768",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xC90C6D91Fc3723Ab230AcaCaD43Ae4d13A9d9822",
+      "balanceUnits": "7845454318709466292835",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xc942000fA3102aC8021D9cD443bAa539180aFb90",
+      "balanceUnits": "8281702962",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xca11D2f1A00F0c3E69BeBd33BC2684bb7E7b6B67",
+      "balanceUnits": "24438362912062784225858",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xcA9CA4012E5863d94292576655577596a5DD1DBF",
+      "balanceUnits": "64494574233410280976523",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xcC108704f0ca749276CBeB4Ba0501a1fAa1Fc764",
+      "balanceUnits": "110147036608766014093",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xCc2D933D41B2fe09e819B5257571B0cd261DA801",
+      "balanceUnits": "1700275226973097432139",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xCC607732fBeC1Cfe14b11a789e131258138e02Fe",
+      "balanceUnits": "1221954924201014590998",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xCD1092dc56a8BF9A12200E82d8F240d7a6c1388e",
+      "balanceUnits": "33727070157407583810775",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xcD6b980029E6E6e0733ac8eC3E02be9410D09799",
+      "balanceUnits": "24817587126477336989681",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "4405071300168989",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xcE3c3E6eBED0B29A91F6702526CE7B0204c9e613",
+      "balanceUnits": "16610064855780007810481",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xCED3Ad7cC0152B89A14fA8D901D1c3805E816Be5",
+      "balanceUnits": "2742544284",
+      "boughtUnits": "18112794822902742544284",
+      "ethInWei": "2555279400000000",
+      "ethOutWei": "3075664522652346",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xcFcdAAD85A2AAaee2112aA9718c6DefafC3fE20a",
+      "balanceUnits": "2999999999999999999995",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xCFDd0fe51F5d50dD2Ee9Bb69aa80c04678A313E0",
+      "balanceUnits": "17583780353030355200161",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd08Ea07230Fea3Cb6D33E68b6042EB0EeBab5005",
+      "balanceUnits": "6094193047",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD09e93a402c745a623C5eC61FA30dBffCea4c63a",
+      "balanceUnits": "122034490260650193582",
+      "boughtUnits": "24406898052130877457650",
+      "ethInWei": "5638422291319278",
+      "ethOutWei": "6869274302159084",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd0A67cB08BE17475f4315a04C5F0Be3e200Ef66c",
+      "balanceUnits": "9361222204663568228234",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd12646A984f83Fd67cEb6BcafF6B9d666BD4ce64",
+      "balanceUnits": "300983582070862",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD1FE46C3ED18EFC9077465ac4694385d6c47FDF0",
+      "balanceUnits": "22838975935325931322810",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD357A9e42d65bC00d0dE78D305da997ef75e68eB",
+      "balanceUnits": "23510430541683957881562",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD3E1B2D00766b8662Cd4bA659f141d2315B301e9",
+      "balanceUnits": "2957907598927211343161",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd448777940dFaBF65FD259fA8a9903e60E1FF178",
+      "balanceUnits": "13269556252123966528612",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd4627eCb405B64448EE6B07dcf860BF55590c83D",
+      "balanceUnits": "1637868780434950543211",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD463FBeAbd4342B48a8115652Ff336Db3A55C8eF",
+      "balanceUnits": "1626939",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd47F2365de1fDEecF5Ab4B4b229DDe63834eA7E2",
+      "balanceUnits": "10236108485895681152410",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd55Cd7d1C0c3B4C634BC04aA01ED79750A1a332F",
+      "balanceUnits": "5318638",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD591465CB40903e5f235f79e067CCA9f0e113767",
+      "balanceUnits": "2778616183670988186646",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd7082dD521a8CC3cbcca2e3523946265274E11f8",
+      "balanceUnits": "14143584271356630402652",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd7456183C8a46E6FEeaBaBBe5D0f81aB3448459d",
+      "balanceUnits": "3517607742404489093524",
+      "boughtUnits": "11927108988011403146605672",
+      "ethInWei": "795042133484468663",
+      "ethOutWei": "909714123843070002",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd75d00d56a4Fb1287F5d886C9AD409B4A0613398",
+      "balanceUnits": "1357187186",
+      "boughtUnits": "125021468514312039866082",
+      "ethInWei": "13408926591105963",
+      "ethOutWei": "39506690084527079",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD77477e301f32179025a744d1BFC3c840Bd95ea0",
+      "balanceUnits": "18590744899346768482552",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD774d50B4140df9eB1598d9B80496f455F58c803",
+      "balanceUnits": "150436204621973506243098",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD78803A4d1E0a737B74E4B846F21DC6bffaA5bD0",
+      "balanceUnits": "5319917127",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xd7bE5BEdE9E6B3aBceAE924356a83a03AcfEE39b",
+      "balanceUnits": "1621302892316608405319104",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD8F96Ae7C2F2d735A808FEd2495EC0968Bcf71f1",
+      "balanceUnits": "1846196559710922",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD9CDA0278479cAeAa47CbA67FF085104BAe665eA",
+      "balanceUnits": "1214285694137827858984",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xD9D199792b0198a18DeB4b8F8991A41f2ADcdf32",
+      "balanceUnits": "157595410279819701614466",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xdA5cAc00aA67702AAF532BC293d35507AEF1af2e",
+      "balanceUnits": "21543263331451868395127",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xdC70bc2181B056a66cb1cf42097129E4c78cD3D0",
+      "balanceUnits": "16031546660828437620870",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDCef51c56C64A54F46E68a1e38dde97e0bA91E20",
+      "balanceUnits": "55720425946830491686433",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xdCfe8eeBf326B9D801acE9C779FA58C9a3b7fbb3",
+      "balanceUnits": "29702288846078852181759",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDd06b345f77C5f8eea15Ca80AeF660A36fCF6106",
+      "balanceUnits": "32116492280294498238585",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDD186065FE76A4e9281006AF1906fe4210f82bAC",
+      "balanceUnits": "22185026323922645156670",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDDABa21fa43CFFA28E826E3b0e988b029e93C8E5",
+      "balanceUnits": "8078357198179411950870",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDdC00441f430Bb6260224e4e307D4283Bb3ba7DC",
+      "balanceUnits": "134614020999769748919288",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xdEd59387a28D27456A3Deef225cDD0ED129b1436",
+      "balanceUnits": "2518999330923021508379",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDEE4c065ac94Ea67f680B5689A09C771eC7eCcB5",
+      "balanceUnits": "6312596458",
+      "boughtUnits": "313477315559615294609212",
+      "ethInWei": "29850000000000000",
+      "ethOutWei": "39831858042998830",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDef73D7C7C271617916c9C1b585dB2e78D5F88aE",
+      "balanceUnits": "19033710527342699511467",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDF27DEd5fe492BCd518c83108Dad21fBe153e389",
+      "balanceUnits": "1159457106777671890862",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xDf8131d2FC4776C69b799D96f49442bd7d8FC615",
+      "balanceUnits": "2663339548230349614640",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe0507403Bb68B206F9F210E6c31DAE812C5c53b3",
+      "balanceUnits": "2149892142724228825",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe05A2b5B34B38c0414E85930B16209B86749fd39",
+      "balanceUnits": "2938685707422247101467",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe08059b13AbE28e692CFC704e4f098d6f8559e1d",
+      "balanceUnits": "139261759629234555875314",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE1519765473309E6313fcE2d84C91FA77b27aac3",
+      "balanceUnits": "106945735",
+      "boughtUnits": "599535079850554867834055",
+      "ethInWei": "15209056641991630",
+      "ethOutWei": "32719674998331309",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE28218a8251F2D16FDe1EdB0DAc81C9C0bEc398C",
+      "balanceUnits": "1839051182437146",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe2A0Ab723a0153E61B83CfF709A1e4825aB14C64",
+      "balanceUnits": "38301365502799743235489",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE39bdeD2Be07054Fb73A78DD09945abcb6B49b1d",
+      "balanceUnits": "4994042428366886816250",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe46eCcfd7b802F9A7dd74E0BE63f28E950AebeF2",
+      "balanceUnits": "8321603842670911733683",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe47a66708b7578ac258eda48D874361D93efd4ab",
+      "balanceUnits": "42583360538248905374079",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe4BD74e2a9ba59072c60ad71b174164b3D477991",
+      "balanceUnits": "2695658053",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "16043596236136583",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE5e702641Ea86F4ae6cC3cDaeD2B886f976Be044",
+      "balanceUnits": "79979879615643818079628",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE6bb8230A308a29c028860452848e74fE66a3Ea2",
+      "balanceUnits": "400000000000000000000000",
+      "boughtUnits": "545666180840968227423573",
+      "ethInWei": "22678549946166682",
+      "ethOutWei": "23404165660119277",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xe7c818d4D7CF8be92f7095f59a86C09A82fd5B62",
+      "balanceUnits": "27268144363900954625122",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE7ed5b825976cfD0716234789298fF74d7da793c",
+      "balanceUnits": "29571004972222060048623",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE8583a874F8c3509Cf67960427079ba164527545",
+      "balanceUnits": "5251776471092104706666",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE89585395151F2E2b0BCf29720033416C302E903",
+      "balanceUnits": "172777215182069679119437",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xE9A31a5A628F6c917cca326b51bBEC5B9c80EC1A",
+      "balanceUnits": "6749204381",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "31485337712248062",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEaCdC249153631aee581Ef983189505882Bc4e6F",
+      "balanceUnits": "3652475850544942640070",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xeaEDc3411A7bf8c3EF5f6649A9744f7f531058Ed",
+      "balanceUnits": "2968592062",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEb16D2446677Db70Cb785a810047C61e69Fb850A",
+      "balanceUnits": "4078626889",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEB1fD67aFf8a100b6Ff1f098fd139fA452d508af",
+      "balanceUnits": "5616518123",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xebe75EE67eEA45d7A4281C7CFa139f798134DC5D",
+      "balanceUnits": "17549750520602960716191",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEC1E5750f3DfaDe5154848ACDAd8a71DaB3DA7E8",
+      "balanceUnits": "491706998088248544381",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEC2EFFE07D65d2daec225E6254B2DE6859C6cF0c",
+      "balanceUnits": "23310020943989468559429",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEC33dA5c3c3EAf2683C8FFa5135Bc00F4746ffaf",
+      "balanceUnits": "16071498684116278470481",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xec7C5df56399A282aA56A8De8EcA971A6E4bfA31",
+      "balanceUnits": "85534986383286587696",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEC9Aa0a6c2372131a0502ABA6188269Ab52CACb5",
+      "balanceUnits": "1",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEcA2a977D731e3904ba87d5F57D8e6C198d798F1",
+      "balanceUnits": "34277823798361217203312",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xeE787aDF6de420115c4039E6f6800c39602f9E13",
+      "balanceUnits": "3623743837851287063300",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xee8ad27729aE04E3E2902a48F9882710E9dc19Df",
+      "balanceUnits": "44501501545420418095774",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEF592378d64A4185C5f9Df768caC4BA59EDA3D49",
+      "balanceUnits": "17791223218191998981583",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xeFAd3A89934B3858EE997415C71CfF0999B0867e",
+      "balanceUnits": "3002868624827614463725610",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xEfcF1cE0239bAa605E03DE7957cb93f0f2BCBa15",
+      "balanceUnits": "230044865332401397714473",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF03f8A9Ff55854423154320876982e7a6364B23C",
+      "balanceUnits": "95199591542073720628692",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF0cB343942E1a3D1BbA2fbE9bfaDEbC116D50131",
+      "balanceUnits": "269185931726372779615609",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF12aAF1d094497b87f29C7Ec8BB92B075699824C",
+      "balanceUnits": "5242392298882457975411",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF163fef13997969a828049046B360e7343b8FeE9",
+      "balanceUnits": "5931438957",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "55578106115545778",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF1B38F4D6dcf042Cbcf856CF34032793B358A6ce",
+      "balanceUnits": "776335893462524044516173",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf1FdA333bc2bB8E510F98693dF8BFDb9f6337AE2",
+      "balanceUnits": "2909516282891816634501",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF247EBBF1DB314d405a0c3e0805ADf1C863CdaE5",
+      "balanceUnits": "10966397632504132953987",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf2665c2F3809cc99B5923b3447735Fc6DAe44Bc6",
+      "balanceUnits": "722244790776701834",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF302ACc952FF5AA52C06eD964fbBF650b51d93F8",
+      "balanceUnits": "1580331230151198051184741",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf34A2AA6Afd26718Fea277a0F43B479EDA110110",
+      "balanceUnits": "8451854133669991170243",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF3856ad836C76d9c6C753D8984552a1CCCE6f275",
+      "balanceUnits": "254522863341580105722589",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf3A1e6e574f080e67362acfAAD804CCCf444023b",
+      "balanceUnits": "276136718378736853",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "816460358849906",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf3D3408813bdDE5800A41cc2a090e7993A51005F",
+      "balanceUnits": "34109187139454733915331",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf4fFaF6597E53dbc0A2b133dAb515e8D5ED92b2F",
+      "balanceUnits": "69711589039850989686838",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF51436e59A9a55Cc0B5BD63552abA769f0A3ecff",
+      "balanceUnits": "7164698200",
+      "boughtUnits": "296260486981027164698200",
+      "ethInWei": "22267948608043600",
+      "ethOutWei": "32228855327211854",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF5B4a36259832E1395dbd89745209E7FA95A4e17",
+      "balanceUnits": "1474478252153028667742",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf5c4F3Dc02c3FB9279495a8fEF7B0741da956157",
+      "balanceUnits": "22837801576703227387",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "367921316032444530",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF5eA2488dB5CF984FA0bE4B339E7bfcAA069a6FB",
+      "balanceUnits": "27945466471468099702125",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf6250D015c2b4EC511D0301aF8F8C79bCd3EC050",
+      "balanceUnits": "637920849709474323462",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "180505782380300861",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf6815554dC573e333AD6cfbb9b7AB2dfd4a05C5C",
+      "balanceUnits": "4",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF69cD0fE7280773BB9B7c93AB68420D07290AFa9",
+      "balanceUnits": "23303530979287160677",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF6a0556f0364FeBE7fc29c9887FBBb485104CA8f",
+      "balanceUnits": "1089574",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF6C3d158643927CC8203958e873dFcDfD072Fa37",
+      "balanceUnits": "1832482260589180354560",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF6D7625EbDF083c9b86f35c196241eB50B31B102",
+      "balanceUnits": "4499474877347000438042",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xf721407941A678B60c578c40183C2d1f3A62eAAB",
+      "balanceUnits": "179954604011899430674765",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF787578aD0eC99519d559E46c895ba7086938A3C",
+      "balanceUnits": "1593776315136800922008545",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF867294026C89A2E588192271C9629283f4C39ed",
+      "balanceUnits": "20950215401685675839014",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF8cC95030E9f9a0083820eE1638481C8fF07aaCb",
+      "balanceUnits": "47363131034356932941799",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF8e4C814A833AC86Ef30eE4Eba6839052eeCa3FF",
+      "balanceUnits": "6519257694",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xF9E7Ca0932701a809068553E5Ec3ff3C0f58B976",
+      "balanceUnits": "16508484188537644280",
+      "boughtUnits": "1298772132423474561119650",
+      "ethInWei": "112484286311978975",
+      "ethOutWei": "114143719391052769",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfA9F31d079Fd02698CC634dd3A86c4bFc95EDB65",
+      "balanceUnits": "7201769123",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xFAD4c8F1e71E4c56B87733BD916FF7CfF46c6C29",
+      "balanceUnits": "24347809679119418940311",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "14061945612071111",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfaF945cb0183E6679f06689105fd12Fe9e7e795B",
+      "balanceUnits": "14411780547211391859737",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfb179AA8dfEfe7f85fae0b1999203DC9D9730eD1",
+      "balanceUnits": "12500000000000000000000",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "1277070333966604",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfB299703a4b20C9463821DB112ba11f97f7bF3d7",
+      "balanceUnits": "76257937724710248369115",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xFb79CD997d540F315e903e0bdeF6fdd7Ac71478E",
+      "balanceUnits": "2854725822437294241189",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xFbcC331517Ec623181a6E8c2dB947BA2B28883BD",
+      "balanceUnits": "9168737773975191802230",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfc3ae7e21dC5E3089aaBf8cB3Dc22456bbbcd52c",
+      "balanceUnits": "1",
+      "boughtUnits": "170705671489279668719531",
+      "ethInWei": "9900000000000000",
+      "ethOutWei": "13183212760157869",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfC52156cB6eE3F504Cb02A47fb6C494964128ad9",
+      "balanceUnits": "8620416",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xFC7C61849adF4FbBC46cdf8aF7611b4981D1C8Bf",
+      "balanceUnits": "9506420812",
+      "boughtUnits": "450151448625069203680571",
+      "ethInWei": "26880898426367527",
+      "ethOutWei": "47631930160317770",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfDdEED477De50D093D586bB0a57F186e9a374776",
+      "balanceUnits": "41108074558362109403",
+      "boughtUnits": "1712123055325368988028249",
+      "ethInWei": "78217821782178217",
+      "ethOutWei": "249942771211319796",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfEE5fEe50000062bd986e86502C5AcDf989067A0",
+      "balanceUnits": "44333464902446696165782",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfEeAC21C90b9291209f5F0Fdc271aEF3Feef303d",
+      "balanceUnits": "6996215907985191805374",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xfF198B18094de2b7384a0ef7664aA7e1d21BcA4c",
+      "balanceUnits": "1040402657524182049714998",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    },
+    {
+      "address": "0xFf7101510846F07a1a77a468f3a572d830AA099C",
+      "balanceUnits": "53200925045957367729555",
+      "boughtUnits": "0",
+      "ethInWei": "0",
+      "ethOutWei": "0",
+      "owedWei": "0"
+    }
+  ]
+}

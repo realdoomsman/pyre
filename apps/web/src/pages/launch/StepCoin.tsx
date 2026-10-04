@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { CreateLaunchBody, slugify } from "@pyre/shared";
 import type { CreateLaunchBody as Body, Launchpad } from "@pyre/shared";
 import { isHttpError, uploadCoinImage } from "../../api/client.js";
-import { useVenues } from "../../lib/venue.js";
+import { isLaunchable, useVenues } from "../../lib/venue.js";
 import { Avatar, Button, Field, Input, Textarea, toast } from "../../ui/index.js";
 import { ImageCrop, type ImageCropHandle } from "./ImageCrop.js";
 import type { CoinDraft } from "./preview.js";
@@ -15,8 +15,8 @@ interface Props {
   busy: boolean;
   /** Intake moderation refused the previous attempt — shown above the form, form stays editable. */
   rejection: string | null;
-  /** Forking `$TICKER`: the venue is the parent's and cannot be changed. */
-  forking: { ticker: string; launchpad: Launchpad } | null;
+  /** Forking `$TICKER`: the coin launches on pump.fun whatever the parent's venue. */
+  forking: { ticker: string } | null;
 }
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -30,7 +30,9 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
   const venues = useVenues();
 
   const patch = (p: Partial<CoinDraft>) => onChange({ ...draft, ...p });
-  const venueOff = venues.data?.some((v) => v.launchpad === draft.launchpad && !v.enabled) ?? false;
+  // A draft resumed from a legacy PONS v2 launch relaunches on pump.fun: PONS v2 takes no new coins.
+  const launchpad: Launchpad = isLaunchable(draft.launchpad) ? draft.launchpad : "pump_fun";
+  const venueOff = venues.data?.some((v) => v.launchpad === launchpad && !v.enabled) ?? false;
 
   const pick = (file: File | undefined) => {
     if (!file) return;
@@ -81,7 +83,7 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
       imageUrl = url;
     }
     const candidate = {
-      launchpad: draft.launchpad,
+      launchpad,
       name: draft.name.trim(),
       ticker: draft.ticker.trim().toUpperCase(),
       imageUrl,
@@ -120,12 +122,12 @@ export const StepCoin = ({ draft, onChange, onSubmit, busy, rejection, forking }
         </p>
       )}
 
-      <Field label="Where does the coin launch?" required hint={venueOff ? "That venue is paused right now; pick another." : "The chain and launchpad cannot be changed after launch."}>
+      <Field label="Where does the coin launch?" required hint={venueOff ? "pump.fun launches are paused right now; try again shortly." : "The chain and launchpad cannot be changed after launch."}>
         <VenuePicker
-          value={draft.launchpad}
-          onChange={(launchpad) => patch({ launchpad })}
+          value={launchpad}
+          onChange={(next) => patch({ launchpad: next })}
           venues={venues.data}
-          locked={forking ? { launchpad: forking.launchpad, reason: `A fork launches where its parent did.` } : null}
+          locked={forking ? { launchpad: "pump_fun", reason: "Forks launch on pump.fun, whatever chain the parent lives on." } : null}
         />
       </Field>
 

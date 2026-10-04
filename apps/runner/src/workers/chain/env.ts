@@ -11,8 +11,10 @@ const ChainWorkerEnv = z.object({
   WEB_ORIGIN: z.string().url().optional(),
   APP_DOMAIN: z.string().optional(),
   PLATFORM_MASTER_SEED_HEX: z.string().regex(/^(0x)?[0-9a-fA-F]{32,128}$/),
-  /** $PYRE launch token; when set, its 25% share of every coin's creator fees is bought back and burned. */
+  /** $PYRE launch token (Robinhood Chain); when set, the `PYRE_TOKEN` ledger balance (legacy coins' 25% leg not routed to PYRE refunds) is bought back and burned. */
   PYRE_TOKEN: EvmAddress.optional(),
+  /** Mint of the Solana PYRE coin (base58); while set, 25% of its creator fees fund the PYRE refund pool. */
+  PYRE_SOL_MINT: z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "expected a base58 Solana mint").optional(),
   /** Zentro session (cookies + CardHub localStorage) for card top-ups; unset keeps credits accruing in the ledger. */
   ZENTRO_STATE: z.string().optional(),
   /** Blockscout PRO key: with it holders come from the explorer; without it the runner indexes Transfer logs itself. */

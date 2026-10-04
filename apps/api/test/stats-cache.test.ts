@@ -89,6 +89,7 @@ const getStats = async (): Promise<StatsDto> => {
 
 const SNAPSHOT: MarketSnapshot = {
   ethPriceUsd: 3210.5,
+  solPriceUsd: null,
   pyreToken: {
     address: "0x1111111111111111111111111111111111111111",
     name: "Pyre",

@@ -61,6 +61,7 @@ const ROUTES = [
     signInProbe: true,
   },
   { path: "/launch", label: "launch", jsBudgetKb: 260, cssBudgetKb: 30, perfMin: 90, a11yMin: 95, forbid: WALLET_CHUNKS, signInProbe: true },
+  { path: "/refund", label: "refund", jsBudgetKb: 200, cssBudgetKb: 30, perfMin: 90, a11yMin: 95, forbid: WALLET_CHUNKS },
   { path: "/apps", label: "apps", jsBudgetKb: 220, cssBudgetKb: 30, perfMin: 90, a11yMin: 95, forbid: WALLET_CHUNKS },
   { path: "/burns", label: "burns", jsBudgetKb: 220, cssBudgetKb: 30, perfMin: 90, a11yMin: 95, forbid: WALLET_CHUNKS },
   { path: "/pyre", label: "pyre", jsBudgetKb: 320, cssBudgetKb: 30, perfMin: 88, a11yMin: 95, forbid: WALLET_CHUNKS },

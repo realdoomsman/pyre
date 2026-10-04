@@ -68,6 +68,10 @@ const LAUNCH_ERRORS: Record<string, (body: Record<string, unknown> | null) => st
   launch_rate_limited: (b) => `You have reached today's launch limit${typeof b?.limitPerDay === "number" ? ` (${b.limitPerDay} in 24 hours)` : ""}. It resets a day after your earliest launch; the limit rises with reputation.`,
   rate_limited: () => "Too many requests in a minute. Wait a moment and try again.",
   wallet_required: () => "Sign in first so a wallet exists to launch from.",
+  venue_disabled: (b) =>
+    b?.launchpad === "pump_fun"
+      ? "pump.fun launches are paused right now. Try again shortly."
+      : "PONS v2 launches are closed; new coins launch on pump.fun. Start a new launch to put this coin on pump.fun.",
 };
 const errorText = (e: unknown): string | null => {
   if (e == null) return null;
@@ -102,11 +106,11 @@ export const Launch = () => {
     document.title = "Launch a coin — Pyre";
   }, []);
 
-  // Fork: prefill the coin form from the parent; a fork launches on the parent's venue.
+  // Fork: prefill the coin form from the parent. Every fork launches on pump.fun, even a legacy Robinhood Chain parent's.
   useEffect(() => {
     if (!forkApp.data || id) return;
     const p = forkApp.data;
-    setDraft((d) => (d.prompt ? d : { ...d, launchpad: p.launchpad, prompt: p.spec ? `${p.spec.oneLiner}\n\n${p.spec.whatItDoes}` : p.oneLiner, imageUrl: d.imageUrl || p.imageUrl }));
+    setDraft((d) => (d.prompt ? d : { ...d, launchpad: "pump_fun", prompt: p.spec ? `${p.spec.oneLiner}\n\n${p.spec.whatItDoes}` : p.oneLiner, imageUrl: d.imageUrl || p.imageUrl }));
   }, [forkApp.data, id]);
 
   const data = launch.data;
@@ -161,15 +165,15 @@ export const Launch = () => {
             Launch a coin that <em>builds</em> something.
           </h1>
           <p className="body text-ink-2">
-            Name it, tell the agent what to build, stake 0.05 ETH on Robinhood Chain or 1 SOL on Solana. The coin launches on pons v2 or pump.fun; its creator fees fund the agent; 25% of every
-            coin's fees buys and burns PYRE on Robinhood Chain — or the coin itself on Solana.
+            Name it, tell the agent what to build, stake 1 SOL. The coin launches on pump.fun on Solana; its creator fees fund the agent; 25% of every claim buys the coin back and burns
+            it.
           </p>
           <div>
             <Button size="lg" onClick={auth.signIn}>
               Sign in to launch
             </Button>
           </div>
-          <p className="small text-ink-3">Google gives you custodial Pyre wallets on Robinhood Chain and Solana. Or sign in with your own wallet and pay a Robinhood Chain stake from it.</p>
+          <p className="small text-ink-3">Sign in with Google or your own wallet: Pyre keeps a custodial Solana wallet for you, and the 1 SOL stake is paid from it in one click.</p>
         </div>
         <div className="w-full max-w-sm lg:sticky lg:top-24">
           <CoinCard app={preview} />
@@ -191,7 +195,7 @@ export const Launch = () => {
           onSubmit={submitCoin}
           busy={create.isPending || fork.isPending}
           rejection={rejected ? (data?.killedReason ?? "The prompt was refused by the launch classifier.") : errorText(create.error ?? fork.error)}
-          forking={forkSlug && !id ? { ticker: forkApp.data?.ticker ?? forkSlug, launchpad: forkApp.data?.launchpad ?? draft.launchpad } : null}
+          forking={forkSlug && !id ? { ticker: forkApp.data?.ticker ?? forkSlug } : null}
         />
       ),
     };

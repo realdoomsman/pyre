@@ -238,7 +238,7 @@ const pump = (over: Partial<VenueTradeChain> = {}, phase: 0 | 1 | 2 = 0): VenueT
   tokenBalance: async () => 50_000_000n * UNIT,
   nativePriceUsd: async () => 120,
   userWallet: () => ({ chain: "solana", address: SOL_WALLET, signer: {} }),
-  ...over,
+  ...(over as Partial<VenueTradeChain & { buy: Mock; sell: Mock; quoteBuy: Mock }>),
 });
 
 describe("quoteVenueTrade (pump.fun)", () => {

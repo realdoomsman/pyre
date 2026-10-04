@@ -36,6 +36,7 @@ const PAUSES: ReadonlyArray<{ key: string; label: string; detail: string }> = [
   { key: "pause_builds", label: "Pause builds", detail: "No new build jobs start. Running jobs finish." },
   { key: "pauseFeeSweep", label: "Pause fee sweeps", detail: "Fees keep accruing on the curve / hook and in escrow; nothing is claimed or split." },
   { key: "pauseBuyback", label: "Pause PYRE burns", detail: "The PYRE_TOKEN ledger keeps accruing; no swaps, no burns." },
+  { key: "pause_refunds", label: "Pause refunds", detail: "No refund accruals or payouts run. Owed balances stay on the ledger." },
 ];
 
 const ALERT_TONE: Record<OpsDto["alerts"][number]["level"], ChipTone> = { info: "build", warn: "warn", critical: "burn" };

@@ -16,14 +16,17 @@ export const metaOf = (app: VenueRow): VenueMeta => venueOf(app);
 /** Solana cluster the API runs against, for explorer links; null for EVM venues. */
 export const clusterOf = (chain: Chain): SolanaCluster | null => (chain === "solana" ? env.SOLANA_CLUSTER : null);
 
-/** Whether launches are accepted on a launchpad right now (environment kill switches, not on-chain gating). */
-export const venueEnabled = (launchpad: Launchpad): boolean =>
-  launchpad === "pons_v2" ? true : solanaEnabled() && env.PUMP_LAUNCH_ENABLED;
+/**
+ * Whether launches are accepted on a launchpad right now. PONS v2 is closed for good: the legacy
+ * Robinhood Chain coins keep trading, sweeping and building, but no new coin launches there.
+ * pump.fun follows the environment kill switches (not on-chain gating).
+ */
+export const venueEnabled = (launchpad: Launchpad): boolean => launchpad === "pump_fun" && solanaEnabled() && env.PUMP_LAUNCH_ENABLED;
 
 /** Refundable launch stake in native base units of `chain` (env overrides for staging). */
 export const requiredStake = (chain: Chain): bigint => (chain === "robinhood" ? env.LAUNCH_STAKE_WEI : env.LAUNCH_STAKE_LAMPORTS);
 
-/** Throws 409 when the venue is disabled: a launch, stake or trade on it cannot be served. */
+/** Throws 409 when the venue is not accepting launches: a launch or stake on it cannot be served. */
 export const assertVenueEnabled = (launchpad: Launchpad): void => {
   if (!venueEnabled(launchpad)) throw new HttpError(409, "venue_disabled", { launchpad });
 };

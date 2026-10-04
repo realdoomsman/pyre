@@ -12,7 +12,7 @@ export interface ShareStat {
  * serif line with one italic word, three mono stats on a hairline. Fixed
  * pixel sizes on purpose: this is captured, never laid out.
  */
-export const ShareFrame = ({ headline, stats, eyebrow = "pyre.fun · Robinhood Chain", media }: { headline: ReactNode; stats: ShareStat[]; eyebrow?: string; media?: ReactNode }) => (
+export const ShareFrame = ({ headline, stats, eyebrow = "pyre.fun · pump.fun", media }: { headline: ReactNode; stats: ShareStat[]; eyebrow?: string; media?: ReactNode }) => (
   <main className="relative h-[630px] w-[1200px] overflow-hidden bg-canvas text-ink" style={{ fontSize: 16 }}>
     <div
       className="absolute inset-x-0 bottom-0 h-[300px]"

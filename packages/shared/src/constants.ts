@@ -9,7 +9,11 @@
 /** Robinhood Chain (Arbitrum Nitro L2, native ETH). */
 export const ROBINHOOD_CHAIN_ID = 4663;
 
-/** Creator-fee split on Robinhood Chain (ETH claimed from the PONS v2 fee escrow). Sums to 10_000. Per-chain table: `FEE_SPLIT_BPS_BY_CHAIN`. */
+/**
+ * Creator-fee split on Robinhood Chain (ETH claimed from the PONS v2 fee escrow of the legacy coins).
+ * Sums to 10_000. `PYRE_TOKEN` is the PYRE program leg: PYRE refunds while a snapshot holder is owed,
+ * then the PYRE buy-and-burn. Per-chain table: `FEE_SPLIT_BPS_BY_CHAIN`.
+ */
 export const FEE_SPLIT_BPS = {
   BUILD_BUDGET: 6000,
   PYRE_TOKEN: 2500,

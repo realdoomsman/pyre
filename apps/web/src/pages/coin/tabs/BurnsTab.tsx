@@ -33,7 +33,13 @@ export const BurnsTab = ({ app }: { app: AppDetailDto }) => {
     [venue, links],
   );
 
-  if (!totals) return <EmptyState title="This coin's fees burn PYRE" body="On Robinhood Chain the 25% fee share buys and burns PYRE, not the coin. See the global burn ledger." />;
+  if (!totals)
+    return (
+      <EmptyState
+        title="This coin's 25% funds PYRE refunds"
+        body="A legacy Robinhood Chain coin never burns itself. Its 25% fee share funds PYRE refunds while any snapshot holder is still owed, then goes back to buying and burning PYRE. See /refund and the PYRE burn history."
+      />
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -77,7 +83,7 @@ export const BurnsTab = ({ app }: { app: AppDetailDto }) => {
       )}
       <p className="small text-ink-3">
         Every row is a swap, a <span className="num">burnChecked</span> that lowers the mint's supply for good, and a memo transaction carrying the hash of the fee claims that paid for it. Burns
-        reduce supply; nothing is paid to holders. PYRE lives on Robinhood Chain only, so no PYRE is bought here.
+        reduce supply; nothing is paid to holders. This coin's fees never buy PYRE: the burn share only ever buys this coin.
       </p>
     </div>
   );

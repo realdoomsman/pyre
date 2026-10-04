@@ -8,6 +8,7 @@ import { createHoldersWorker } from "./holders.js";
 import { RETRY_GATED_JOB, createLaunchWorker } from "./launch.js";
 import { createMarketWorker } from "./market.js";
 import { createPriceWorker } from "./price.js";
+import { createRefundsWorker } from "./refunds.js";
 
 export type { ChainWorkerContext } from "./context.js";
 export { publishEvent, publishGlobal } from "./publish.js";
@@ -21,10 +22,11 @@ const SCHEDULES: Record<string, { queue: (typeof CHAIN_QUEUES)[keyof typeof CHAI
   marketRefresh: { queue: CHAIN_QUEUES.market, name: "refresh", everyMs: 60_000 },
   launchRetryGated: { queue: CHAIN_QUEUES.launch, name: RETRY_GATED_JOB, everyMs: 600_000 },
   creditsFunding: { queue: CHAIN_QUEUES.credits, name: "fund", everyMs: 300_000 },
+  refunds: { queue: CHAIN_QUEUES.refunds, name: "run", everyMs: 600_000 },
 };
 
 /**
- * Starts the on-chain workers (launch, feeSweep, buyback, price, holders, market, credits) and registers
+ * Starts the on-chain workers (launch, feeSweep, buyback, price, holders, market, credits, refunds) and registers
  * their repeatable schedules. Returns the Worker instances so the caller can close them on shutdown.
  */
 export async function registerChainWorkers(ctx: ChainWorkerContext): Promise<Worker[]> {
@@ -44,6 +46,7 @@ export async function registerChainWorkers(ctx: ChainWorkerContext): Promise<Wor
     createHoldersWorker(ctx, connection),
     createMarketWorker(ctx, connection),
     createCreditsWorker(ctx, connection),
+    createRefundsWorker(ctx, connection),
   ];
   for (const worker of workers) {
     worker.on("failed", (job, err) => ctx.log.error({ err, queue: worker.name, jobId: job?.id }, "chain job failed"));

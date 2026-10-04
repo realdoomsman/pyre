@@ -20,7 +20,7 @@ export const ShareCoin = () => {
 
   return (
     <ShareFrame
-      eyebrow={app ? `$${app.ticker} · pyre.fun` : "pyre.fun · Robinhood Chain"}
+      eyebrow={app ? `$${app.ticker} · pyre.fun` : "pyre.fun · pump.fun"}
       media={app ? <Avatar src={app.imageUrl} name={app.ticker} size={168} shape="square" /> : undefined}
       headline={
         app ? (

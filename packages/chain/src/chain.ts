@@ -65,6 +65,38 @@ export function walletClient(account: LocalAccount): PyreWalletClient {
   return createWalletClient({ account, chain: pyreChain, transport: transport() });
 }
 
+export interface RpcCall {
+  method: string;
+  params: unknown[];
+}
+
+/**
+ * Sends `calls` as ONE JSON-RPC batch (one HTTP request) to `RPC_URL` and returns the results in
+ * order. Unlike the client's implicit batching (whose retries can split a batch across requests),
+ * every answer comes from the same request, so a load-balanced RPC serves them all from one node:
+ * a caller can ask "do you have block N?" and "logs up to N" and trust that the logs come from a
+ * node that has N. Any per-call error, a missing id, or a non-array body throws.
+ */
+export async function rpcBatch(calls: RpcCall[], url: string = rpcUrl()): Promise<unknown[]> {
+  const body = JSON.stringify(calls.map((c, id) => ({ jsonrpc: "2.0", id, method: c.method, params: c.params })));
+  const res = await fetchFn(url, { method: "POST", headers: { "content-type": "application/json" }, body, signal: AbortSignal.timeout(20_000) });
+  const text = await res.text();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error(`RPC batch: HTTP ${res.status}, non-JSON body`);
+  }
+  if (!Array.isArray(parsed)) throw new Error(`RPC batch: HTTP ${res.status}, expected an array`);
+  const answers = parsed as Array<{ id: number; result?: unknown; error?: { message?: string } }>;
+  return calls.map((c, id) => {
+    const r = answers.find((a) => a.id === id);
+    if (!r) throw new Error(`RPC batch: no answer for ${c.method}`);
+    if (r.error) throw new Error(`RPC batch: ${c.method} failed: ${r.error.message ?? JSON.stringify(r.error)}`);
+    return r.result;
+  });
+}
+
 /** The transaction was mined and reverted: nothing it was meant to move has moved. */
 export class TransactionRevertedError extends Error {
   constructor(readonly hash: Hash) {

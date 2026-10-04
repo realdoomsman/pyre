@@ -2,6 +2,8 @@ export {
   pyreChain,
   publicClient,
   walletClient,
+  rpcBatch,
+  type RpcCall,
   sendTx,
   waitForSuccess,
   TransactionRevertedError,
@@ -124,7 +126,8 @@ export { attestOnSolana, readAttestationOnSolana, encodeAttestationMemo, parseAt
 // pump.fun
 export { readPumpState, readPumpLaunch, readPoolReserves, launchStateFrom, pumpPhase, graduationLamports, priceFromReserves, PUMP_TOKEN_DECIMALS, PUMP_TOTAL_SUPPLY_UNITS, type PumpState, type PoolReserves } from "./pump/read.js";
 export { launchPumpCoin, predictPumpLaunchCost, canPumpLaunch, readPumpGlobal, launchGate, PumpLaunchDisabledError, type PumpLaunchResult } from "./pump/launch.js";
-export { accruingPumpFees, claimPumpFees, creatorVaultBalances, type CreatorVaultBalances } from "./pump/feesClaim.js";
+export { accruingPumpFees, claimPumpFees, claimPyreSolFees, creatorVaultBalances, pumpCreatorFeeRoute, type CreatorVaultBalances, type PumpCreatorFeeRoute, type PumpFeeShareholder, type PyreSolFeeClaim } from "./pump/feesClaim.js";
+export { pyreSolFeeReceipts, type PyreSolFeeReceipt, type PyreSolFeeReceiptScan } from "./pump/feeReceipts.js";
 export { pumpQuoteBuy, pumpQuoteSell, pumpBuy, pumpSell, quoteBuyFrom, quoteSellFrom, PumpMigratingError } from "./pump/swap.js";
 export { pumpTrades, currentSlot, fillFromEvent, PumpTradeWindowTooDeepError, type PumpFill } from "./pump/trades.js";
 export { pumpHolders } from "./pump/holders.js";

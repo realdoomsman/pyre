@@ -11,6 +11,7 @@ RUN npm ci --workspace @pyre/runner --workspace @pyre/app-sdk --include-workspac
 COPY packages packages
 COPY apps/runner apps/runner
 COPY template template
+COPY data data
 COPY tsconfig.base.json ./
 RUN npm run build -w @pyre/shared && npm run build -w @pyre/db && npm run build -w @pyre/chain && npm run build -w @pyre/app-sdk && npm run build -w @pyre/runner
 
