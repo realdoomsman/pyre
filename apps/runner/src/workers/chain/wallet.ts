@@ -8,6 +8,8 @@ export const APP_GAS_RESERVE_WEI = parseEther("0.0005");
 export const APP_GAS_LOW_WEI = parseEther("0.0001");
 /** The treasury never spends below this on app gas or launches, so buybacks, refunds and payouts keep working. */
 export const TREASURY_FLOOR_WEI = parseEther("0.01");
+/** SOL the treasury Solana wallet always keeps for its own claims, launches and fees: refunds, burns, launches and card top-ups never spend below it. */
+export const TREASURY_SOL_FLOOR_LAMPORTS = 100_000_000n; // 0.1 SOL
 
 /**
  * The app's custodial wallet (PONS deployer + creatorFeeRecipient). `App.walletAddress` is written by

@@ -4,12 +4,12 @@ Live state of Pyre on Robinhood Chain as of 2026-09-21, annotated on 2026-09-22 
 
 ## PYRE → Solana
 
-PYRE relaunches on Solana as a fair launch on pump.fun with no dev buy and 100% of its creator fees going to the treasury Solana wallet; Robinhood Chain holders at the snapshot who still hold that PYRE are refunded at `/refund` (`docs/economics.md` → *PYRE refund program*). The refund pool is funded by 25% of the Solana PYRE coin's creator fees and by the legacy Robinhood Chain coins' 25% share while any snapshot holder is still owed.
+PYRE relaunches on Solana as a fair launch on pump.fun — the founder's 2 SOL dev buy at creation is locked for 12 months on Streamflow — with 100% of its creator fees going to the treasury Solana wallet; Robinhood Chain holders at the snapshot who still hold that PYRE are refunded at `/refund` (`docs/economics.md` → *PYRE refund program*). The refund pool is funded by 25% of the Solana PYRE coin's creator fees and by the legacy Robinhood Chain coins' 25% share while any snapshot holder is still owed.
 
 - **Snapshot recorded:** Robinhood Chain block `79819827`, hash `0x141e47824b2a808e47e0e4d5262f7c7b3eb0b4f77c6d0b1113b7aa11874df0d8`, 2026-10-04T09:12:28Z (`docs/sol-migration-snapshot.md`).
 - **Announced:** pinned post https://x.com/PyreFun/status/2106687742541287487 (2026-10-04, 10:07:52Z, after the snapshot). The first announcement (09:18:42Z) was deleted.
 - **Snapshot loaded (2026-10-04):** migration `20261004000000_pyre_refund` applied on api start; `load-refund-snapshot.mjs` created 785 `RefundHolder` rows on the production runner. `GET /v1/refund` reports 785 holders, 229 owed, 11.846939549841023398 ETH owed, pool 0.
-- **Pending — Solana coin launch (chosen path):** the founder launches the coin from his own wallet on pump.fun with no dev buy and immediately sets creator fee sharing to the treasury Solana wallet `CZeNrWsfVqBciYLWYoLGc2wcMqozsAeVB14HVMwWqjah` as the only shareholder at 100%, finalized (`docs/runbook.md` → *PYRE refund program*, step 4); then publish its mint on pyre.fun. The `launch-pyre-sol.mjs` treasury launch stays as the fallback.
+- **Pending — Solana coin launch (chosen path):** the founder launches the coin from his own wallet on pump.fun with a 2 SOL dev buy, locks the dev-buy tokens for 12 months on Streamflow, and immediately sets creator fee sharing to the treasury Solana wallet `CZeNrWsfVqBciYLWYoLGc2wcMqozsAeVB14HVMwWqjah` as the only shareholder at 100%, finalized (`docs/runbook.md` → *PYRE refund program*, step 4); then publish its mint and the Streamflow lock link on pyre.fun. The `launch-pyre-sol.mjs` treasury launch stays as the fallback.
 - **Pending — `PYRE_SOL_MINT`:** set it on `api` and `runner` once the mint exists. Until then `/refund` says payouts start once the Solana coin is live, nothing accrues to `REFUND` from the Solana coin, and only linking works; the legacy coins' share accrues to `REFUND` regardless once the snapshot is loaded.
 - **Pending — treasury Solana wallet funding for refunds:** payouts are SOL from the treasury Solana wallet; the legacy coins' share arrives as ETH in the Robinhood treasury and nothing bridges automatically, so the wallet must be funded by hand to cover outstanding credit.
 
@@ -35,14 +35,14 @@ Production configuration:
 | `RPC_URL` | `https://rpc.mainnet.chain.robinhood.com` (since 2026-10-04) | the Alchemy key was over its monthly capacity and `/v1/status` reported `rpc ok:false`; switched to the public endpoint on `api` + `runner`, now `rpc ok:true`. Upgrade Alchemy and switch back for capacity (blocked item 4) |
 | `CHAIN_ID` | `4663` | |
 | `PLATFORM_MASTER_SEED_HEX` | set (new seed) | backed up in `.secrets/pyre-keys.env` |
-| treasury (`m/44'/60'/0'/0/0`) | `0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6` | ≈0 ETH on 2026-10-04 (8.2e-7 ETH): legacy sweeps, launcher claims and Zentro funding stall until funded (blocked item 1) |
+| treasury (`m/44'/60'/0'/0/0`) | `0xdd9F2043c2df2Cd675ff4eF75373E82bB68389b6` | ≈0 ETH on 2026-10-04 (8.2e-7 ETH): legacy sweeps and launcher claims stall until funded (blocked item 1); Zentro top-ups no longer draw on it |
 | `USDG_ADDRESS` | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | account balances and deposits only; apps take no payments |
 | `PYRE_TOKEN` | `0xc8488bE2e4f430420A364E64f4D8af428b74D903` on `api` + `runner` | Robinhood Chain PYRE (legacy); the Solana coin is `PYRE_SOL_MINT`, unset until the founder's launch |
 | `E2B_TEMPLATE` | `pyre-builder` | template built and published |
 | `GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID` | set | |
 | `ANTHROPIC_API_KEY`, `E2B_API_KEY`, `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_WEBHOOK_SECRET` | set | |
 | `BLOCKSCOUT_API_KEY` | unset | holders self-index from `Transfer` logs (blocked item 4) |
-| `ZENTRO_STATE` | set on `runner` (re-captured 2026-10-04) | the previous session had expired (`zentro_session_expired`); `probe-zentro.mjs 15 --quote` on the production runner minted a deposit address and quoted 0.0056 ETH for $15, nothing sent. Card balance C$3.10 on 2026-10-04 |
+| `ZENTRO_STATE` | set on `runner` (re-captured 2026-10-04) | the previous session had expired (`zentro_session_expired`); `probe-zentro.mjs 15 --quote` on the production runner minted a deposit address, nothing sent. Top-ups pay in SOL from the treasury Solana wallet `CZeNrWsfVqBciYLWYoLGc2wcMqozsAeVB14HVMwWqjah` (ETH before the 2026-10-04 cutover; live Relay quote for this wallet: 0.1245 SOL ≈ $15.15 for $15 USDC, one deposit instruction + one lookup table) and wait while it holds less than the top-up plus the 0.1 SOL floor. Card balance C$3.10 on 2026-10-04 |
 | `PAYOUTS_FROZEN` | `0` on `api` (since 2026-10-04) | was `1` since the 2026-09-23 staker-claim drain (parallel `POST /v1/pyre/claim` each paid the same `earnedMicros`: $4,717.65 paid against $5.25 accrued). Fixed with a guarded decrement in `claimStakerRewardsHandler` + `apps/api/test/pyre-claim.test.ts`, then unfrozen |
 | `X_API_*` | unset | growth posts are recorded as `[X not connected]` |
 | `APP_DOMAIN` / `VITE_APP_DOMAIN` | `pyre.fun` | apps serve at `<slug>.pyre.fun` |
@@ -78,7 +78,7 @@ Production was purged on 2026-09-21: `seed-demo-data.mjs --remove` and `seed-dem
 
 Step 2 is done (2026-10-04); the rest is **pending** until the first real launch.
 
-1. Fund the treasury Solana wallet (launch pre-funding, stake refunds, coin burns, refund payouts) and confirm Anthropic credits.
+1. Fund the treasury Solana wallet (launch pre-funding, stake refunds, coin burns, refund payouts, Zentro card top-ups) and confirm Anthropic credits.
 2. Set `SOLANA_RPC_URL` (keyed mainnet provider) and `SOLANA_CLUSTER=mainnet-beta` on `api` and `runner`, redeploy both; `GET /v1/venues` should report `pump_fun` enabled and `pons_v2` disabled.
 3. Sign in on `https://pyre.fun` with Google (a custodial wallet is derived on each chain) and deposit SOL to the custodial Solana address.
 4. `/launch`: name, ticker, image, prompt → the intake agent writes a spec → approve it → stake 1 SOL from the custodial balance.

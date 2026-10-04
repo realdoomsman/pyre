@@ -232,7 +232,9 @@ admin.get(
           ticker: f.app.ticker,
           usdMicros: f.usdMicros.toString(),
           usdcUnits: f.usdcUnits.toString(),
-          ethWei: big(f.ethWei).toString(),
+          originChain: f.originChain,
+          // Paid to Relay in the origin chain's base unit: lamports on solana, wei on robinhood.
+          nativeWei: big(f.nativeWei).toString(),
           status: f.status,
           error: f.error,
           createdAt: f.createdAt.toISOString(),

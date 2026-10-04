@@ -159,8 +159,8 @@ const Migration = () => (
   >
     <div className="eyebrow mb-1 text-warn">PYRE is moving to Solana</div>
     <p className="text-ink">
-      PYRE relaunches on Solana as a fair launch on pump.fun. Everyone who held PYRE on Robinhood Chain at the snapshot and still holds it is refunded the ETH they put in, minus
-      any ETH they took out and capped at what the PYRE they held cost them.{" "}
+      PYRE relaunches on Solana as a fair launch on pump.fun; the founder's 2 SOL dev buy at creation is locked for 12 months on Streamflow. Everyone who held PYRE on Robinhood
+      Chain at the snapshot and still holds it is refunded the ETH they put in, minus any ETH they took out and capped at what the PYRE they held cost them.{" "}
       <Link to="/refund" className="text-accent underline underline-offset-2">
         Check and link your refund
       </Link>

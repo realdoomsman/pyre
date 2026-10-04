@@ -33,6 +33,7 @@ import { audit } from "../../lib/audit.js";
 import { withLock } from "../../lib/lock.js";
 import { CHAIN_QUEUES, type ChainWorkerContext } from "./context.js";
 import { isPaused } from "./money.js";
+import { TREASURY_SOL_FLOOR_LAMPORTS } from "./wallet.js";
 
 /**
  * PYRE holder refunds. Each pass (under one Redis lock, so two runners never overlap):
@@ -48,8 +49,6 @@ import { isPaused } from "./money.js";
  *      Credit already allocated stays payable after a sell (it was earned while holding).
  */
 
-/** SOL the treasury Solana wallet always keeps for its own claims, launches and fees: 0.1 SOL. */
-export const REFUND_SOL_FLOOR_LAMPORTS = 100_000_000n;
 const LOCK_TTL_SECONDS = 900;
 const SOL_DECIMALS = 9;
 /** `PlatformSetting` key: last Robinhood block whose PYRE Transfer logs are applied to RefundHolder balances. */
@@ -268,8 +267,8 @@ export async function payRefunds(log: Logger, now: Date = new Date()): Promise<n
     const usdMicros = h.creditMicros;
     const lamports = nativeFromUsdMicros(usdMicros, solPriceUsd, SOL_DECIMALS);
     if (lamports <= 0n) continue;
-    if (balance - lamports < REFUND_SOL_FLOOR_LAMPORTS) {
-      log.warn({ balance: balance.toString(), lamports: lamports.toString(), floor: REFUND_SOL_FLOOR_LAMPORTS.toString() }, "treasury Solana wallet below refund floor; payouts stop");
+    if (balance - lamports < TREASURY_SOL_FLOOR_LAMPORTS) {
+      log.warn({ balance: balance.toString(), lamports: lamports.toString(), floor: TREASURY_SOL_FLOOR_LAMPORTS.toString() }, "treasury Solana wallet below refund floor; payouts stop");
       break;
     }
     const heldNow = await payoutHold();

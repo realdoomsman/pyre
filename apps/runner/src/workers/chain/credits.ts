@@ -1,35 +1,41 @@
 import { dec, prisma, type CreditFunding } from "@pyre/db";
-import { MIN_CREDITS_FUNDING_USD, weiFromUsdMicros } from "@pyre/shared";
-import { getEthBalance, getEthPriceUsd, publicClient, sendTx, treasury, TransactionRevertedError } from "@pyre/chain";
+import { MIN_CREDITS_FUNDING_USD, nativeFromUsdMicros } from "@pyre/shared";
+import { COMPUTE_UNITS, getSolBalance, getSolPriceUsd, sendSerializedInstructions, solanaCluster, solanaEnabled, solTreasury, SolanaTransactionFailedError } from "@pyre/chain";
 import { Worker } from "bullmq";
 import type { Logger } from "pino";
 import { getAddress, type Hex } from "viem";
 import { audit } from "../../lib/audit.js";
 import { withLock } from "../../lib/lock.js";
-import { getRelayIntent, quoteEthToUsdc, waitForRelayFill, RelayQuoteError } from "../../lib/relay.js";
+import { getRelayIntent, quoteSolToUsdc, waitForRelayFill, RelayQuoteError } from "../../lib/relay.js";
 import { getZentroDepositAddress, maskAddress, ZENTRO_SESSION_EXPIRED } from "../../lib/zentro.js";
 import { CHAIN_QUEUES, type ChainWorkerContext } from "./context.js";
 import { chainWorkerEnv } from "./env.js";
 import { isPaused } from "./money.js";
-import { TREASURY_FLOOR_WEI } from "./wallet.js";
+import { TREASURY_SOL_FLOOR_LAMPORTS } from "./wallet.js";
 
 /*
  * Model-credit funding. Each coin's `CREDITS:<appId>` ledger balance is its accrued, unfunded
  * share of creator fees earmarked for the card that pays Anthropic (the founder's Zentro card, set
  * as Anthropic's billing method with auto-reload). With ZENTRO_STATE set, every coin whose balance
- * clears MIN_CREDITS_FUNDING_USD is topped up from the treasury, at most MAX_CREDITS_FUNDING_USD
- * per top-up, through a persisted step machine on `CreditFunding`:
+ * clears MIN_CREDITS_FUNDING_USD is topped up from the treasury Solana wallet, at most
+ * MAX_CREDITS_FUNDING_USD per top-up, through a persisted step machine on `CreditFunding`:
  *
  *   ADDRESS_MINTED  a headless Zentro session minted a fresh USDC (Ethereum) deposit address for
  *                   the whole-dollar amount; nothing has left the treasury.
- *   SENT            Relay quoted ETH (Robinhood Chain) → exactly that many USDC on Ethereum to the
- *                   address, the quote passed the sanity checks, and the treasury sent the single
- *                   origin transaction. `relayRequestId`, `ethWei`, `usdcUnits` are written BEFORE
- *                   the broadcast and `sendTx` in the same tick as it, so a crash resumes here.
+ *   SENT            Relay quoted native SOL (Solana) → exactly that many USDC on Ethereum to the
+ *                   address, the quote passed the sanity checks, and the treasury signed and sent
+ *                   the single deposit transaction. `relayRequestId`, `originChain`, `nativeWei`
+ *                   (lamports) and `usdcUnits` are written BEFORE the broadcast and `sendTx` (the
+ *                   signature) right after it, before confirmation, so a crash resumes here.
  *   CONFIRMED       Relay reports the destination fill; `fillTx` is the Ethereum transaction and
  *                   the `CREDITS:<appId>` ledger is debited in the same DB transaction.
- *   FAILED          nothing moved (quote refused, revert, address expired) or Relay refunded /
- *                   failed the fill — the balance stays on the ledger for the next pass.
+ *   FAILED          nothing moved (quote refused, deposit failed on-chain, address expired) or
+ *                   Relay refunded / failed the fill — the balance stays on the ledger for the next
+ *                   pass.
+ *
+ * The treasury Solana wallet never spends below TREASURY_SOL_FLOOR_LAMPORTS on a top-up. Rows from
+ * before the cutover (`originChain` robinhood, `nativeWei` in wei) still settle: SENT is polled
+ * at Relay whatever the origin, and an unsent one is re-quoted in SOL.
  *
  * A pass first resumes every in-flight row (SENT → poll the intent; ADDRESS_MINTED → send, or
  * abandon when the address is stale), then opens new top-ups for coins with nothing in flight.
@@ -51,8 +57,9 @@ export const ADDRESS_TTL_MS = 30 * 60_000;
 export const FILL_DEADLINE_MS = 15 * 60_000;
 /** A later pass resuming a SENT row gives the intent at least this long before handing it on again. */
 const RESUME_POLL_MS = 60_000;
-/** Margin over the spot ETH price for the affordability check done before minting an address. */
+/** Margin over the spot SOL price for the affordability check done before minting an address (covers Relay's fee and impact). */
 const PRE_QUOTE_MARGIN_BPS = 500n;
+const SOL_DECIMALS = 9;
 
 export interface CreditsFundingStatus {
   mode: "accrue_only" | "zentro";
@@ -94,18 +101,18 @@ async function settleSent(row: CreditFunding, log: Logger, now: number): Promise
       prisma.creditFunding.update({ where: { id: row.id }, data: { status: "CONFIRMED", fillTx: fill.fillTx, error: null, completedAt: new Date() } }),
       prisma.ledgerEntry.create({ data: { account: `CREDITS:${row.appId}`, deltaMicros: -row.usdMicros, refType: "CreditFunding", refId: row.id, memo: "card top-up" } }),
     ]);
-    log.info({ appId: row.appId, fundingId: row.id, usdMicros: row.usdMicros.toString(), usdcUnits: row.usdcUnits.toString(), sendTx: row.sendTx, fillTx: fill.fillTx, to }, "coin credits funded");
+    log.info({ appId: row.appId, fundingId: row.id, usdMicros: row.usdMicros.toString(), usdcUnits: row.usdcUnits.toString(), originChain: row.originChain, nativeWei: row.nativeWei.toString(), sendTx: row.sendTx, fillTx: fill.fillTx, to }, "coin credits funded");
     await audit({
       actor: "worker:credits",
       action: "CREDIT_FUNDING",
       targetType: "CreditFunding",
       targetId: row.id,
-      meta: { appId: row.appId, usdMicros: row.usdMicros, ethWei: row.ethWei.toString(), usdcUnits: row.usdcUnits, sendTx: row.sendTx, fillTx: fill.fillTx, to, relayRequestId: requestId },
+      meta: { appId: row.appId, usdMicros: row.usdMicros, originChain: row.originChain, nativeWei: row.nativeWei.toString(), usdcUnits: row.usdcUnits, sendTx: row.sendTx, fillTx: fill.fillTx, to, relayRequestId: requestId },
     });
     return;
   }
   if (fill.outcome === "timeout") {
-    await prisma.creditFunding.update({ where: { id: row.id }, data: { error: `relay fill unconfirmed (status ${fill.status}); ETH is with Relay, row kept SENT` } });
+    await prisma.creditFunding.update({ where: { id: row.id }, data: { error: `relay fill unconfirmed (status ${fill.status}); the deposit is with Relay, row kept SENT` } });
     log.warn({ appId: row.appId, fundingId: row.id, sendTx: row.sendTx, status: fill.status }, "relay fill not confirmed yet; will poll again next pass");
     return;
   }
@@ -115,13 +122,13 @@ async function settleSent(row: CreditFunding, log: Logger, now: number): Promise
 }
 
 /**
- * Quotes and sends the single origin transaction for an ADDRESS_MINTED row, then settles it.
+ * Quotes and sends the single Solana deposit transaction for an ADDRESS_MINTED row, then settles it.
  * Returns without sending when the treasury cannot afford the quote (the row waits, within its
  * TTL). Resolves `true` only when the row was abandoned as stale, i.e. its coin is free for a fresh
  * address in the same pass.
  */
 async function sendForRow(row: CreditFunding, log: Logger, now: number): Promise<boolean> {
-  const t = treasury();
+  const t = solTreasury();
   const to = maskAddress(row.wallet);
   if (row.relayRequestId) {
     // A previous pass persisted the intent and then died around the broadcast. If Relay has seen the
@@ -143,46 +150,46 @@ async function sendForRow(row: CreditFunding, log: Logger, now: number): Promise
   }
   let quote;
   try {
-    quote = await quoteEthToUsdc(t.address, getAddress(row.wallet), row.usdMicros);
+    quote = await quoteSolToUsdc(t.address, getAddress(row.wallet), row.usdMicros);
   } catch (err) {
     if (!(err instanceof RelayQuoteError)) throw err;
     await fail(row, `quote refused: ${errorText(err)}`);
     log.error({ err, appId: row.appId, fundingId: row.id, to }, "relay quote refused; credit funding failed");
     return false;
   }
-  const treasuryWei = await getEthBalance(t.address);
-  if (treasuryWei - quote.ethWei < TREASURY_FLOOR_WEI) {
-    log.warn({ appId: row.appId, fundingId: row.id, ethWei: quote.ethWei.toString(), treasuryWei: treasuryWei.toString() }, "treasury ETH too low for the quote; top-up waits");
+  const treasuryLamports = await getSolBalance(t.address);
+  if (treasuryLamports - quote.lamports < TREASURY_SOL_FLOOR_LAMPORTS) {
+    log.warn({ appId: row.appId, fundingId: row.id, lamports: quote.lamports.toString(), treasuryLamports: treasuryLamports.toString() }, "treasury SOL too low for the quote; top-up waits");
     return false;
   }
   // The intent is on the row before the broadcast: a crash in between is recovered above.
   await prisma.creditFunding.update({
     where: { id: row.id },
-    data: { relayRequestId: quote.requestId, ethWei: dec(quote.ethWei), usdcUnits: quote.usdcUnits, error: null },
+    data: { relayRequestId: quote.requestId, originChain: "solana", nativeWei: dec(quote.lamports), usdcUnits: quote.usdcUnits, error: null },
   });
   let sent: CreditFunding | undefined;
   try {
-    await sendTx(
-      t.account,
-      async (wallet) => {
-        const hash = await wallet.sendTransaction({ to: quote.tx.to, data: quote.tx.data, value: quote.tx.value, gas: quote.tx.gas });
-        sent = await prisma.creditFunding.update({ where: { id: row.id }, data: { status: "SENT", sendTx: hash } });
-        return hash;
+    await sendSerializedInstructions(t.keypair, quote.deposit.instructions, {
+      computeUnits: COMPUTE_UNITS.relayDeposit,
+      lookupTables: quote.deposit.lookupTables,
+      onBroadcast: async (signature) => {
+        sent = await prisma.creditFunding.update({ where: { id: row.id }, data: { status: "SENT", sendTx: signature } });
       },
-      publicClient(),
-    );
+    });
   } catch (err) {
-    if (err instanceof TransactionRevertedError) {
-      await fail(row, `relay deposit reverted: ${err.hash}`);
-      log.error({ err, appId: row.appId, fundingId: row.id }, "relay deposit reverted; nothing moved");
+    if (err instanceof SolanaTransactionFailedError) {
+      // Rejected at preflight, or processed and failed: the deposit did not move the SOL.
+      await fail(row, `relay deposit failed: ${errorText(err)}`);
+      log.error({ err, appId: row.appId, fundingId: row.id }, "relay deposit failed; nothing moved");
       return false;
     }
     if (!sent) throw err;
-    // Broadcast but receipt unreadable: Relay's status is the source of truth from here.
-    log.warn({ err, appId: row.appId, fundingId: row.id, sendTx: sent.sendTx }, "relay deposit receipt unavailable; settling from Relay status");
+    // Broadcast but confirmation unreadable: it may still land, so it is never re-signed; Relay's
+    // status is the source of truth from here.
+    log.warn({ err, appId: row.appId, fundingId: row.id, sendTx: sent.sendTx }, "relay deposit unconfirmed; settling from Relay status");
   }
-  if (!sent) throw new Error("sendTx returned without broadcasting");
-  log.info({ appId: row.appId, fundingId: row.id, ethWei: quote.ethWei.toString(), usdcUnits: quote.usdcUnits.toString(), costUsd: quote.amountInUsd, sendTx: sent.sendTx, to }, "relay deposit sent");
+  if (!sent) throw new Error("relay deposit returned without broadcasting");
+  log.info({ appId: row.appId, fundingId: row.id, lamports: quote.lamports.toString(), usdcUnits: quote.usdcUnits.toString(), costUsd: quote.amountInUsd, sendTx: sent.sendTx, to }, "relay deposit sent");
   await settleSent(sent, log, now);
   return false;
 }
@@ -224,16 +231,20 @@ export async function fundCredits(log: Logger, now = Date.now()): Promise<void> 
     .filter((x) => x.pending >= minMicros && !busy.has(x.appId));
   if (due.length === 0) return;
 
-  const t = treasury();
-  const ethPriceUsd = await getEthPriceUsd();
+  if (!solanaEnabled() || solanaCluster() !== "mainnet-beta") {
+    log.warn("credit top-ups pay in SOL on Solana mainnet and SOLANA_RPC_URL is unset or not mainnet; balances left accrued");
+    return;
+  }
+  const t = solTreasury();
+  const solPriceUsd = await getSolPriceUsd();
   for (const { appId, pending } of due) {
     const topUpUsd = Math.min(MAX_CREDITS_FUNDING_USD, Number(pending / 1_000_000n));
     const usdMicros = BigInt(topUpUsd) * 1_000_000n;
     // Rough affordability before spending a headless-browser run on an address we could not fund.
-    const estimateWei = (weiFromUsdMicros(usdMicros, ethPriceUsd) * (10_000n + PRE_QUOTE_MARGIN_BPS)) / 10_000n;
-    const treasuryWei = await getEthBalance(t.address);
-    if (treasuryWei - estimateWei < TREASURY_FLOOR_WEI) {
-      log.warn({ appId, topUpUsd, estimateWei: estimateWei.toString(), treasuryWei: treasuryWei.toString() }, "treasury ETH too low to fund credits; stopping this pass");
+    const estimateLamports = (nativeFromUsdMicros(usdMicros, solPriceUsd, SOL_DECIMALS) * (10_000n + PRE_QUOTE_MARGIN_BPS)) / 10_000n;
+    const treasuryLamports = await getSolBalance(t.address);
+    if (treasuryLamports - estimateLamports < TREASURY_SOL_FLOOR_LAMPORTS) {
+      log.warn({ appId, topUpUsd, estimateLamports: estimateLamports.toString(), treasuryLamports: treasuryLamports.toString() }, "treasury SOL too low to fund credits; stopping this pass");
       return;
     }
     let deposit;
@@ -250,7 +261,7 @@ export async function fundCredits(log: Logger, now = Date.now()): Promise<void> 
     }
     if (status?.sessionExpiredAt) await writeStatus({ mode: "zentro", sessionExpiredAt: null });
     const row = await prisma.creditFunding.create({
-      data: { appId, usdMicros: BigInt(deposit.amountUsd) * 1_000_000n, wallet: deposit.address, status: "ADDRESS_MINTED" },
+      data: { appId, usdMicros: BigInt(deposit.amountUsd) * 1_000_000n, wallet: deposit.address, status: "ADDRESS_MINTED", originChain: "solana" },
     });
     log.info({ appId, fundingId: row.id, topUpUsd: deposit.amountUsd, to: maskAddress(deposit.address) }, "zentro deposit address minted");
     try {

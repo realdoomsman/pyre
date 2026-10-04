@@ -23,7 +23,7 @@ import { withLock } from "../../lib/lock.js";
 import { CHAIN_QUEUES, type ChainWorkerContext } from "./context.js";
 import { chainWorkerEnv } from "./env.js";
 import { publishEvent, publishGlobal } from "./publish.js";
-import { APP_GAS_LOW_WEI, TREASURY_FLOOR_WEI, appWallet } from "./wallet.js";
+import { APP_GAS_LOW_WEI, TREASURY_FLOOR_WEI, TREASURY_SOL_FLOOR_LAMPORTS, appWallet } from "./wallet.js";
 
 const LaunchJob = z.object({ appId: z.string().min(1) });
 
@@ -155,7 +155,7 @@ async function refundFailedLaunch(ctx: ChainWorkerContext, app: LaunchApp, walle
 /** Native float left in a Solana app wallet after the launch: rent exemption plus fees for the claim/sweep passes (≈0.02 SOL). */
 const VENUE_WALLET_FLOAT: Record<string, bigint> = { solana: 20_000_000n };
 /** The treasury Solana wallet never funds below this (a coin burn + a launch must stay possible). */
-const VENUE_TREASURY_FLOOR: Record<string, bigint> = { solana: 100_000_000n };
+const VENUE_TREASURY_FLOOR: Record<string, bigint> = { solana: TREASURY_SOL_FLOOR_LAMPORTS };
 
 async function finishLiveVenue(ctx: ChainWorkerContext, app: LaunchApp, venue: VenueAdapter, found: { token: string; curve: string; hash: string; block: number }, note: string, log: Logger): Promise<void> {
   const state = await venue.readLaunch(found.token);

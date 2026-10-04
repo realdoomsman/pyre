@@ -4,11 +4,12 @@ import { LAUNCH_PHASE, nativeFromUsdMicros } from "@pyre/shared";
 import type { Logger } from "pino";
 import { audit } from "../../lib/audit.js";
 import { MIN_BUYBACK_MICROS } from "./buyback.js";
+import { TREASURY_SOL_FLOOR_LAMPORTS } from "./wallet.js";
 
 /** Quoted output may move between quote and fill; the fill must deliver at least this share of it. */
 const SLIPPAGE_BPS = 100n;
 /** The treasury wallet on a venue's chain never spends below this on a burn (a launch pre-fund must stay possible). */
-const VENUE_TREASURY_FLOOR: Record<string, bigint> = { solana: 100_000_000n };
+const VENUE_TREASURY_FLOOR: Record<string, bigint> = { solana: TREASURY_SOL_FLOOR_LAMPORTS };
 
 type BurnApp = Prisma.AppGetPayload<{ select: { id: true; chain: true; launchpad: true; tokenAddress: true; slug: true } }>;
 const BURN_APP_SELECT = { id: true, chain: true, launchpad: true, tokenAddress: true, slug: true } as const;

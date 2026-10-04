@@ -4,12 +4,13 @@ import {
   PublicKey,
   SendTransactionError,
   TransactionExpiredBlockheightExceededError,
+  TransactionInstruction,
   TransactionMessage,
   VersionedTransaction,
+  type AddressLookupTableAccount,
   type Connection,
   type Keypair,
   type SimulatedTransactionResponse,
-  type TransactionInstruction,
   type VersionedTransactionResponse,
 } from "@solana/web3.js";
 import { withSendLock } from "../sendLock.js";
@@ -37,6 +38,14 @@ export interface SendOptions {
   computeUnits: number;
   /** Signers besides the payer (a new mint keypair on create). */
   signers?: Keypair[];
+  /** Address lookup tables the v0 message may compress account keys into. */
+  lookupTables?: AddressLookupTableAccount[];
+  /**
+   * Called with the signature right after each broadcast, before confirmation (again with the new
+   * signature if an expired blockhash forces a re-sign). Lets a caller persist "sent" in the same
+   * tick as the broadcast; a throw propagates as-is and the transaction may still land.
+   */
+  onBroadcast?: (signature: string) => Promise<void> | void;
 }
 
 /** The transaction was processed and failed, or was rejected at preflight: nothing it was meant to move has moved. */
@@ -129,7 +138,7 @@ async function sendLocked(payer: Keypair, instructions: TransactionInstruction[]
   const all = [...budgetInstructions(opts.computeUnits, microLamports), ...instructions];
   for (let attempt = 0; ; attempt++) {
     const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash(SOLANA_COMMITMENT);
-    const message = new TransactionMessage({ payerKey: payer.publicKey, recentBlockhash: blockhash, instructions: all }).compileToV0Message();
+    const message = new TransactionMessage({ payerKey: payer.publicKey, recentBlockhash: blockhash, instructions: all }).compileToV0Message(opts.lookupTables);
     const tx = new VersionedTransaction(message);
     tx.sign([payer, ...(opts.signers ?? [])]);
     let signature: string;
@@ -138,6 +147,7 @@ async function sendLocked(payer: Keypair, instructions: TransactionInstruction[]
     } catch (err) {
       throw preflightError(err) ?? err;
     }
+    await opts.onBroadcast?.(signature);
     try {
       const { value } = await conn.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, SOLANA_COMMITMENT);
       if (value.err) {
@@ -171,6 +181,46 @@ async function sendLocked(payer: Keypair, instructions: TransactionInstruction[]
 /** Sends `instructions` from `payer` and resolves once confirmed; see the module comment. */
 export function sendInstructions(payer: Keypair, instructions: TransactionInstruction[], opts: SendOptions): Promise<SolanaTxResult> {
   return withSendLock(payer.publicKey.toBase58(), () => sendLocked(payer, instructions, opts));
+}
+
+/** An instruction as an API hands it over (Relay's SVM steps): base58 keys, hex-encoded data. */
+export interface SerializedInstruction {
+  programId: string;
+  keys: Array<{ pubkey: string; isSigner: boolean; isWritable: boolean }>;
+  data: string;
+}
+
+/** Decodes a serialized instruction; refuses one that needs a signature from anyone but `payer`. Exported for tests. */
+export function decodeInstruction(ix: SerializedInstruction, payer: PublicKey): TransactionInstruction {
+  if (!/^(?:[0-9a-fA-F]{2})*$/.test(ix.data)) throw new Error(`instruction for ${ix.programId} carries non-hex data`);
+  const keys = ix.keys.map((k) => ({ pubkey: new PublicKey(k.pubkey), isSigner: k.isSigner, isWritable: k.isWritable }));
+  const foreign = keys.find((k) => k.isSigner && !k.pubkey.equals(payer));
+  if (foreign) throw new Error(`instruction for ${ix.programId} needs a signature from ${foreign.pubkey.toBase58()}, not the payer`);
+  return new TransactionInstruction({ programId: new PublicKey(ix.programId), keys, data: Buffer.from(ix.data, "hex") });
+}
+
+/**
+ * Sends instructions built by a third party (a Relay deposit) from `payer` through
+ * `sendInstructions`, compressing keys with the given lookup tables. Everything is decoded and
+ * every table resolved before anything is signed, so a throw before `onBroadcast` means nothing
+ * was sent.
+ */
+export async function sendSerializedInstructions(
+  payer: Keypair,
+  instructions: SerializedInstruction[],
+  opts: Omit<SendOptions, "lookupTables" | "signers"> & { lookupTables?: string[] },
+): Promise<SolanaTxResult> {
+  if (instructions.length === 0) throw new Error("no instructions to send");
+  const decoded = instructions.map((ix) => decodeInstruction(ix, payer.publicKey));
+  const conn = connection();
+  const lookupTables = await Promise.all(
+    (opts.lookupTables ?? []).map(async (address) => {
+      const { value } = await conn.getAddressLookupTable(new PublicKey(address), { commitment: SOLANA_COMMITMENT });
+      if (!value) throw new Error(`address lookup table ${address} not found`);
+      return value;
+    }),
+  );
+  return sendInstructions(payer, decoded, { computeUnits: opts.computeUnits, onBroadcast: opts.onBroadcast, lookupTables });
 }
 
 export interface SimulationResult {

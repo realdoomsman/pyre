@@ -119,7 +119,7 @@ export { connection as solanaConnection, solanaEnabled, solanaCluster, solanaRpc
 export { deriveSolWallet, deriveSolAppWallet, solTreasury, isSolAddress, isSolSignature, solDerivationPath, SOL_APP_INDEX_OFFSET, type SolWallet } from "./solana/keys.js";
 export { getSolBalance, transferSol, verifySolTransfer, checkSolTransfer, type SolTransferCheck } from "./solana/native.js";
 export { getSolPriceUsd, WSOL_MINT } from "./solana/price.js";
-export { sendInstructions, simulateInstructions, fetchTransaction, lamportDelta, SolanaTransactionFailedError, SolanaTransactionUnconfirmedError, type SolanaTxResult, type SendOptions, type SimulationResult } from "./solana/send.js";
+export { sendInstructions, sendSerializedInstructions, simulateInstructions, fetchTransaction, lamportDelta, SolanaTransactionFailedError, SolanaTransactionUnconfirmedError, type SolanaTxResult, type SendOptions, type SerializedInstruction, type SimulationResult } from "./solana/send.js";
 export { computeUnitPrice, clampComputeUnitPrice, priorityFeeLamports, COMPUTE_UNITS, PRIORITY_FEE_FLOOR_MICROLAMPORTS, PRIORITY_FEE_CAP_MICROLAMPORTS } from "./solana/fees.js";
 export { attestOnSolana, readAttestationOnSolana, encodeAttestationMemo, parseAttestationMemo, memoInstruction, memosIn, ATTESTATION_MEMO_PREFIX, MEMO_PROGRAM_ID } from "./solana/memo.js";
 
